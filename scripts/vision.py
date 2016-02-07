@@ -68,8 +68,6 @@ class LiveFilter:
 #takes in a list of filters and returns the first in the distance, or the longest to be updated
 def getClosestIndex(liveFilterArray, dist, newpoint) : #, pastPoints
 	count = 0
-	longestWait = 0
-	longestWaitIndex = 0
 	shortestDistance = 100
 	shortestDistanceIndex = -1
 	for f in liveFilterArray :
@@ -77,13 +75,11 @@ def getClosestIndex(liveFilterArray, dist, newpoint) : #, pastPoints
 		if distance_to < shortestDistance :
 			shortestDisance = distance_to
 			shortestDistanceIndex = count
-		if (f.lastCall > longestWait) :
-			longestWaitIndex = count
 		count += 1
 
 	if shortestDistance < dist and shortestDistanceIndex >-1 :
-		return shortestDistanceIndex
-	return longestWaitIndex
+		return (shortestDistanceIndex, shortestDistance)
+	return (-1, 100)
 
 #returns index into obj_poses of the best choice
 #if there are no good choices, returns -1
