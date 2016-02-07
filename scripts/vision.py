@@ -307,6 +307,7 @@ class Vision:
 	#given an hsv_mask, finds the number of blobs, filters, and publishes if it's consistent
 	def find_project_publish(self, hsv_mask):
 		objs = self.findBlobsofHue(hsv_mask, hsv_mask.num_blobs , self.rgb_image)
+		print "-------------"
 		
 		object_points = []
 		for bi in objs:
@@ -328,7 +329,7 @@ class Vision:
 				obj_pose.position.z = obj_pose.position.z / 1000
 				(index,dist) = getClosestIndex( hsv_mask.filters, 10, obj_pose.position)
 				#finds closest object-filter pair for each object
-				print dist
+				print index, dist
 				object_points.append((obj_pose, index, dist))
 				
 		#pair of index of object for that filter and distance
