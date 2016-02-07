@@ -346,7 +346,7 @@ class Vision:
 				obj_pose.position.x = obj_pose.position.x / 1000
 				obj_pose.position.y = obj_pose.position.y / 1000
 				obj_pose.position.z = obj_pose.position.z / 1000
-				(index,dist) = getClosestIndex( hsv_mask.filters, .3, obj_pose.position)
+				(index,dist) = getClosestIndex( hsv_mask.filters, 10, obj_pose.position)
 				#finds closest object-filter pair for each object
 				print dist
 				object_points.append((obj_pose, index, dist))
