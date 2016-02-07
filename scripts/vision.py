@@ -371,7 +371,7 @@ class Vision:
 		#iterates throught the bad ones so they are in the system and will become good ones		
 		c = 0
 		while c < len(freeFilters) and c < len(freePoints):
-			hsv_mask.filters[freeFilters[c]].updateFilter(object_points[freePoints[c]].position)
+			hsv_mask.filters[freeFilters[c]].updateFilter(object_points[freePoints[c]][0].position)
 			c += 1
 		print "recombined ",c
 
