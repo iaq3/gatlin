@@ -392,7 +392,7 @@ class Vision:
 		while c < len(freeFilters) and c < len(freePoints):
 			hsv_mask.filters[freeFilters[c]].updateFilter(object_points[freePoints[c]].position)
 			c += 1
-		print "recombined ",d
+		print "recombined ",c
 
 	def depth_callback(self,data):
 		try:
