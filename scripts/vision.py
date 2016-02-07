@@ -357,7 +357,7 @@ class Vision:
 			
 			hsv_counts.append([-1, 100, []])
 		c = 0
-		#finds closest object to the filter
+		#finds closest object-filter pair for the filter
 		for (obj_pose, closest_filter , dist) in object_points :
 			if closest_filter > -1 :
 				
@@ -375,19 +375,19 @@ class Vision:
 			obj_index = hsv_counts[i][0]
 			if obj_index > -1 :
 				bestPoint = object_points[obj_index][0].position
-				output_object = hsv_mask.filters[obj_index].updateFilter(best_point)
+				output_object = hsv_mask.filters[i].updateFilter(best_point)
 				if (output_object) :
 					try :
-						hsv_mask.base_pubs[obj_index].publish(bestPoint)
+						hsv_mask.base_pubs[i].publish(bestPoint)
 					except CvBridgeError, e:
 						print e
-				for point_indexes in hsv_counts[i][2] :
+				for point_index in hsv_counts[i][2] :
 					if obj_index != point_index :
-						freePoints.append(point_indexes)
+						freePoints.append(point_index)
 			else :
 				freeFilters.append(i)
 		
-		#iterates throught he bad ones so they are in the system and will become good ones		
+		#iterates throught the bad ones so they are in the system and will become good ones		
 		c = 0
 		while c < len(freeFilters) and c < len(freePoints):
 			hsv_mask.filters[freeFilters[c]].updateFilter(object_points[freePoints[c]].position)
