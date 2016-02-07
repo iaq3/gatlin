@@ -355,7 +355,7 @@ class Vision:
 			
 			obj_index = hsv_counts[i][0]
 			if obj_index > -1 :
-				bestPose = object_points[obj_index][0].position
+				bestPose = object_points[obj_index][0]
 				output_object = hsv_mask.filters[i].updateFilter(bestPose.position)
 				if (output_object) :
 					try :
