@@ -68,13 +68,13 @@ class LiveFilter:
 #takes in a list of filters and returns the first in the distance, or the longest to be updated
 def getClosestIndex(liveFilterArray, dist, newpoint) : #, pastPoints
 	count = 0
-	shortestDistance = 100
+	shortestDistance = 100000
 	shortestDistanceIndex = -1
 	for f in liveFilterArray :
 		distance_to = PointDistance(f.lastPosition, newpoint)
 		print distance_to
 		if distance_to < shortestDistance :
-			shortestDisance = distance_to
+			shortestDistance = distance_to
 			shortestDistanceIndex = count
 		count += 1
 	#shortestDistance < dist and 
