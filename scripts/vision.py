@@ -72,35 +72,15 @@ def getClosestIndex(liveFilterArray, dist, newpoint) : #, pastPoints
 	shortestDistanceIndex = -1
 	for f in liveFilterArray :
 		distance_to = PointDistance(f.lastPosition, newpoint)
+		print distance_to
 		if distance_to < shortestDistance :
 			shortestDisance = distance_to
 			shortestDistanceIndex = count
 		count += 1
-
-	if shortestDistance < dist and shortestDistanceIndex >-1 :
+	#shortestDistance < dist and 
+	if shortestDistanceIndex >-1 :
 		return (shortestDistanceIndex, shortestDistance)
 	return (-1, 100)
-
-#returns index into obj_poses of the best choice
-#if there are no good choices, returns -1
-def getClosestObject_pose(obj_poses, dist, fil) : #, pastPoints
-	count = 0
-	shortestDistance = 100
-	shortestDistanceIndex = -1
-	#returns closest point to filter that is within 
-	for obj in obj_poses :
-		distance_to = PointDistance(obj.position, fil.lastPosition)
-		if distance_to < shortestDistance :
-			shortestDisance = distance_to
-			shortestDistanceIndex = count
-		count += 1
-
-	if shortestDistance < dist and shortestDistanceIndex >-1 :
-		return (shortestDistanceIndex, shortestDistance)
-	
-	#put this filter into another list of free ones.
-	#what if two pick the same?????
-	return (-1,shortestDistance)
 
 
 
@@ -463,7 +443,7 @@ class Vision:
 		for c in cs:
 
 			area = cv2.contourArea(c)
-			similarity = cv2.matchShapes(shape,c,1,0.0) + 1
+			similarity = 0#cv2.matchShapes(shape,c,1,0.0) + 1
 
 			if hsv_mask.shape_name == 'square':
 
