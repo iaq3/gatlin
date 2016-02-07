@@ -356,7 +356,7 @@ class Vision:
 			obj_index = hsv_counts[i][0]
 			if obj_index > -1 :
 				bestPoint = object_points[obj_index][0].position
-				output_object = hsv_mask.filters[i].updateFilter(best_point)
+				output_object = hsv_mask.filters[i].updateFilter(bestPoint)
 				if (output_object) :
 					try :
 						hsv_mask.base_pubs[i].publish(bestPoint)
