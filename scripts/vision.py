@@ -351,6 +351,7 @@ class Vision:
 				obj_pose.position.y = obj_pose.position.y / 1000
 				obj_pose.position.z = obj_pose.position.z / 1000
 				(index,dist) = getClosestIndex( hsv_mask.filters, .3, obj_pose.position)
+				#finds closest object-filter pair for each object
 				object_points.append((obj_pose, index, dist))
 				
 		#pair of index of object for that filter and distance
@@ -360,6 +361,7 @@ class Vision:
 			
 			hsv_counts.append([-1, 100, []])
 		c = 0
+		#finds closest object to the filter
 		for (obj_pose, closest_filter , dist) in object_points :
 			if closest_filter > -1 :
 				
@@ -371,6 +373,7 @@ class Vision:
 		
 		freeFilters = []
 		freePoints = []
+		#publishes best filter-object pairs and collects the bad ones
 		for i in xrange(len(hsv_mask.filters)) :
 			
 			obj_index = hsv_counts[i][0]
@@ -388,7 +391,7 @@ class Vision:
 			else :
 				freeFilters.append(i)
 		
-				
+		#iterates throught he bad ones so they are in the system and will become good ones		
 		c = 0
 		while c < len(freeFilters) and c < len(freePoints):
 			hsv_mask.filters[freeFilters[c]].updateFilter(object_points[freePoints[c]].position)
