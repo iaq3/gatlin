@@ -1,0 +1,5 @@
+<launch>
+
+<node pkg="gatlin" type="GmapperConverter.py" name="GmapperConverter" output="screen" ></node>
+
+</launch>

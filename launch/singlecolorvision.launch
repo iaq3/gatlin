@@ -1,0 +1,5 @@
+<launch>
+
+<node pkg="gatlin" type="single_color_vision.py" name="single_color_vision" output="screen" ></node>
+
+</launch>

@@ -1,0 +1,9 @@
+<launch>
+
+	<arg name="calibrate" default="false"/>
+
+    <node name="vision" pkg="gatlin" type="vision.py" output="screen"></node>
+    <!-- <node ns="kinect" name="vision" pkg="cs4752_proj3" type="vision.py" output="screen"></node> -->
+
+   
+</launch>

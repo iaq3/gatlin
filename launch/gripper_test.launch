@@ -1,0 +1,28 @@
+<!--
+  gatlinv4 launch
+ -->
+<launch>
+	<arg name="rviz" default="true"/>
+	<arg name="calibrate" default="false"/>
+
+
+	<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" >
+		<arg name="port" value="9090"/>
+	</include>
+
+	<node pkg="gatlin" type="vuforia.py" name="vuforia" output="screen" ></node>
+
+	<arg name="simulation" default="false"/>
+	<arg name="arm_type" default="pincher"/>
+
+	<node name="fake_joint_pub" pkg="turtlebot_arm_bringup" type="fake_joint_pub.py"/>
+
+	<node name="arbotix" pkg="arbotix_python" type="arbotix_driver" output="screen">
+		<rosparam file="$(find turtlebot_arm_bringup)/config/$(arg arm_type)_arm.yaml" command="load"/>
+		<param name="sim" value="$(arg simulation)"/>
+	</node>
+
+	<node name="gripper_controller" pkg="arbotix_controllers" type="gripper_controller" output="screen">
+		<rosparam file="$(find turtlebot_arm_bringup)/config/$(arg arm_type)_gripper.yaml" command="load" />
+	</node>
+</launch>

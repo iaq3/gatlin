@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+
+<robot name="gatlin_robot" xmlns:xacro="http://ros.org/wiki/xacro">
+
+   <xacro:property name="PI" value="3.1415"/>
+
+   <!-- Define a number of dimensions using properties -->   
+   <property name="head_offset_x" value="0.105" />
+   <property name="head_offset_y" value="0.03" />
+   <property name="head_offset_z" value="0.05" />
+   <property name="head_offset_rotz" value="0.02" />
+   
+   <property name="arm_offset_x" value="0.13" />
+   <property name="arm_offset_y" value="0.00" />
+   <property name="arm_offset_z" value="0.135" />
+
+   <property name="stacks_offset" value="-.03" />   
+   <property name="top_plate" value=".33" />   
+
+   <!-- The following xacro:include files set up definitions of parts of the robot body -->
+
+   <xacro:include filename="$(find gatlin)/urdf/turtlebot_library.urdf.xacro" />
+   
+   <xacro:property name="joints_vlimit" value="1.571"/>
+   <xacro:property name="pan_llimit" value="-2.617"/>
+   <xacro:property name="pan_ulimit" value="2.617"/>
+   <xacro:property name="shoulder_llimit" value="-2.2"/>
+   <xacro:property name="shoulder_ulimit" value="2.16"/>
+   <xacro:property name="elbow_llimit" value="-2.42"/>
+   <xacro:property name="elbow_ulimit" value="2.38"/>
+   <xacro:property name="wrist_llimit" value="-1.72"/>
+   <xacro:property name="wrist_ulimit" value="1.68"/>
+   <xacro:include filename="$(find gatlin)/urdf/turtlebot_arm.xacro"/>
+
+   <xacro:include filename="$(find gatlin)/urdf/pan_tilt_head.urdf.xacro" />
+
+   <!-- Now we can start using the macros included above to define the actual robot -->
+   
+   <!-- Start with the base and wheels -->
+   <create/>
+   
+   <!-- Attach the stacks -->
+   <stack_squares parent="base_link" offset="${stacks_offset}" top_plate="${top_plate}"/>
+
+   <!-- Attach the pan and tilt head -->
+   <head name="head_base" parent="plate_3" color="White">
+      <origin xyz="${head_offset_x} ${head_offset_y} ${head_offset_z}" rpy="${PI/2} 0 ${PI/2+head_offset_rotz}" />
+   </head>  
+
+   <!-- Attach the arm -->
+   <turtlebot_arm parent="base_link" color="Gray" gripper_color="Gray" pincher_gripper="true" turtlebot_gripper="false">
+     <origin xyz="${arm_offset_x} ${arm_offset_y} ${arm_offset_z}" rpy="0 0 0" />
+   </turtlebot_arm>
+
+</robot>
+
+

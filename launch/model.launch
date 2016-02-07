@@ -1,0 +1,44 @@
+<launch>
+	<arg name="gui" default="true" />
+	<arg name="rviz" default="true" />
+	<arg name="bridge" default="false" />
+	<arg name="sim" default="false" />
+
+	<arg name="urdf_file" default="$(find xacro)/xacro.py '$(find gatlin)/robots/gatlin_with_arm_and_head.urdf.xacro'" />
+	<!-- <arg name="urdf_file" default="$(find xacro)/xacro.py '$(find gatlin)/urdf/pan_tilt_head.urdf.xacro'" /> -->
+	<!-- <arg name="urdf_file" default="$(find xacro)/xacro.py '$(find turtlebot_arm_description)/urdf/pincher_arm.urdf.xacro'" /> -->
+
+	<param name="robot_description" command="$(arg urdf_file)" />
+
+	<!-- <param name="use_gui" value="$(arg gui)"/> -->
+	<!-- <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" /> -->
+	<!-- <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" /> -->
+	<!-- <node name="fake_joint_pub" pkg="turtlebot_arm_bringup" type="fake_joint_pub.py"/> -->
+	<node if="$(arg rviz)" name="rviz" pkg="rviz" type="rviz" args="-d $(find gatlin)/rviz/urdf.rviz" required="true" />
+
+	<include if="$(arg bridge)" file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" >
+		<arg name="port" value="9090"/>
+	</include>
+
+	<node if="$(arg bridge)" pkg="gatlin" type="vuforia.py" name="vuforia" output="screen" ></node>
+
+	<!-- <rosparam if="$(arg sim)" file="$(find gatlin)/config/fake_controllers.yaml"/> -->
+	<!-- <include file="$(find gatlin)/launch/move_group.launch">
+		<arg name="allow_trajectory_execution" value="true"/>  
+		<arg name="fake_execution" value="$(arg sim)"/>
+		<arg name="info" value="true"/>
+		<arg name="debug" value="false"/>
+	</include>
+
+	<node if="$(arg sim)" name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
+		<param name="/use_gui" value="$(arg gui)"/> 
+		<rosparam param="/source_list">[/move_group/fake_controller_joint_states]</rosparam>
+	</node> -->
+
+	<include file="$(find gatlin)/launch/arm_minimal.launch">
+		<arg name="gui" value="$(arg gui)"/>
+		<arg name="simulation" value="$(arg sim)"/>
+		<arg name="rviz" value="false"/>
+	</include>
+
+</launch>

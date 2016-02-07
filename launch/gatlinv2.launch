@@ -1,0 +1,37 @@
+<!--
+  gatlinv2 launch   
+ -->
+<launch>
+
+<include file="$(find turtlebot_bringup)/launch/minimal.launch"></include>
+
+
+<node pkg="web_video_server" type="web_video_server" name="web_video_server" output="screen" ></node>
+
+<node pkg="image_converter" type="image_converter" name="image_converter" output="screen" ></node>
+
+<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" >
+	<arg name="port" value="9090"/>
+</include>
+
+
+
+
+<param name="camera/rgb/image_color/compressed/jpeg_quality" value="50"/>
+
+<include file="$(find turtlebot_bringup)/launch/3dsensor.launch">
+	<arg name="rgb_processing" value="true" />
+	<arg name="depth_registration" value="true" />
+	<arg name="depth_processing" value="true" />
+</include>
+
+
+<!-- Make a slower camera feed available; only required if we use android client -->
+<node pkg="topic_tools" type="throttle" name="camera_throttle"
+  args="messages camera/rgb/image_color/compressed 5"/>
+
+
+
+
+
+</launch>
