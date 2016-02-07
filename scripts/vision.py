@@ -355,11 +355,11 @@ class Vision:
 			
 			obj_index = hsv_counts[i][0]
 			if obj_index > -1 :
-				bestPoint = object_points[obj_index][0].position
-				output_object = hsv_mask.filters[i].updateFilter(bestPoint)
+				bestPose = object_points[obj_index][0].position
+				output_object = hsv_mask.filters[i].updateFilter(bestPose.position)
 				if (output_object) :
 					try :
-						hsv_mask.base_pubs[i].publish(bestPoint)
+						hsv_mask.base_pubs[i].publish(bestPose)
 					except CvBridgeError, e:
 						print e
 				for point_index in hsv_counts[i][2] :
