@@ -85,6 +85,27 @@ def getClosestIndex(liveFilterArray, dist, newpoint) : #, pastPoints
 		return shortestDistanceIndex
 	return longestWaitIndex
 
+#returns index into obj_poses of the best choice
+#if there are no good choices, returns -1
+def getClosestObject_pose(obj_poses, dist, fil) : #, pastPoints
+	count = 0
+	shortestDistance = 100
+	shortestDistanceIndex = -1
+	#returns closest point to filter that is within 
+	for obj in obj_poses :
+		distance_to = PointDistance(obj.position, fil.lastPosition)
+		if distance_to < shortestDistance :
+			shortestDisance = distance_to
+			shortestDistanceIndex = count
+		count += 1
+
+	if shortestDistance < dist and shortestDistanceIndex >-1 :
+		return (shortestDistanceIndex, shortestDistance)
+	
+	#put this filter into another list of free ones.
+	#what if two pick the same?????
+	return (-1,shortestDistance)
+
 
 
 class HSVMask:
@@ -307,15 +328,11 @@ class Vision:
 			# print "self.find_project_publish(%s)" % mask.color
 			self.find_project_publish(mask)
 
+	#given an hsv_mask, finds the number of blobs, filters, and publishes if it's consistent
 	def find_project_publish(self, hsv_mask):
-		
-
 		objs = self.findBlobsofHue(hsv_mask, hsv_mask.num_blobs , self.rgb_image)
-		#if len(objs) > 0:
-		#	screen_pub.publish(ScreenObj(objs[0][0],objs[0][1],objs[0][2],self.rgb_image.shape[0],self.rgb_image.shape[1]))
-		#else:	
-		#	screen_pub.publish(ScreenObj(0,0,0,0,0))
-
+		
+		object_points = []
 		for bi in objs:
 			# bi = objs[0]
 			radius = bi[2]
@@ -326,42 +343,56 @@ class Vision:
 					print "NAN returning instead of using bad depth"
 					return
 				obj_pose = self.project((bi[0], bi[1]), distance, self.rgb_image.shape[1], self.rgb_image.shape[0])
-				
 			else :
 				distance = self.pixel_radius / radius
 				obj_pose = self.project((bi[0], bi[1]), distance, self.rgb_imageCREATE .shape[1], self.rgb_image.shape[0])
-
-
-			try:
-				if obj_pose != None :
-					#print obj_pose
-
-
-					obj_pose.position.x = obj_pose.position.x / 1000
-					obj_pose.position.y = obj_pose.position.y / 1000
-					obj_pose.position.z = obj_pose.position.z / 1000
-					index = getClosestIndex( hsv_mask.filters, 1, obj_pose.position) #TEST TODO 
-					print "INDEX of FILTER %d", index
-					output_object = hsv_mask.filters[index].updateFilter(obj_pose.position)
-					if (output_object) :
-						image_frame = ""
-						#if self.vision_type == "kinect":
-						#	image_frame = "/camera_rgb_optical_frame"
-						#elif self.vision_type == "hand":
-						#	image_frame = "/%s_hand_camera" % self.limb_name
-						#obj_image_pose = PoseStamped()
-						#obj_image_pose.header.frame_id = image_frame
-						#obj_image_pose.header.stamp = self.transform_listener.getLatestCommonTime(image_frame, 'map')
-						#obj_image_pose.pose = obj_pose
-
-						#obj_base_pose = self.transform_listener.transformPose('map', obj_image_pose)
-						#obj_base_pose.header.stamp = rospy.Time.now()
-						#TODO add index to base_pub
-						
-						hsv_mask.base_pubs[index].publish(obj_pose)
-						
-			except CvBridgeError, e:
-				print e
+			if obj_pose != None :
+				obj_pose.position.x = obj_pose.position.x / 1000
+				obj_pose.position.y = obj_pose.position.y / 1000
+				obj_pose.position.z = obj_pose.position.z / 1000
+				(index,dist) = getClosestIndex( hsv_mask.filters, .3, obj_pose.position)
+				object_points.append((obj_pose, index, dist))
+				
+		#pair of index of object for that filter and distance
+		hsv_counts = []	
+		
+		for i in xrange(len(hsv_mask.filters)) :
+			
+			hsv_counts.append([-1, 100, []])
+		c = 0
+		for (obj_pose, closest_filter , dist) in object_points :
+			if closest_filter > -1 :
+				
+				if (hsv_counts[closest_filter][1] > dist) :
+					hsv_counts[closest_filter][0] = c
+					hsv_counts[closest_filter][1] = dist
+				hsv_counts[closest_filter][2].append(c)
+			c += 1
+		
+		freeFilters = []
+		freePoints = []
+		for i in xrange(len(hsv_mask.filters)) :
+			
+			obj_index = hsv_counts[i][0]
+			if obj_index > -1 :
+				bestPoint = object_points[obj_index][0].position
+				output_object = hsv_mask.filters[obj_index].updateFilter(best_point)
+				if (output_object) :
+					try :
+						hsv_mask.base_pubs[obj_index].publish(bestPoint)
+					except CvBridgeError, e:
+						print e
+				for point_indexes in hsv_counts[i][2] :
+					if obj_index != point_index :
+						freePoints.append(point_indexes)
+			else :
+				freeFilters.append(i)
+		
+				
+		c = 0
+		while c < len(freeFilters) and c < len(freePoints):
+			hsv_mask.filters[freeFilters[c]].updateFilter(object_points[freePoints[c]].position)
+			c += 1
 
 	def depth_callback(self,data):
 		try:
