@@ -72,7 +72,7 @@ def getClosestIndex(liveFilterArray, dist, newpoint) : #, pastPoints
 	shortestDistanceIndex = -1
 	for f in liveFilterArray :
 		distance_to = PointDistance(f.lastPosition, newpoint)
-		print distance_to
+		
 		if distance_to < shortestDistance :
 			shortestDistance = distance_to
 			shortestDistanceIndex = count
@@ -307,7 +307,7 @@ class Vision:
 	#given an hsv_mask, finds the number of blobs, filters, and publishes if it's consistent
 	def find_project_publish(self, hsv_mask):
 		objs = self.findBlobsofHue(hsv_mask, hsv_mask.num_blobs , self.rgb_image)
-		print "-------------"
+		#print "-------------"
 		
 		object_points = []
 		for bi in objs:
@@ -329,7 +329,7 @@ class Vision:
 				obj_pose.position.z = obj_pose.position.z / 1000
 				(index,dist) = getClosestIndex( hsv_mask.filters, 10, obj_pose.position)
 				#finds closest object-filter pair for each object
-				print index, dist
+				#print index, dist
 				object_points.append((obj_pose, index, dist))
 				
 		#pair of index of object for that filter and distance
@@ -342,7 +342,7 @@ class Vision:
 		for (obj_pose, closest_filter , dist) in object_points :
 			if closest_filter > -1 :
 				if (hsv_counts[closest_filter][1] > dist) :
-					print "closer obj found"
+					#print "closer obj found"
 					hsv_counts[closest_filter][0] = c
 					hsv_counts[closest_filter][1] = dist
 				hsv_counts[closest_filter][2].append(c)
@@ -373,7 +373,7 @@ class Vision:
 		while c < len(freeFilters) and c < len(freePoints):
 			hsv_mask.filters[freeFilters[c]].updateFilter(object_points[freePoints[c]][0].position)
 			c += 1
-		print "recombined ",c
+		#print "recombined ",c
 
 	def depth_callback(self,data):
 		try:
