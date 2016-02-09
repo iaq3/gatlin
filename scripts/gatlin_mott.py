@@ -3,12 +3,14 @@ import time
 from threading import Thread
 import rospy, sys, tf
 from math import *
+from std_msgs.msg import *
 from geometry_msgs.msg import *
 from tf.transformations import *
 from tf import *
 from copy import deepcopy
-from turtle_sim.msg import Velocity
+# from turtle_sim.msg import Velocity
 from config import *
+from gatlin.msg import *
 	
 
 def PointDistance (p1, p2) :
@@ -28,7 +30,7 @@ def angle(v1, v2):
   return math.acos(np.dot(v1, v2) / (length(v1) * length(v2)))
 
 def relativeAngle(robot_pose, toTargetPoint) :
-	toTarget = vector3_to_numpy(toTargetPoint):
+	toTarget = vector3_to_numpy(toTargetPoint)
 	forwardRobot = np.array([0,-1,0, 1])
 	robotRotation = quaternion_matrix(robot_pose.orientation)
 	forwardRobotInMap = np.dot(robotRotation, forwardRobot.T)
@@ -62,16 +64,15 @@ class Mott_Thread(Thread) :
 
 	#object pose is in the kinect frame because its visual
 	def visual_servo_base(self, object_pose) :
-		forward = object_pose.z;
-		turn = object_pose.x;
-		
-		print "turn value of goalinself ", turn;
-		if (abs(turn)/abs(forward) > .5) { #TODO TUNE
-			forward = 0;
-		}
+		forward = object_pose.z
+		turn = object_pose.x
+
+		print "turn value of goalinself %d" % turn
+		if (abs(turn)/abs(forward) > .5): #TODO TUNE
+			forward = 0
 
 		mag = (turn**2 + forward**2)**.5
-		if (mag > .3f) :
+		if (mag > .3) :
 			turn = (turn/mag) * .3
 			forward = (forward/mag) *.3
 		
@@ -86,16 +87,15 @@ class Mott_Thread(Thread) :
 
 	#pose is in the map frame because its virtual
 	def target_servo_base(self, target_pose) :
-		forward = target_pose.y;
-		turn = target_pose.x;
+		forward = target_pose.y
+		turn = target_pose.x
 		
-		print "turn value of goalinself ", turn;
-		if (abs(turn)/abs(forward) > .5) { #TODO TUNE
-			forward = 0;
-		}
+		print "turn value of goalinself %d" % turn
+		if (abs(turn)/abs(forward) > .5) :#TODO TUNE
+			forward = 0
 
 		mag = (turn**2 + forward**2)**.5
-		if (mag > .3f) :
+		if (mag > .3) :
 			turn = (turn/mag) * .3
 			forward = (forward/mag) *.3
 		
@@ -113,7 +113,7 @@ class Mott_Thread(Thread) :
 		
 		#object pose is in kinect coordinates.... need them in map coordinates..... TODO test
 		object_in_map = None
-		while !object_in_map :
+		while not object_in_map :
 			object_in_map = self.get_pose('map', 'camera_link', self.gatlin_mott.object_pose)
 		self.gatlin_mott.gmapBaseTo(object_in_map)
 
@@ -182,7 +182,7 @@ class Mott_Thread(Thread) :
 
 		#move arm to target
 		target_in_kinect = None
-		while !target_in_kinect:
+		while not target_in_kinect:
 			target_in_kinect = self.get_pose('camera_link', 'map', self.gatlin_mott.target_pose)
 		self.gatlin_matt.arm_pose_pub.publish(target_in_kinect)
 
@@ -208,7 +208,7 @@ class gatlin_mott:
 		self.object_sub = rospy.Subscriber(data.object_topic, Pose, objectPoseCallback, queue_size = 1)
 		self.target_sub = rospy.Subscriber(data.target_topic, Pose, targetPoseCallback, queue_size = 1)
 		
-		if (!self.working) :
+		if not (self.working) :
 			self.working = True
 			Mott_Thread(self, data.object_topic, data.target_topic).start()
 
@@ -256,7 +256,7 @@ class gatlin_mott:
 	def distanceToTarget(self) :
 		return PointDistance(self.robot_pose.position, self.target_pose.position)
 
-	def __init__(self, target):
+	def __init__(self):
 		rospy.init_node('gatlin_mott')
 
 		self.robot_pose = Pose()
@@ -268,17 +268,19 @@ class gatlin_mott:
 		self.response_pub = rospy.Publisher("/gatlin_mott_response", String)
 		self.gmap_base_pub = rospy.Publisher("/move_to_goal", Pose)
 		self.gripper_pub = rospy.Publisher("/target_pos", Point)
-		self.gatlin_cmd_pub = rospy.Publisher("/gatlin_cmd", int)
+		self.gatlin_cmd_pub = rospy.Publisher("/gatlin_cmd", Int32)
 		self.arm_pose_pub = rospy.Publisher("/arm_target_pose", Pose)
 		self.base_joystick_pub = rospy.Publisher("/cmd_vel_mux/input/teleop" , Twist)
 
 
-		rospy.Subscriber("/gatlin_mott", Mott, MottCallback, queue_size = 1)
-		rospy.Subscriber("/robot_pose", Pose, robotPoseCallback, queue_size =1)
+		rospy.Subscriber("/gatlin_mott", Mott, self.MottCallback, queue_size = 1)
+		rospy.Subscriber("/robot_pose", Pose, self.robotPoseCallback, queue_size =1)
 
 
-		self.object_sub = rospy.Subscriber("/green_kinect0_pose", Pose, objectPoseCallback, queue_size = 1)
-		self.target_sub = rospy.Subscriber("/green_kinect0_pose", Pose, targetPoseCallback, queue_size = 1)
+		self.object_sub = rospy.Subscriber("/green_kinect0_pose", Pose, self.objectPoseCallback, queue_size = 1)
+		self.target_sub = rospy.Subscriber("/green_kinect0_pose", Pose, self.targetPoseCallback, queue_size = 1)
+
+		rospy.spin()
 
 
 if __name__ == "__main__":

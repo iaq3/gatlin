@@ -1,0 +1,2 @@
+string object_pose_topic
+geometry_msgs/Pose target_pose

@@ -2,7 +2,7 @@
   arm_minimal launch   
  -->
 <launch>
-  <arg name="rviz" default="true"/>
+  <arg name="rviz" default="false"/>
   <arg name="gui" default="false"/>
 <!-- ######################################## arm.launch ######################################## -->
 
