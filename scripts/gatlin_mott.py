@@ -208,12 +208,17 @@ class gatlin_mott:
 		self.object_sub.unregister()
 		self.target_sub.unregister()
 
-		self.object_sub = rospy.Subscriber(data.object_topic, Pose, objectPoseCallback, queue_size = 1)
-		self.target_sub = rospy.Subscriber(data.target_topic, Pose, targetPoseCallback, queue_size = 1)
+		self.object_sub = rospy.Subscriber(data.object_pose_topic, Pose, objectPoseCallback, queue_size = 1)
+		self.target_sub = rospy.Subscriber(data.target_pose_topic, Pose, targetPoseCallback, queue_size = 1)
+
+		if (data.object_pose) :
+			self.object_pose = data.object_pose
+		if (data.target_pose) :
+			self.target_pose = data.target_pose
 		
 		if not (self.working) :
 			self.working = True
-			Mott_Thread(self, data.object_topic, data.target_topic).start()
+			Mott_Thread(self, data.object_pose_topic, data.target_pose_topic).start()
 
 
 	def robotPoseCallback(self, data) :
