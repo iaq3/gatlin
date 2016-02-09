@@ -14,7 +14,10 @@ from gatlin.msg import *
 	
 
 def PointDistance (p1, p2) :
-		return ((p1.x-p2.x)** 2 + (p1.y - p2.y)** 2 + (p1.z - p2.z)**2)**.5
+	return ((p1.x-p2.x)** 2 + (p1.y - p2.y)** 2 + (p1.z - p2.z)**2)**.5
+
+def PointDistanceFlat (p1, p2) :
+	return ((p1.x-p2.x)** 2 + (p1.y - p2.y)** 2)**.5
 
 def PointMinus(p1, p2) :
 	np = Point()
@@ -86,12 +89,15 @@ class Mott_Thread(Thread) :
 		self.gatlin_mott.baseJoystickPublish (msg)
 
 	#pose is in the map frame because its virtual
-	def target_servo_base(self, target_pose) :
-		forward = target_pose.y
-		turn = target_pose.x
+	def target_servo_base(self, target_position) :
+
+		robot_to_target_angle = relativeAngle(self.gatlin_mott.robot_pose, target_position)
 		
-		print "turn value of goalinself %d" % turn
-		if (abs(turn)/abs(forward) > .5) :#TODO TUNE
+		forward = .15
+		turn = robot_to_target_angle
+
+		print "turn value of goalinself %d" % robot_to_target_angle
+		if (robot_to_target_angle > .5) :#TODO TUNE
 			forward = 0
 
 		mag = (turn**2 + forward**2)**.5
@@ -172,10 +178,7 @@ class Mott_Thread(Thread) :
 			#TODO, it's already in map coords... ?????
 			toTarget = PointMinus(self.gatlin_mott.target_pose.position, self.robot_pose.position)
 
-
-
-			self.robot_pose.orientation 
-			self.target_servo_base(relative_target)
+			self.target_servo_base(toTarget)
 			time.sleep(.03)
 
 		time.sleep(2)
