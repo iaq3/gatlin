@@ -208,8 +208,10 @@ class gatlin_mott:
 		self.object_sub.unregister()
 		self.target_sub.unregister()
 
-		self.object_sub = rospy.Subscriber(data.object_pose_topic, Pose, objectPoseCallback, queue_size = 1)
-		self.target_sub = rospy.Subscriber(data.target_pose_topic, Pose, targetPoseCallback, queue_size = 1)
+		if (not (data.object_pose_topic == "")) :
+			self.object_sub = rospy.Subscriber(data.object_pose_topic, Pose, objectPoseCallback, queue_size = 1)
+		if (not (data.target_pose_topic == "")) :
+			self.target_sub = rospy.Subscriber(data.target_pose_topic, Pose, targetPoseCallback, queue_size = 1)
 
 		if (data.object_pose) :
 			self.object_pose = data.object_pose
@@ -258,9 +260,15 @@ class gatlin_mott:
 	def publishResponse(self, statement) : 
 		self.response_pub.publish(statement)
 
+	#object is in kinect frame. find distance to origin ie magnitude
 	def distanceToObject(self) :
-		return PointDistance(self.robot_pose.position, self.object_pose.position)
+		z = Point()
+		z.x = 0
+		z.y = 0
+		z.z = 0
+		return PointDistance(z, self.object_pose.position)
 
+	#distance from robot_pose to target_pose in map frame
 	def distanceToTarget(self) :
 		return PointDistance(self.robot_pose.position, self.target_pose.position)
 
