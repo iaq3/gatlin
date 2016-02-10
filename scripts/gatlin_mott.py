@@ -115,7 +115,7 @@ class Mott_Thread(Thread) :
 	def run(self):
 
 		#gmap move base to object ******************************* TODO if not in visible frame, then 
-		if gatlin_mott.distanceToObject() > 3 :
+		if gatlin_mott.distanceToObject() > 3 :#these are new
 			self.gatlin_mott.publishResponse("Gmap base to "+self.object_name)
 			
 			#object pose is in kinect coordinates.... need them in map coordinates..... TODO test
