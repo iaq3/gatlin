@@ -1,0 +1,23 @@
+Commands
+
+AR Drone:
+roslaunch tum_ardrone ardrone_driver.launch
+roslaunch tum_ardrone tum_ardrone.launch
+
+KB control 
+    requires the GUI window to have focus, but NOT the upper-left text field. => make the GUI the active window and press ESC to immediately enable KB control and set focus such that KB control works properly. can be used for safety (autopilot does wired stuff -> press ESC and immediately take over, disabling the autopilot and enabeling manual control).
+        q,a: fly up & down.
+        i,j,k,l: fly horizontally.
+        u,o: rotate yaw.
+        F1: toggle emergency
+        s: takeoff
+        d: land
+
+    Buttons Land, Takeoff, ToggleCam, Emergency (toggles emergency state).
+
+Autopilot Control
+
+    write commands in top-left text field (or load eample from one of the files). You can simply add .txt files to flightplans/.
+    click Send to transmit commands to the autopilot's command queue (automatically sets Control Source to Autopilot).
+    click Clear to clear autopilot command queue and current target.
+    click Reset to reset Autopilot, PTAM and EKF.
