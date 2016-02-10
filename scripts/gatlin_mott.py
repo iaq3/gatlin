@@ -114,30 +114,32 @@ class Mott_Thread(Thread) :
 
 	def run(self):
 
-		#gmap move base to object *******************************
-		self.gatlin_mott.publishResponse("Gmap base to "+self.object_name)
-		
-		#object pose is in kinect coordinates.... need them in map coordinates..... TODO test
-		object_in_map = None
-		while not object_in_map :
-			object_in_map = self.get_pose('map', 'camera_link', self.gatlin_mott.object_pose)
-		self.gatlin_mott.gmapBaseTo(object_in_map)
+		#gmap move base to object ******************************* TODO if not in visible frame, then 
+		if gatlin_mott.distanceToObject() > 3 :
+			self.gatlin_mott.publishResponse("Gmap base to "+self.object_name)
+			
+			#object pose is in kinect coordinates.... need them in map coordinates..... TODO test
+			object_in_map = None
+			while not object_in_map :
+				object_in_map = self.get_pose('map', 'camera_link', self.gatlin_mott.object_pose)
+			self.gatlin_mott.gmapBaseTo(object_in_map)
 
-		#distance is from kinect...
-		while gatlin_mott.distanceToObject() > 3 :
-			time.sleep(.03)
-		#stop gmap base
-		self.gatlin_mott.cancelgmapBaseTo()
+			#distance is from kinect...
+			while gatlin_mott.distanceToObject() > 3 :
+				time.sleep(.03)
+			#stop gmap base
+			self.gatlin_mott.cancelgmapBaseTo()
 
 		#servo base to object ************************************
-		self.gatlin_mott.publishResponse("Servo base to "+self.object_name)
-		while gatlin_mott.distanceToObject() > 1.5 :
-			#visual servo off of position of object in kinect frame
-			self.visual_servo_base(self.gatlin_mott.object_pose)
+		if gatlin_mott.distanceToObject() > 1.5 :
+			self.gatlin_mott.publishResponse("Servo base to "+self.object_name)
+			while gatlin_mott.distanceToObject() > 1.5 :
+				#visual servo off of position of object in kinect frame
+				self.visual_servo_base(self.gatlin_mott.object_pose)
 
-			time.sleep(.03)
+				time.sleep(.03)
 
-		time.sleep(1)
+			time.sleep(1)
 
 		#grab object **********************************************
 		holding_object = False
@@ -166,29 +168,30 @@ class Mott_Thread(Thread) :
 		self.gatlin_mott.publishResponse("Grabbed "+self.object_name)
 
 		#gmap move base to target
-		self.gatlin_mott.publishResponse("Gmap base to "+self.target_name)
-		self.gatlin_mott.gmapBaseTo(self.gatlin_mott.target_pose)
-		while gatlin_mott.distanceToTarget() > .6 :
-			time.sleep(.03)
-		#stop gmap base
-		self.gatlin_mott.cancelgmapBaseTo()
+		if gatlin_mott.distanceToTarget() > .7 :
+			self.gatlin_mott.publishResponse("Gmap base to "+self.target_name)
+			self.gatlin_mott.gmapBaseTo(self.gatlin_mott.target_pose)
+			while gatlin_mott.distanceToTarget() > .6 :
+				time.sleep(.03)
+			#stop gmap base
+			self.gatlin_mott.cancelgmapBaseTo()
 
 		#servo base to target
-		self.gatlin_mott.publishResponse("Servo base to "+self.target_name)
-		while gatlin_mott.distanceToTarget() > .4 :
-			#TODO, it's already in map coords... ?????
-			toTarget = PointMinus(self.gatlin_mott.target_pose.position, self.robot_pose.position)
+		if gatlin_mott.distanceToTarget() > .4 :
+			self.gatlin_mott.publishResponse("Servo base to "+self.target_name)
+			while gatlin_mott.distanceToTarget() > .4 :
+				toTarget = PointMinus(self.gatlin_mott.target_pose.position, self.robot_pose.position)
+				self.target_servo_base(toTarget)
+				time.sleep(.03)
 
-			self.target_servo_base(toTarget)
-			time.sleep(.03)
-
-		time.sleep(2)
+			time.sleep(2)
 
 		#move arm to target
 		target_in_kinect = None
 		while not target_in_kinect:
 			target_in_kinect = self.get_pose('camera_link', 'map', self.gatlin_mott.target_pose)
 		self.gatlin_matt.arm_pose_pub.publish(target_in_kinect)
+		self.gatlin_mott.publishResponse("Moving Arm to "+self.target_name)
 
 		time.sleep(4)
 
