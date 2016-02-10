@@ -437,7 +437,14 @@ class Vision:
 				return 0
 
 		def score_compare(c1, c2):
-			return int(get_score(c1) - get_score(c2))
+			tc1 = get_score(c1)
+			tc2 = get_score(c2)
+			minus = tc1 - tc2
+			try :
+				return int(minus)
+			except e :
+				return 0
+			return 0
 
 		cs = sorted(cnts, cmp=score_compare)[-num_blobs:]
 
