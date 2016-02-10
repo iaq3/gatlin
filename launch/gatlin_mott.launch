@@ -1,0 +1,4 @@
+
+<launch>
+	<node pkg="gatlin" type="gatlin_mott.py" name="gatlin_mott" output="screen" ></node>
+</launch>
