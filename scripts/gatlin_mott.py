@@ -43,9 +43,13 @@ def relativeAngle(robot_pose, toTargetPoint) :
 	return angle(forwardRobotInMap, toTarget)
 
 class Mott_Thread(Thread) :
-	def __init__(self, gm, on, tn):
+	def __init__(self, gm):
 		Thread.__init__(self)
 		self.gatlin_mott = gm
+		self.lock = Lock()
+		#todo add lock
+
+	def update_info(on, tn) :
 		self.object_name = on
 		self.target_name = tn
 
@@ -111,9 +115,7 @@ class Mott_Thread(Thread) :
 			
 		self.gatlin_mott.baseJoystickPublish (msg)
 
-
-	def run(self):
-
+	def moveBaseToObject(self) :
 		#gmap move base to object ******************************* TODO if not in visible frame, then 
 		if gatlin_mott.distanceToObject() > 3 :#these are new
 			self.gatlin_mott.publishResponse("Gmap base to "+self.object_name)
@@ -130,6 +132,7 @@ class Mott_Thread(Thread) :
 			#stop gmap base
 			self.gatlin_mott.cancelgmapBaseTo()
 
+	def servoBaseToObject(self) :
 		#servo base to object ************************************
 		if gatlin_mott.distanceToObject() > 1.5 :
 			self.gatlin_mott.publishResponse("Servo base to "+self.object_name)
@@ -141,6 +144,7 @@ class Mott_Thread(Thread) :
 
 			time.sleep(1)
 
+	def grabObject(self) :
 		#grab object **********************************************
 		holding_object = False
 		while not holding_object :
@@ -167,8 +171,9 @@ class Mott_Thread(Thread) :
 
 		self.gatlin_mott.publishResponse("Grabbed "+self.object_name)
 
+	def moveBaseToTarget(self) :
 		#gmap move base to target
-		if gatlin_mott.distanceToTarget() > .7 :
+		if self.gatlin_mott.distanceToTarget() > .7 :
 			self.gatlin_mott.publishResponse("Gmap base to "+self.target_name)
 			self.gatlin_mott.gmapBaseTo(self.gatlin_mott.target_pose)
 			while gatlin_mott.distanceToTarget() > .6 :
@@ -176,16 +181,18 @@ class Mott_Thread(Thread) :
 			#stop gmap base
 			self.gatlin_mott.cancelgmapBaseTo()
 
+	def servoBaseToTarget(self) :
 		#servo base to target
-		if gatlin_mott.distanceToTarget() > .4 :
+		if self.gatlin_mott.distanceToTarget() > .4 :
 			self.gatlin_mott.publishResponse("Servo base to "+self.target_name)
-			while gatlin_mott.distanceToTarget() > .4 :
+			while self.gatlin_mott.distanceToTarget() > .4 :
 				toTarget = PointMinus(self.gatlin_mott.target_pose.position, self.robot_pose.position)
 				self.target_servo_base(toTarget)
 				time.sleep(.03)
 
 			time.sleep(2)
 
+	def moveArmToTarget(self) :
 		#move arm to target
 		target_in_kinect = None
 		while not target_in_kinect:
@@ -202,30 +209,54 @@ class Mott_Thread(Thread) :
 
 		self.gatlin_mott.sendResetArm()
 
-		self.gatlin_mott.publishResponse("finished")
-		self.gatlin_mott.working = False
+	def run_mott_sequence(self) :
+		print "about to start with lock"
+		with self.lock :
+			print "inside lock"
+			#if self.quitting :
+			#	return
+			#self.moveBaseToObject()
+			self.servoBaseToObject()
+			self.grabObject()
+
+			#self.moveBaseToTarget()
+			self.servoBaseToTarget()
+			self.moveArmToTarget()
+
+			self.gatlin_mott.publishResponse("finished")
+			self.gatlin_mott.working = False 
+
+
+	def run(self) :
+		while not rospy.is_shutdown() :
+			time.sleep(1)
+
+		
 
 
 class gatlin_mott:
 
 	def MottCallback(self, data) :
-		self.object_sub.unregister()
-		self.target_sub.unregister()
+		with self.mott_callback_lock : #guarantees sequential callbacks
+			if not self.mott_thread.lock.locked() : #TODO might be bad practice, but only this method calls the thread
+				print "callback of unlocked node"
+				self.object_sub.unregister()
+				self.target_sub.unregister()
 
-		if (not (data.object_pose_topic == "")) :
-			self.object_sub = rospy.Subscriber(data.object_pose_topic, Pose, objectPoseCallback, queue_size = 1)
-		if (not (data.target_pose_topic == "")) :
-			self.target_sub = rospy.Subscriber(data.target_pose_topic, Pose, targetPoseCallback, queue_size = 1)
+				if (not (data.object_pose_topic == "")) :
+					self.object_sub = rospy.Subscriber(data.object_pose_topic, Pose, objectPoseCallback, queue_size = 1)
+				if (not (data.target_pose_topic == "")) :
+					self.target_sub = rospy.Subscriber(data.target_pose_topic, Pose, targetPoseCallback, queue_size = 1)
 
-		if (data.object_pose) :
-			self.object_pose = data.object_pose
-		if (data.target_pose) :
-			self.target_pose = data.target_pose
-		
-		if not (self.working) :
-			self.working = True
-			Mott_Thread(self, data.object_pose_topic, data.target_pose_topic).start()
-
+				if (data.object_pose) :
+					self.object_pose = data.object_pose
+				if (data.target_pose) :
+					self.target_pose = data.target_pose
+				
+				self.mott_thread.update_info(data.object_pose_topic, data.target_pose_topic) #maybe put this above?? lol
+				self.mott_thread.run_mott_sequence()
+			else :
+				print "MOTT THREAD IS LOCKED!!!"
 
 	def robotPoseCallback(self, data) :
 		self.robot_pose = data
@@ -284,6 +315,9 @@ class gatlin_mott:
 		self.last_object_pose_update = 0
 		self.target_pose = Pose()
 		self.working = False;
+
+		self.mott_thread = Mott_Thread()
+		self.mott_callback_lock = Lock()
 
 		self.response_pub = rospy.Publisher("/gatlin_mott_response", String)
 		self.gmap_base_pub = rospy.Publisher("/move_to_goal", Pose)
