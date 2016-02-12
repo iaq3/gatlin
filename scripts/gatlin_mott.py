@@ -162,7 +162,7 @@ class Mott_Thread(Thread) :
 
 			time.sleep(5)
 
-			if self.gatlin_mott.last_object_pose_update > 1 : #no object detection in last second, it is likely in robot's hand
+			if time.time() - self.gatlin_mott.last_object_pose_update > 1 : #no object detection in last second, it is likely in robot's hand
 				holding_object = True
 
 		self.gatlin_mott.publishResponse("Grabbed "+self.object_name)
@@ -231,7 +231,7 @@ class gatlin_mott:
 		self.robot_pose = data
 
 	def objectPoseCallback(self, data) :
-		self.last_object_pose_update = rospy.time.now().toSec()
+		self.last_object_pose_update = time.time()
 		self.object_pose = data
 
 	def targetPoseCallback(self, data) :
