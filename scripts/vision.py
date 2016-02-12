@@ -251,7 +251,7 @@ class Vision:
 			"green",
 			"circle",
 			"kinect",
-			{'H': {'max': 82, 'min': 26}, 'S': {'max': 255, 'min': 30.0}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 231.0, 'min': 40.0}},
+			{'H': {'max': 68, 'min': 38}, 'S': {'max': 255, 'min': 70}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 231.0, 'min': 40.0}},
 			calibrated=True, num_blobs = 1
 		)
 		self.masks.append(self.green_kinect_mask)
@@ -423,15 +423,16 @@ class Vision:
 		def get_score(c):
 			try:
 				# use shape of the obj to get similarity
-				similarity = 1
+				# similarity = 1
 				# similarity = cv2.matchShapes(shape,c,1,0.0) + 1
 				area = cv2.contourArea(c)
-				M = cv2.moments(c)
-				cx = int(M['m10']/M['m00'])
-				cy = int(M['m01']/M['m00'])
-				centroid = np.array([cx,cy])
-				center_error = np.linalg.norm(centroid - center_img)
-				score = 1 / (center_error / (area * .25) * (similarity * .1))
+				# M = cv2.moments(c)
+				# cx = int(M['m10']/M['m00'])
+				# cy = int(M['m01']/M['m00'])
+				# centroid = np.array([cx,cy])
+				# center_error = np.linalg.norm(centroid - center_img)
+				score = area * 1000
+				# rospy.logerr(score)
 				return score
 			except:
 				return 0
@@ -451,7 +452,7 @@ class Vision:
 		for c in cs:
 
 			area = cv2.contourArea(c)
-			similarity = 0#cv2.matchShapes(shape,c,1,0.0) + 1
+			# similarity = 0#cv2.matchShapes(shape,c,1,0.0) + 1
 
 			if hsv_mask.shape_name == 'square':
 
@@ -471,8 +472,11 @@ class Vision:
 			
 			elif hsv_mask.shape_name == 'circle':
 				((x, y), radius) = cv2.minEnclosingCircle(c)
+				# rospy.logerr(area)
+
 				
-				if radius > 3 and area > 80 and similarity < 2.0:
+				# if radius > 3 and area > 80 and similarity < 2.0:
+				if radius > 3 and area > 80:
 					blobsFound.append([x,y,radius])
 					cv2.circle(res, (int(x), int(y)), int(radius), (0,255,255), 2)
 

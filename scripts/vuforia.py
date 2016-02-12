@@ -25,15 +25,17 @@ class Server:
 
 		self.tfl = tf.TransformListener()
 
-		rospy.Subscriber("/target_pos", Vector3, self.pos_callback, queue_size=3)
-		rospy.Subscriber("/head_pos", Vector3, self.head_callback, queue_size=3)
+		self.target_pos_sub = rospy.Subscriber("/target_pos", Vector3, self.pos_callback, queue_size=3)
+		self.head_pos_sub = rospy.Subscriber("/head_pos", Vector3, self.head_callback, queue_size=3)
 
 		# init a gripper publisher because movegroup won't work
 		self.gripper_pub = rospy.Publisher('/gripper_joint/command', Float64)
 		self.orientation_pub = rospy.Publisher('/target_orientation', Vector3)
 
+		rospy.sleep(5)
+
 		# center the head
-		self.head_set(0.0,0.0)
+		# self.head_set(0.0,0.0)
 
 		# lower the head to look at the floor
 		# self.head_set(0.0,self.lowerHeadRad)
@@ -59,8 +61,7 @@ class Server:
 		self.head_set(roty,-rotx)
 
 	def head_set(self, pan, tilt):
-		print "pan: %f" % (pan)
-		print "tilt: %f" % (tilt)
+		rospy.logerr("pan: %f \t tilt: %f" % (pan, tilt))
 		self.head_pan_pub.publish(pan)
 		self.head_tilt_pub.publish(tilt)
 

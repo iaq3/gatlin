@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import time
-from threading import Thread
+from threading import Thread, Lock
 import rospy, sys, tf
 from math import *
 from std_msgs.msg import *
@@ -49,7 +49,7 @@ class Mott_Thread(Thread) :
 		self.lock = Lock()
 		#todo add lock
 
-	def update_info(on, tn) :
+	def update_info(self, on, tn) :
 		self.object_name = on
 		self.target_name = tn
 
@@ -117,7 +117,7 @@ class Mott_Thread(Thread) :
 
 	def moveBaseToObject(self) :
 		#gmap move base to object ******************************* TODO if not in visible frame, then 
-		if gatlin_mott.distanceToObject() > 3 :#these are new
+		if self.gatlin_mott.distanceToObject() > 3 :#these are new
 			self.gatlin_mott.publishResponse("Gmap base to "+self.object_name)
 			
 			#object pose is in kinect coordinates.... need them in map coordinates..... TODO test
@@ -127,16 +127,16 @@ class Mott_Thread(Thread) :
 			self.gatlin_mott.gmapBaseTo(object_in_map)
 
 			#distance is from kinect...
-			while gatlin_mott.distanceToObject() > 3 :
+			while self.gatlin_mott.distanceToObject() > 3 :
 				time.sleep(.03)
 			#stop gmap base
 			self.gatlin_mott.cancelgmapBaseTo()
 
 	def servoBaseToObject(self) :
 		#servo base to object ************************************
-		if gatlin_mott.distanceToObject() > 1.5 :
+		if self.gatlin_mott.distanceToObject() > 1.5 :
 			self.gatlin_mott.publishResponse("Servo base to "+self.object_name)
-			while gatlin_mott.distanceToObject() > 1.5 :
+			while self.gatlin_mott.distanceToObject() > 1.5 :
 				#visual servo off of position of object in kinect frame
 				self.visual_servo_base(self.gatlin_mott.object_pose)
 
@@ -148,12 +148,14 @@ class Mott_Thread(Thread) :
 		#grab object **********************************************
 		holding_object = False
 		while not holding_object :
+			print "attempting to grab"
 			self.gatlin_mott.publishResponse("Attempting to grab "+self.object_name)
 			#open gripper
 			self.gatlin_mott.sendGripCommand(1)
 
 			#arm to object
-			self.gatlin_matt.arm_pose_pub.publish(self.gatlin_mott.object_pose)
+			print "sending arm pose pub"
+			self.gatlin_mott.arm_pose_pub.publish(self.gatlin_mott.object_pose)
 
 			time.sleep(5)
 
@@ -176,7 +178,7 @@ class Mott_Thread(Thread) :
 		if self.gatlin_mott.distanceToTarget() > .7 :
 			self.gatlin_mott.publishResponse("Gmap base to "+self.target_name)
 			self.gatlin_mott.gmapBaseTo(self.gatlin_mott.target_pose)
-			while gatlin_mott.distanceToTarget() > .6 :
+			while self.gatlin_mott.distanceToTarget() > .6 :
 				time.sleep(.03)
 			#stop gmap base
 			self.gatlin_mott.cancelgmapBaseTo()
@@ -244,9 +246,9 @@ class gatlin_mott:
 				self.target_sub.unregister()
 
 				if (not (data.object_pose_topic == "")) :
-					self.object_sub = rospy.Subscriber(data.object_pose_topic, Pose, objectPoseCallback, queue_size = 1)
+					self.object_sub = rospy.Subscriber(data.object_pose_topic, Pose, self.objectPoseCallback, queue_size = 1)
 				if (not (data.target_pose_topic == "")) :
-					self.target_sub = rospy.Subscriber(data.target_pose_topic, Pose, targetPoseCallback, queue_size = 1)
+					self.target_sub = rospy.Subscriber(data.target_pose_topic, Pose, self.targetPoseCallback, queue_size = 1)
 
 				if (data.object_pose) :
 					self.object_pose = data.object_pose
@@ -316,7 +318,7 @@ class gatlin_mott:
 		self.target_pose = Pose()
 		self.working = False;
 
-		self.mott_thread = Mott_Thread()
+		self.mott_thread = Mott_Thread(self)
 		self.mott_callback_lock = Lock()
 
 		self.response_pub = rospy.Publisher("/gatlin_mott_response", String)

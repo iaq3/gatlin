@@ -27,7 +27,14 @@ class Gatlin_Server:
 		self.REFERENCE_FRAME = 'base_link'
 		self.ARM_BASE_FRAME = 'arm_base_link'
 
-		self.self.done = True
+		self.done = True
+		
+		# init a gripper publisher because movegroup won't work
+		self.gripper_pub = rospy.Publisher('/gripper_joint/command', Float64)
+
+		rospy.Subscriber("/arm_target_pose", Pose, self.arm_target_pose_cb, queue_size=1)
+		rospy.Subscriber("/target_pos", Vector3, self.pos_callback, queue_size=1)
+		rospy.Subscriber("/target_orientation", Vector3, self.orientation_cb, queue_size=1)
 
 		# We need a tf listener to convert poses into arm reference base
 		self.tfl = tf.TransformListener()
@@ -84,13 +91,6 @@ class Gatlin_Server:
 		self.arm.set_pose_target(self.rest_pose)
 		# self.arm.go()
 		rospy.sleep(1)
-
-		# init a gripper publisher because movegroup won't work
-		self.gripper_pub = rospy.Publisher('/gripper_joint/command', Float64)
-
-		rospy.Subscriber("/arm_target_pose", Pose, self.arm_target_pose_cb, queue_size=1)
-		rospy.Subscriber("/target_pos", Vector3, self.pos_callback, queue_size=1)
-		rospy.Subscriber("/target_orientation", Vector3, self.orientation_cb, queue_size=1)
 
 		rospy.spin()
 
