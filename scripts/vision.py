@@ -251,8 +251,8 @@ class Vision:
 			"green",
 			"circle",
 			"kinect",
-			{'H': {'max': 50, 'min': 30}, 'S': {'max': 255, 'min': 106.0}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 231.0, 'min': 40.0}},
-			calibrated=True, num_blobs = 3
+			{'H': {'max': 82, 'min': 26}, 'S': {'max': 255, 'min': 30.0}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 231.0, 'min': 40.0}},
+			calibrated=True, num_blobs = 1
 		)
 		self.masks.append(self.green_kinect_mask)
 		
@@ -413,12 +413,12 @@ class Vision:
 		blobsFound = []
 		cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)[-2]
 
-		h = rgb_image.shape[0]
-		w = rgb_image.shape[1]
-		center_img = np.array([w/2.,h/2.])
-		ret, thresh = cv2.threshold(hsv_mask.shape, 127, 255,0)
-		contours,hierarchy = cv2.findContours(thresh,2,1)
-		shape = contours[0]
+		# h = rgb_image.shape[0]
+		# w = rgb_image.shape[1]
+		# center_img = np.array([w/2.,h/2.])
+		# ret, thresh = cv2.threshold(hsv_mask.shape, 127, 255,0)
+		# contours,hierarchy = cv2.findContours(thresh,2,1)
+		# shape = contours[0]
 
 		def get_score(c):
 			try:

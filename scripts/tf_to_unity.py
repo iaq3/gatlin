@@ -58,7 +58,7 @@ class Tf_Transformer(Thread):
 
 		except Exception as e:
 			print e
-			print "no transform"
+			rospy.logerr("no transform %s_in_%s" % (self.child, self.parent))
 
 
 class Tf_to_Unity:
