@@ -335,6 +335,8 @@ class Gatlin_Server:
 		#places.append(deepcopy(place))
 
 		# waypoints = []
+
+		self.test_pos_publisher = rospy.Publisher("/gatlin_test_arm_target", PoseStamped)
 		rospy.Subscriber("/arm_target_pose", Pose, self.arm_target_pose_cb, queue_size=1)
 
 
@@ -473,8 +475,10 @@ def kinect_to_base(data) :
 	kinectPt = PointStamped()
 	kinectPt.header.frame_id = "/camera_rgb_optical_frame"
 	
-	kinectPt.header.stamp = rospy.Time.now() - rospy.Duration(.22)
 	kinectPt.point = Point(target_pos[0],target_pos[1],target_pos[2])
+
+	# tf.waitForTransform("/camera_rgb_optical_frame", "/base_link", rospy.Time(0), rospy.Duration(4.0))
+	kinectPt.header.stamp = rospy.Time(0)#rospy.Time.now() - rospy.Duration(.22)
 
 	basePt = tf.transformPoint("/base_link", kinectPt)
 
@@ -564,7 +568,8 @@ def pos_callback(data):
 			kinectPt = PointStamped()
 			kinectPt.header.frame_id = "/camera_rgb_optical_frame"
 			# kinectPt.header.frame_id = "/arm_target_frame"
-			kinectPt.header.stamp = rospy.Time.now() - rospy.Duration(.22)
+			# kinectPt.header.stamp = rospy.Time.now() - rospy.Duration(.22)
+			kinectPt.header.stamp = rospy.Time(0)
 			kinectPt.point = Point(target_pos[0],target_pos[1],target_pos[2])
 
 			basePt = tf.transformPoint("/base_link", kinectPt)
@@ -699,6 +704,9 @@ def pos_callback(data):
 			# print target_pose
 
 			target_pose.pose.position.z -= .03
+
+			#TODO publish target_pose
+			#self.test_pos_publisher.publish(target_pose) #TODO
 			# target_pose.pose.position.y += .01
 
 			inter_pose = deepcopy(target_pose)

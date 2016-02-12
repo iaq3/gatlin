@@ -114,6 +114,7 @@ def head_set(pan,tilt):
 	global head_tilt_pub
 	print "pan: %f" % (pan)
 	print "tilt: %f" % (tilt)
+	rospy.logerr("setting head")
 	head_pan_pub.publish(pan)
 	head_tilt_pub.publish(tilt)
 
@@ -177,6 +178,7 @@ def publish_marker(pos):
 
 def head_callback(data):
 	global lowerHeadRad
+	rospy.logerr("got head callback")
 	if(data.x == -1.0):
 		head_set(data.y,data.z)
 		return
