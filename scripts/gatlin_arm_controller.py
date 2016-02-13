@@ -28,9 +28,11 @@ class Gatlin_Server:
 		self.ARM_BASE_FRAME = 'arm_base_link'
 
 		self.done = True
-		
+
 		# init a gripper publisher because movegroup won't work
 		self.gripper_pub = rospy.Publisher('/gripper_joint/command', Float64)
+		self.test_pose_publisher = rospy.Publisher('/test_arm_pose1', PoseStamped)
+
 
 		rospy.Subscriber("/arm_target_pose", Pose, self.arm_target_pose_cb, queue_size=1)
 		rospy.Subscriber("/target_pos", Vector3, self.pos_callback, queue_size=1)

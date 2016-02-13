@@ -155,6 +155,7 @@ class Mott_Thread(Thread) :
 
 			#arm to object
 			print "sending arm pose pub"
+			print self.gatlin_mott.object_pose
 			self.gatlin_mott.arm_pose_pub.publish(self.gatlin_mott.object_pose)
 
 			time.sleep(5)
