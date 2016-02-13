@@ -21,7 +21,6 @@ class Server:
 		self.head_tilt_pub = rospy.Publisher('/head_tilt_joint/command', Float64)
 		self.marker_pub = rospy.Publisher('/visualization_marker', Marker)
 		self.arm_target_marker_pub = rospy.Publisher('/arm_target_marker', Marker)
-		self.lowerHeadRad = 1.17
 
 		self.tfl = tf.TransformListener()
 
@@ -38,7 +37,8 @@ class Server:
 		# self.head_set(0.0,0.0)
 
 		# lower the head to look at the floor
-		# self.head_set(0.0,self.lowerHeadRad)
+		self.lowerHeadRad = 1.17
+		self.head_set(0.0,self.lowerHeadRad)
 
 		rospy.spin()
 
@@ -61,50 +61,12 @@ class Server:
 		self.head_set(roty,-rotx)
 
 	def head_set(self, pan, tilt):
-		rospy.logerr("pan: %f \t tilt: %f" % (pan, tilt))
+		rospy.loginfo("pan: %f \t tilt: %f" % (pan, tilt))
 		self.head_pan_pub.publish(pan)
 		self.head_tilt_pub.publish(tilt)
 
 	def gripper_set(self, val):
 		self.gripper_pub.publish((1-val)*-2.53)
-
-	def publish_arm_target(self, target_pos):
-		marker = Marker()
-		marker.header.frame_id = "/camera_rgb_optical_frame"
-		marker.type = marker.SPHERE
-		marker.action = marker.ADD
-		marker.scale.x = 0.02
-		marker.scale.y = 0.02
-		marker.scale.z = 0.02
-		marker.color.a = 1.0
-		marker.color.r = 1.0
-		marker.color.g = 0.0
-		marker.color.b = 0.0
-		marker.pose.orientation.w = 1.0
-
-		calibration_scale = 1.1
-		marker.pose.position = Point(target_pos[0],target_pos[1],target_pos[2])
-
-		print marker.pose.position
-		self.arm_target_marker_pub.publish(marker)
-
-	def publish_marker(self, pos):
-		marker = Marker()
-		marker.header.frame_id = "/head_base_link"
-		marker.type = marker.SPHERE
-		marker.action = marker.ADD
-		marker.scale.x = 0.02
-		marker.scale.y = 0.02
-		marker.scale.z = 0.02
-		marker.color.a = 1.0
-		marker.color.r = 1.0
-		marker.color.g = 1.0
-		marker.color.b = 0.0
-		marker.pose.orientation.w = 1.0
-
-		marker.pose.position = pos
-
-		self.marker_pub.publish(marker)
 
 	def head_callback(self, data):
 		if(data.x == -1.0):
@@ -116,8 +78,6 @@ class Server:
 		headPt.header.stamp = rospy.Time.now()
 		headPt.point = Point(-data.x,data.y,data.z)
 
-		self.publish_marker(headPt.point)
-
 		self.head_set_xyz(headPt)
 
 	def pos_callback(self, data):
@@ -128,20 +88,10 @@ class Server:
 			print "###################  Gripping!  ###################"
 			print "################################################"
 
-			if(data.z == -1.0):
-				gripper_stop()
-			else:
-				self.gripper_set(data.z)
+			self.gripper_set(data.z)
 		
 		elif(data.x == -1.0 and data.y == -2.0):
 			self.orientation_pub.publish(data)	
-
-		else:
-			rospy.loginfo("Received a target_pos message: [%f, %f, %f]"%(data.x, data.y, data.z))
-
-			target_pos = [data.x, -data.y, data.z]
-
-			self.publish_arm_target(target_pos)
 
 if __name__ == "__main__":
 	Server()

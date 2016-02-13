@@ -282,13 +282,8 @@ class Vision:
 		self.rgb_image = None
 		self.depth_image = None
 
-		
-		
-		
 		self.rate = rospy.Rate(30)
 		self.pixel_radius = 10#2.1539 #radius in pixels at 1 meter of orange ball
-		
-	
 
 		print "done initializing"
 
@@ -320,6 +315,7 @@ class Vision:
 					print "NAN returning instead of using bad depth"
 					return
 				obj_pose = self.project((bi[0], bi[1]), distance, self.rgb_image.shape[1], self.rgb_image.shape[0])
+				# use the point cloud data to get correct x,y,z from pixel coords
 			else :
 				distance = self.pixel_radius / radius
 				obj_pose = self.project((bi[0], bi[1]), distance, self.rgb_imageCREATE .shape[1], self.rgb_image.shape[0])

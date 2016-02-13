@@ -31,7 +31,8 @@ class Gatlin_Server:
 
 		# init a gripper publisher because movegroup won't work
 		self.gripper_pub = rospy.Publisher('/gripper_joint/command', Float64)
-		self.test_pose_publisher = rospy.Publisher('/test_arm_pose1', PoseStamped)
+
+		self.test_pose_publisher = rospy.Publisher('/test_arm_pose3', PoseStamped)
 
 
 		rospy.Subscriber("/arm_target_pose", Pose, self.arm_target_pose_cb, queue_size=1)
@@ -98,15 +99,24 @@ class Gatlin_Server:
 
 
 	def arm_target_pose_cb(self, msg):
-		base_rel_pose = self.kinect_to_base(msg.position)
+		# base_rel_pose = self.kinect_to_base(msg.position)
+
+		kinectPt = PointStamped()
+		kinectPt.header.frame_id = "/camera_rgb_optical_frame"
+		kinectPt.header.stamp = rospy.Time(0)
+		kinectPt.point = deepcopy(msg.position)
+
+		basePt = self.tfl.transformPoint(self.REFERENCE_FRAME, kinectPt)
 
 		arm_target_pose = PoseStamped()
 		arm_target_pose.header.frame_id = self.REFERENCE_FRAME
-		arm_target_pose.header.stamp = rospy.Time.now() 
-		arm_target_pose.pose.position = deepcopy(base_rel_pose)
+		arm_target_pose.header.stamp = rospy.Time.now()
+		arm_target_pose.pose.position = deepcopy(basePt.point)
 		down = Quaternion(-0.00035087, 0.73273, 0.00030411, 0.68052)
 		arm_target_pose.pose.orientation = down
 		#arm_target_pose.pose.position.z -= .0
+		self.test_pose_publisher.publish(arm_target_pose)
+		rospy.logerr(arm_target_pose)
 
 		inter_pose = deepcopy(arm_target_pose)
 		inter_pose.pose.position.z += .05
@@ -115,7 +125,6 @@ class Gatlin_Server:
 		self.arm.go()
 		
 		self.arm.set_pose_target(arm_target_pose)
-
 		self.arm.go()
 
 		rospy.sleep(1)
@@ -136,7 +145,7 @@ class Gatlin_Server:
 		kinectPt.header.stamp = rospy.Time(0)
 		kinectPt.point = Point(target_pos[0],target_pos[1],target_pos[2])
 
-		basePt = self.tfl.transformPoint("/base_link", kinectPt)
+		basePt = self.tfl.transformPoint(self.REFERENCE_FRAME, kinectPt)
 
 		print "############# basePt #############"
 		print basePt

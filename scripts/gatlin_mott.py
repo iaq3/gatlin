@@ -59,7 +59,7 @@ class Mott_Thread(Thread) :
 			ps = PoseStamped()
 			ps.pose.orientation = atom.orientation
 			ps.pose.position = atom.position
-			ps.header.frame_id = self.child
+			ps.header.frame_id = child
 			ps.header.stamp =  rospy.Time(0)
 			self.tfl.waitForTransform(child, parent, rospy.Time(0), rospy.Duration(4.0))
 			child_pose = self.tfl.transformPose(parent, ps)
@@ -158,16 +158,17 @@ class Mott_Thread(Thread) :
 			print self.gatlin_mott.object_pose
 			self.gatlin_mott.arm_pose_pub.publish(self.gatlin_mott.object_pose)
 
-			time.sleep(5)
+			time.sleep(15)
 
 			#grab
+			print "grabbing arm"
 			self.gatlin_mott.sendGripCommand(.3)
-			time.sleep(2)
+			time.sleep(3)
 
 			#arm up and
 			self.gatlin_mott.sendResetArm()
 
-			time.sleep(5)
+			time.sleep(15)
 
 			if time.time() - self.gatlin_mott.last_object_pose_update > 1 : #no object detection in last second, it is likely in robot's hand
 				holding_object = True
@@ -278,14 +279,14 @@ class gatlin_mott:
 		self.gatlin_cmd_pub.publish(9)
 
 	def sendGripCommand(self, val) :
-		msg = Point()
-		msg.x = val
+		msg = Vector3()
+		msg.x = -1
 		msg.y = -1
-		msg.z = -1
+		msg.z = val
 		self.gripper_pub.publish(msg)
 
 	def sendResetArm(self) :
-		msg = Point()
+		msg = Vector3()
 		msg.x = -2
 		msg.y = -2
 		msg.z = -2
@@ -324,7 +325,7 @@ class gatlin_mott:
 
 		self.response_pub = rospy.Publisher("/gatlin_mott_response", String)
 		self.gmap_base_pub = rospy.Publisher("/move_to_goal", Pose)
-		self.gripper_pub = rospy.Publisher("/target_pos", Point)
+		self.gripper_pub = rospy.Publisher("/target_pos", Vector3)
 		self.gatlin_cmd_pub = rospy.Publisher("/gatlin_cmd", Int32)
 		self.arm_pose_pub = rospy.Publisher("/arm_target_pose", Pose)
 		self.base_joystick_pub = rospy.Publisher("/cmd_vel_mux/input/teleop" , Twist)
