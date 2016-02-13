@@ -164,7 +164,7 @@ class Mott_Thread(Thread) :
 			self.gatlin_mott.sendGripCommand(.3)
 			time.sleep(2)
 
-			#arm up
+			#arm up and
 			self.gatlin_mott.sendResetArm()
 
 			time.sleep(5)
