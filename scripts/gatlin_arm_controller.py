@@ -114,7 +114,7 @@ class Gatlin_Server:
 		arm_target_pose.pose.position = deepcopy(basePt.point)
 		down = Quaternion(-0.00035087, 0.73273, 0.00030411, 0.68052)
 		arm_target_pose.pose.orientation = down
-		#arm_target_pose.pose.position.z -= .0
+		arm_target_pose.pose.position.z += .015
 		self.test_pose_publisher.publish(arm_target_pose)
 		rospy.logerr(arm_target_pose)
 

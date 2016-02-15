@@ -80,7 +80,7 @@ class Tf_to_Unity:
 		transformer = Tf_Transformer(self.tfl, KINECT_FRAME, BASE_FRAME, rospy.Rate(10))
 		transform_pubs.append(transformer)
 
-		gripper_in_base = Tf_Transformer(self.tfl, GRIPPER_FRAME, BASE_FRAME, rospy.Rate(8))
+		gripper_in_base = Tf_Transformer(self.tfl, GRIPPER_FRAME, BASE_FRAME, rospy.Rate(10))
 		transform_pubs.append(gripper_in_base)
 
 
