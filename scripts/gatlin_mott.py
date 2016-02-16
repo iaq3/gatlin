@@ -234,8 +234,8 @@ class Mott_Thread(Thread) :
 			self.grabObject()
 
 			# #self.moveBaseToTarget() TODO ready to test
-			# self.servoBaseToTarget()
-			# self.moveArmToTarget()
+			self.servoBaseToTarget()
+			self.moveArmToTarget()
 
 			self.gatlin_mott.publishResponse("finished")
 			self.gatlin_mott.working = False 
