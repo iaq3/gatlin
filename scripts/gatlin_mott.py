@@ -75,92 +75,41 @@ class Mott_Thread(Thread) :
 			return None
 
 	def servo_base_to_pose(self) :
-		rate = rospy.Rate(30)
-		error = self.gatlin_mott.distanceToObject()
-		while error > .03 :
+		actual_pos = vector3_to_numpy(self.gatlin_mott.object_pose.position)
+		actual_pos[2] = 0
 
-			actual_pos = vector3_to_numpy(self.gatlin_mott.object_pose.position)
-			actual_pos[2] = 0
+		desired_pos = np.array([.29,0,0])
 
-			desired_pos = np.array([.27,0,0])
+		error_vec =  actual_pos - desired_pos
+		error = np.linalg.norm(error_vec)
+		rospy.logerr(error_vec)
 
-			error_vec =  actual_pos - desired_pos
-			error = np.linalg.norm(error_vec)
-			rospy.logerr(error_vec)
+		forward = error_vec[0]
+		turn = error_vec[1]
 
-			forward = error_vec[0]
-			turn = error_vec[1]
-
-			maxVel = .05
-			mag = (turn**2 + forward**2)**.5
-			if (mag > maxVel) :
-				turn = (turn/mag) * maxVel
-				forward = (forward/mag) * maxVel
-
-			msg = Twist (Point(forward, 0.0, 0.0), Point(0.0, 0.0, turn))
-			# rospy.logerr(msg)
-			self.base_joystick_pub.publish(msg)
-
-			rate.sleep()
-
-	#object pose is in the kinect frame because its visual
-	def servo_base_to_pose2(self, object_pose) :
-		maxVel = .08
-		forward = object_pose.position.x/2.0
-		turn = object_pose.position.y
-
-		# print "turn value of goalinself %d" % turn
-		if (abs(turn)/abs(forward) > .5): #TODO TUNE
+		error_angle = angle(error_vec, np.array([1,0,0]))
+		rospy.logerr(error_angle)
+		if error_angle > 0.174533 :
 			forward = 0
 
+		maxVel = .05
 		mag = (turn**2 + forward**2)**.5
 		if (mag > maxVel) :
 			turn = (turn/mag) * maxVel
 			forward = (forward/mag) * maxVel
-		
 
-		# object_pose_st = PoseStamped()
-		# object_pose_st.header.frame_id = "base_link"
-		# object_pose_st.header.stamp = rospy.Time.now()
-		# object_pose_st.pose = deepcopy(object_pose)
-		# self.test_pose_pub.publish(object_pose_st)
+		turn *= 3.0
 
-		#if (dist < 1f) {
-		#	normed = normed * dist;
-		#}
 		msg = Twist (Point(forward, 0.0, 0.0), Point(0.0, 0.0, turn))
-		
-		# rospy.logerr(object_pose.position)
-		rospy.logerr(msg)
-		# self.gatlin_mott.baseJoystickPublish (msg) # had problems, didnt publish right
+		# rospy.logerr(msg)
 		self.base_joystick_pub.publish(msg)
 
-	#pose is in the map frame because its virtual
-	def target_servo_base(self, target_position) :
+		return error
 
-		robot_to_target_angle = relativeAngle(self.gatlin_mott.robot_pose, target_position)
-		
-		forward = .15
-		turn = robot_to_target_angle
-
-		print "turn value of goalinself %d" % robot_to_target_angle
-		if (robot_to_target_angle > .5) :#TODO TUNE
-			forward = 0
-
-		mag = (turn**2 + forward**2)**.5
-		if (mag > .3) :
-			turn = (turn/mag) * .3
-			forward = (forward/mag) *.3
-		
-
-
-		msg = Twist (Point(forward, 0.0, 0.0), Point(0.0, 0.0, turn))
-			
-		self.gatlin_mott.baseJoystickPublish (msg)
 
 	def moveBaseToObject(self) :
 		#gmap move base to object ******************************* TODO if not in visible frame, then 
-		if self.gatlin_mott.distanceToObject() > 3 :#these are new
+		if self.gatlin_mott.distanceToObject() > 1.5 :#these are new
 			self.gatlin_mott.publishResponse("Gmap base to "+self.object_name)
 			
 			#object pose is in kinect coordinates.... need them in map coordinates..... TODO test
@@ -179,11 +128,20 @@ class Mott_Thread(Thread) :
 		#servo base to object ************************************
 		if self.gatlin_mott.distanceToObject() < 1.5 :
 			self.gatlin_mott.publishResponse("Servo base to "+self.object_name)
-			# while self.gatlin_mott.distanceToObject() > .2 :
-				#visual servo off of position of object in kinect frame
-			self.servo_base_to_pose()
 
-				# time.sleep(.03)
+			rate = rospy.Rate(30)
+			error = self.gatlin_mott.distanceToObject()
+			goal_tolerence = .05
+
+			actual_pos = vector3_to_numpy(self.gatlin_mott.object_pose.position)
+			actual_pos[2] = 0
+			desired_pos = np.array([.27,0,0])
+			error_vec =  actual_pos - desired_pos
+			error = np.linalg.norm(error_vec)
+
+			while error > goal_tolerence :
+				error = self.servo_base_to_pose()
+				rate.sleep()
 
 			time.sleep(1)
 
@@ -201,17 +159,17 @@ class Mott_Thread(Thread) :
 			print self.gatlin_mott.object_pose
 			self.gatlin_mott.arm_pose_pub.publish(self.gatlin_mott.object_pose)
 
-			time.sleep(15)
+			time.sleep(7)
 
 			#grab
 			print "grabbing arm"
-			self.gatlin_mott.sendGripCommand(.3)
+			self.gatlin_mott.sendGripCommand(.5)
 			time.sleep(3)
 
 			#arm up and
 			self.gatlin_mott.sendResetArm()
 
-			time.sleep(15)
+			time.sleep(7)
 
 			if time.time() - self.gatlin_mott.last_object_pose_update > 1 : #no object detection in last second, it is likely in robot's hand
 				holding_object = True
