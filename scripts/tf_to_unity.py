@@ -75,7 +75,6 @@ class Tf_to_Unity:
 		KINECT_FRAME = 'camera_link'
 		CAMERA_RGB_OPTICAL_FRAME = 'camera_rgb_optical_frame'
 
-
 		transform_pubs = []
 
 		kinect_in_base = Tf_Transformer(self.tfl, KINECT_FRAME, BASE_FRAME, rospy.Rate(10)) # stagger the rates for less msg collisions?

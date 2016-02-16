@@ -112,8 +112,8 @@ class Gatlin_Server:
 		# arm_target_pose.pose.position = deepcopy(basePt.point)
 		# arm_target_pose.pose.position = deepcopy(msg.position)
 		arm_target_pose.pose = deepcopy(msg)
-		# down = Quaternion(-0.00035087, 0.73273, 0.00030411, 0.68052)
-		# arm_target_pose.pose.orientation = down
+		down = Quaternion(-0.00035087, 0.73273, 0.00030411, 0.68052)
+		arm_target_pose.pose.orientation = down
 		# arm_target_pose.pose.orientation = self.current_pose.pose.orientation
 
 		# arm_target_pose.pose.position.z -= .01

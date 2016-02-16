@@ -47,6 +47,11 @@ class Mott_Thread(Thread) :
 		Thread.__init__(self)
 		self.gatlin_mott = gm
 		self.lock = Lock()
+		self.base_joystick_pub = rospy.Publisher("/cmd_vel_mux/input/teleop", Twist)
+
+		# self.test_pose_pub = rospy.Publisher('/test_obj_pose', PoseStamped)
+
+
 		#todo add lock
 
 	def update_info(self, on, tn) :
@@ -69,28 +74,66 @@ class Mott_Thread(Thread) :
 			print "no transform"
 			return None
 
-	#object pose is in the kinect frame because its visual
-	def visual_servo_base(self, object_pose) :
-		forward = object_pose.z
-		turn = object_pose.x
+	def servo_base_to_pose(self) :
+		rate = rospy.Rate(30)
+		error = self.gatlin_mott.distanceToObject()
+		while error > .03 :
 
-		print "turn value of goalinself %d" % turn
+			actual_pos = vector3_to_numpy(self.gatlin_mott.object_pose.position)
+			actual_pos[2] = 0
+
+			desired_pos = np.array([.27,0,0])
+
+			error_vec =  actual_pos - desired_pos
+			error = np.linalg.norm(error_vec)
+			rospy.logerr(error_vec)
+
+			forward = error_vec[0]
+			turn = error_vec[1]
+
+			maxVel = .05
+			mag = (turn**2 + forward**2)**.5
+			if (mag > maxVel) :
+				turn = (turn/mag) * maxVel
+				forward = (forward/mag) * maxVel
+
+			msg = Twist (Point(forward, 0.0, 0.0), Point(0.0, 0.0, turn))
+			# rospy.logerr(msg)
+			self.base_joystick_pub.publish(msg)
+
+			rate.sleep()
+
+	#object pose is in the kinect frame because its visual
+	def servo_base_to_pose2(self, object_pose) :
+		maxVel = .08
+		forward = object_pose.position.x/2.0
+		turn = object_pose.position.y
+
+		# print "turn value of goalinself %d" % turn
 		if (abs(turn)/abs(forward) > .5): #TODO TUNE
 			forward = 0
 
 		mag = (turn**2 + forward**2)**.5
-		if (mag > .3) :
-			turn = (turn/mag) * .3
-			forward = (forward/mag) *.3
+		if (mag > maxVel) :
+			turn = (turn/mag) * maxVel
+			forward = (forward/mag) * maxVel
 		
+
+		# object_pose_st = PoseStamped()
+		# object_pose_st.header.frame_id = "base_link"
+		# object_pose_st.header.stamp = rospy.Time.now()
+		# object_pose_st.pose = deepcopy(object_pose)
+		# self.test_pose_pub.publish(object_pose_st)
 
 		#if (dist < 1f) {
 		#	normed = normed * dist;
 		#}
-
 		msg = Twist (Point(forward, 0.0, 0.0), Point(0.0, 0.0, turn))
-			
-		self.gatlin_mott.baseJoystickPublish (msg)
+		
+		# rospy.logerr(object_pose.position)
+		rospy.logerr(msg)
+		# self.gatlin_mott.baseJoystickPublish (msg) # had problems, didnt publish right
+		self.base_joystick_pub.publish(msg)
 
 	#pose is in the map frame because its virtual
 	def target_servo_base(self, target_position) :
@@ -134,13 +177,13 @@ class Mott_Thread(Thread) :
 
 	def servoBaseToObject(self) :
 		#servo base to object ************************************
-		if self.gatlin_mott.distanceToObject() > 1.5 :
+		if self.gatlin_mott.distanceToObject() < 1.5 :
 			self.gatlin_mott.publishResponse("Servo base to "+self.object_name)
-			while self.gatlin_mott.distanceToObject() > 1.5 :
+			# while self.gatlin_mott.distanceToObject() > .2 :
 				#visual servo off of position of object in kinect frame
-				self.visual_servo_base(self.gatlin_mott.object_pose)
+			self.servo_base_to_pose()
 
-				time.sleep(.03)
+				# time.sleep(.03)
 
 			time.sleep(1)
 
@@ -223,9 +266,9 @@ class Mott_Thread(Thread) :
 			self.servoBaseToObject()
 			self.grabObject()
 
-			#self.moveBaseToTarget()
-			self.servoBaseToTarget()
-			self.moveArmToTarget()
+			# #self.moveBaseToTarget()
+			# self.servoBaseToTarget()
+			# self.moveArmToTarget()
 
 			self.gatlin_mott.publishResponse("finished")
 			self.gatlin_mott.working = False 

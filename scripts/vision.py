@@ -102,9 +102,12 @@ class HSVMask:
 		self.window_name = '%s %s vision' % (color, camera)
 		self.filters = []
 		self.base_pubs = []
+		# self.base_stamped_pubs = []
 		for i in range(0, num_blobs):
 			base_pub = rospy.Publisher("/%s_%s_%d_pose" % (color, camera, i), Pose, queue_size=1)
+			# base_stamped_pub = rospy.Publisher("/%s_%s_%d_pose_stamped" % (color, camera, i), PoseStamped, queue_size=1)
 			self.base_pubs.append(base_pub)
+			# self.base_stamped_pubs.append(base_stamped_pub)
 			new_filter = LiveFilter()
 			self.filters.append(new_filter)
 
@@ -119,6 +122,11 @@ class HSVMask:
 
 		cv2.startWindowThread()
 		cv2.namedWindow(self.window_name)
+
+		self.tfl = tf.TransformListener()
+		self.BASE_FRAME = "base_link"
+		self.CAMERA_FRAME = "camera_rgb_optical_frame"
+
 
 
 	def changeMask(self, param, arg, inc):
@@ -207,6 +215,28 @@ class HSVMask:
 			print self.m
 			print "#############################################"
 
+	def kinect_to_base_pt(self, kinect_pt):
+		# todo: use inverse matrix to speed up calculation
+		kinectPtStamped = PointStamped()
+		kinectPtStamped.header.frame_id = self.CAMERA_FRAME
+		kinectPtStamped.header.stamp = rospy.Time(0)
+		kinectPtStamped.point = deepcopy(kinect_pt)
+		basePt = self.tfl.transformPoint(self.BASE_FRAME, kinectPtStamped)
+		return basePt.point
+
+	def transform_publish(self, i, kinect_pose):
+		basePose = Pose()
+		basePose.position = self.kinect_to_base_pt(kinect_pose.position)
+		# rospy.logerr(basePose)
+		self.base_pubs[i].publish(basePose)
+		
+		# basePoseStamped = PoseStamped()
+		# basePoseStamped.header.frame_id = self.BASE_FRAME
+		# basePoseStamped.header.stamp = rospy.Time.now()
+		# basePoseStamped.pose = deepcopy(basePose)
+		# self.base_stamped_pubs[i].publish(basePoseStamped)
+
+
 class Vision:
 
 	def __init__(self):
@@ -223,8 +253,6 @@ class Vision:
 
 		self.lastImageTime = time.time()
 		self.imageWaitTime = .01
-
-
 
 		self.masks = []
 
@@ -259,7 +287,6 @@ class Vision:
 		
 
 
-		self.transform_listener = tf.TransformListener()
 		self.bridge = CvBridge()	
 
 		if self.vision_type == "kinect":
@@ -297,11 +324,11 @@ class Vision:
 			print e
 
 		for mask in self.masks:
-			# print "self.find_project_publish(%s)" % mask.color
-			self.find_project_publish(mask)
+			# print "self.find_project_transform_publish(%s)" % mask.color
+			self.find_project_transform_publish(mask)
 
 	#given an hsv_mask, finds the number of blobs, filters, and publishes if it's consistent
-	def find_project_publish(self, hsv_mask):
+	def find_project_transform_publish(self, hsv_mask):
 		objs = self.findBlobsofHue(hsv_mask, hsv_mask.num_blobs , self.rgb_image)
 		#print "-------------"
 		
@@ -320,10 +347,16 @@ class Vision:
 			else :
 				distance = self.pixel_radius / radius
 				obj_pose = self.project((bi[0], bi[1]), distance, self.rgb_imageCREATE .shape[1], self.rgb_image.shape[0])
+
+
 			if obj_pose != None :
 				obj_pose.position.x = obj_pose.position.x / 1000
 				obj_pose.position.y = obj_pose.position.y / 1000
 				obj_pose.position.z = obj_pose.position.z / 1000
+
+				# base_obj_pose = Pose()
+				# base_obj_pose.position = self.kinect_to_base_pt(obj_pose.position)
+
 				(index,dist) = getClosestIndex( hsv_mask.filters, 10, obj_pose.position)
 				#finds closest object-filter pair for each object
 				#print index, dist
@@ -356,7 +389,8 @@ class Vision:
 				output_object = hsv_mask.filters[i].updateFilter(bestPose.position)
 				if (output_object) :
 					try :
-						hsv_mask.base_pubs[i].publish(bestPose)
+						# hsv_mask.base_pubs[i].publish(bestPose)
+						hsv_mask.transform_publish(i, bestPose)
 					except CvBridgeError, e:
 						print e
 				for point_index in hsv_counts[i][2] :
@@ -473,7 +507,7 @@ class Vision:
 
 				
 				# if radius > 3 and area > 80 and similarity < 2.0:
-				if radius > 3 and area > 80:
+				if radius > 3 and area > 150:
 					blobsFound.append([x,y,radius])
 					cv2.circle(res, (int(x), int(y)), int(radius), (0,255,255), 2)
 

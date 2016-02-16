@@ -8,38 +8,40 @@
 <arg name="calibrate" default="false"/>
 
 
-<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" >
+<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch">
 	<arg name="port" value="9090"/>
 </include>
 
 <include file="$(find gatlin)/launch/arm_minimal.launch">
-  <arg name="simulation" value="$(arg sim)"/>
-  <arg name="rviz" value="$(arg rviz)"/>
+	<arg name="simulation" value="$(arg sim)"/>
+	<arg name="rviz" value="$(arg rviz)"/>
 </include>
 
 <include file="$(find gatlin)/launch/base_minimal.launch">
 	<arg name="simulation" value="$(arg sim)"/>
 </include>
 
-<node pkg="gatlin" type="gatlin_arm_controller.py" name="gatlin_arm_controller" output="screen" ></node>
+<!-- <node pkg="gatlin" type="gatlin_mott.py" name="gatlin_mott" output="screen"/> -->
 
-<node pkg="gatlin" type="tf_to_unity.py" name="tf_to_unity"></node>
+<node pkg="gatlin" type="gatlin_arm_controller.py" name="gatlin_arm_controller" output="screen"/>
 
-<node pkg="gatlin" type="vuforia.py" name="vuforia"></node>
+<node pkg="gatlin" type="tf_to_unity.py" name="tf_to_unity"/>
 
-<node if="$(arg calibrate)" pkg="dynamic_tf" type="server.py" name="server"  ></node>
+<node pkg="gatlin" type="vuforia.py" name="vuforia"/>
 
-<node pkg="web_video_server" type="web_video_server" name="web_video_server"  ></node>
+<node if="$(arg calibrate)" pkg="dynamic_tf" type="server.py" name="server"/>
 
-<node pkg="image_converter" type="image_converter" name="image_converter" ></node>
+<node pkg="web_video_server" type="web_video_server" name="web_video_server"/>
+
+<node pkg="image_converter" type="image_converter" name="image_converter"/>
 
 <param name="camera/rgb/image_color/compressed/jpeg_quality" value="30"/>
 
 <include file="$(find turtlebot_bringup)/launch/3dsensor.launch">
-	<arg name="rgb_processing" value="true" />
-	<arg name="depth_registration" value="true" />
-	<arg name="depth_processing" value="true" />
-    <arg name="scan_topic" value="/scan" />
+	<arg name="rgb_processing" value="true"/>
+	<arg name="depth_registration" value="true"/>
+	<arg name="depth_processing" value="true"/>
+	<arg name="scan_topic" value="/scan"/>
 </include>
 
 
@@ -50,13 +52,13 @@
 
 <!-- <node pkg="topic_tools" type="throttle" name="camera_throttle" args="messages camera/rgb/image_rect_color 2"/> -->
 
-<node name="vision" pkg="gatlin" type="vision.py" output="screen" ></node> 
+<node name="vision" pkg="gatlin" type="vision.py" output="screen"/> 
 
 <include file="$(find turtlebot_navigation)/launch/includes/gmapping.launch.xml"/>
 
 <include file="$(find turtlebot_navigation)/launch/includes/move_base.launch.xml"/>
 
-<node pkg="gatlin" type="GmapperConverter.py" name="GmapperConverter" ></node>
+<node pkg="gatlin" type="GmapperConverter.py" name="GmapperConverter"/>
 
 <node name="robot_pose_throttler" type="throttle" pkg="topic_tools" args="messages /robot_pose_ekf/odom_combined 20 /robot_pose_ekf/odom_combined_throttled"/>
 
