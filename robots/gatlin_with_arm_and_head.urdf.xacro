@@ -7,12 +7,12 @@
    <!-- Define a number of dimensions using properties -->   
    <property name="head_offset_x" value="0.105" />
    <property name="head_offset_y" value="0.03" />
-   <property name="head_offset_z" value="0.05" />
+   <property name="head_offset_z" value="0.025" />
    <property name="head_offset_rotz" value="0.02" />
    
    <property name="arm_offset_x" value="0.13" />
    <property name="arm_offset_y" value="0.00" />
-   <property name="arm_offset_z" value="0.135" />
+   <property name="arm_offset_z" value="0.125" />
 
    <property name="stacks_offset" value="-.03" />   
    <property name="top_plate" value=".33" />   

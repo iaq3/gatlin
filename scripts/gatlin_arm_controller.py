@@ -32,7 +32,7 @@ class Gatlin_Server:
 		# init a gripper publisher because movegroup won't work
 		self.gripper_pub = rospy.Publisher('/gripper_joint/command', Float64)
 
-		self.test_pose_publisher = rospy.Publisher('/test_arm_pose3', PoseStamped)
+		self.test_pose_publisher = rospy.Publisher('/test_arm_pose', PoseStamped)
 
 
 		rospy.Subscriber("/arm_target_pose", Pose, self.arm_target_pose_cb, queue_size=1)
@@ -62,8 +62,8 @@ class Gatlin_Server:
 		# Allow some leeway in position (meters) and orientation (radians)
 		# USELESS; do not work on pick and place! Explained on this issue:
 		# https://github.com/ros-planning/moveit_ros/issues/577
-		self.arm.set_goal_position_tolerance(0.01)
-		self.arm.set_goal_orientation_tolerance(0.2)
+		self.arm.set_goal_position_tolerance(0.005)
+		self.arm.set_goal_orientation_tolerance(0.05)
 
 		# Allow 2 seconds per planning attempt
 		self.arm.set_planning_time(2.0)
@@ -99,35 +99,38 @@ class Gatlin_Server:
 
 
 	def arm_target_pose_cb(self, msg):
-		# base_rel_pose = self.kinect_to_base(msg.position)
+		# kinectPt = PointStamped()
+		# kinectPt.header.frame_id = "/camera_rgb_optical_frame"
+		# kinectPt.header.stamp = rospy.Time(0)
+		# kinectPt.point = deepcopy(msg.position)
 
-		kinectPt = PointStamped()
-		kinectPt.header.frame_id = "/camera_rgb_optical_frame"
-		kinectPt.header.stamp = rospy.Time(0)
-		kinectPt.point = deepcopy(msg.position)
-
-		basePt = self.tfl.transformPoint(self.REFERENCE_FRAME, kinectPt)
+		# basePt = self.tfl.transformPoint(self.REFERENCE_FRAME, kinectPt)
 
 		arm_target_pose = PoseStamped()
 		arm_target_pose.header.frame_id = self.REFERENCE_FRAME
 		arm_target_pose.header.stamp = rospy.Time.now()
-		arm_target_pose.pose.position = deepcopy(basePt.point)
-		down = Quaternion(-0.00035087, 0.73273, 0.00030411, 0.68052)
-		arm_target_pose.pose.orientation = down
-		arm_target_pose.pose.position.z += .015
+		# arm_target_pose.pose.position = deepcopy(basePt.point)
+		# arm_target_pose.pose.position = deepcopy(msg.position)
+		arm_target_pose.pose = deepcopy(msg)
+		# down = Quaternion(-0.00035087, 0.73273, 0.00030411, 0.68052)
+		# arm_target_pose.pose.orientation = down
+		# arm_target_pose.pose.orientation = self.current_pose.pose.orientation
+
+		# arm_target_pose.pose.position.z -= .01
+
 		self.test_pose_publisher.publish(arm_target_pose)
 		rospy.logerr(arm_target_pose)
 
 		inter_pose = deepcopy(arm_target_pose)
-		inter_pose.pose.position.z += .05
+		inter_pose.pose.position.z += .07
 
 		self.arm.set_pose_target(inter_pose)
 		self.arm.go()
+
+		rospy.sleep(2)
 		
 		self.arm.set_pose_target(arm_target_pose)
 		self.arm.go()
-
-		rospy.sleep(1)
 
 	def gripper_set(self, val):
 		self.gripper_pub.publish((1-val)*-2.53)

@@ -53,7 +53,7 @@
   
 
   <include file="$(find gatlin)/launch/includes/mobile_base.launch.xml">
-    <arg name="base_port" value="/dev/ttyUSB0" />
+    <arg name="base_port" value="/dev/ttyUSB1" />
   </include>
   <include file="$(find turtlebot_bringup)/launch/includes/netbook.launch.xml">
     <arg name="battery" value="$(arg battery)" />

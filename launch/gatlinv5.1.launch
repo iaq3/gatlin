@@ -64,5 +64,6 @@
 
 <node name="rgb_image_throttler" type="throttle" pkg="topic_tools" args="messages /camera/rgb/image_rect_color 10 /camera/rgb/image_rect_color_throttled"/> 
 
+<node pkg="tf" type="static_transform_publisher" name="tool_tip_tf" args="0.00 0.065 0.00 0.7071 0.7071 0.0 0.0 /gripper_active_link /tool_tip_link 100"/>
 
 </launch>
