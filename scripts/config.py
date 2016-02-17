@@ -3,6 +3,7 @@
 import rospy
 import numpy as np
 from geometry_msgs.msg import *
+from tf.transformations import *
 
 midfield_to_ball_start = 0.5334 # from field measurement
 goal_width = 0.28
@@ -26,22 +27,22 @@ THROW = 14
 CHECK_BLOCKS = 15
 MOVE_BLOCKS = 16
 
-def createServiceProxy(service,srv_type,limb):
+def createServiceProxy(service,srv_type,robot_name):
 	name = ""
-	if limb == "":
+	if robot_name == "":
 		name = "/%s" % (service)
 	else:
-		name = "/%s/%s" % (limb,service)
+		name = "/%s/%s" % (robot_name,service)
 	rospy.wait_for_service(name)
 	rospy.loginfo("Initialized service proxy for %s" % name)
 	return rospy.ServiceProxy(name, srv_type)
 
-def createService(service,srv_type,callback,limb):
+def createService(service,srv_type,callback,robot_name):
 	name = ""
-	if limb == "":
+	if robot_name == "":
 		name = "/%s" % (service)
 	else:
-		name = "/%s/%s" % (limb,service)
+		name = "/%s/%s" % (robot_name,service)
 	rospy.loginfo("Initialized service for %s" % name)
 	return rospy.Service(name, srv_type, callback)
 
@@ -191,3 +192,22 @@ def get_current_pose(arm):
     p.position = Point(pos[0],pos[1],pos[2])
     p.orientation = Quaternion(ori[0],ori[1],ori[2],ori[3])
     return p
+
+def getOffsetPose(self, pose, offset) :
+    offsetpose = deepcopy(pose)
+    offsetpose.position.x += offset.x
+    offsetpose.position.y += offset.y
+    offsetpose.position.z += offset.z
+    return offsetpose
+
+def getLocalOffsetPose(self, pose, offset) :
+    offsetpose = deepcopy(pose)
+    q = pose.orientation
+    off = np.dot(
+        quaternion_matrix([q.x,q.y,q.z,q.w]),
+        np.array([offset.x,offset.y,offset.z,1]).T)
+    off = off[:3]/off[3]
+    offsetpose.position.x += off[0]
+    offsetpose.position.y += off[1]
+    offsetpose.position.z += off[2]
+    return offsetpose

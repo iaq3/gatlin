@@ -8,9 +8,9 @@ from geometry_msgs.msg import *
 from tf.transformations import *
 from tf import *
 from copy import deepcopy
-# from turtle_sim.msg import Velocity
-from config import *
 from gatlin.msg import *
+from gatlin.srv import *
+from config import *
 	
 
 def PointDistance (p1, p2) :
@@ -153,13 +153,16 @@ class Mott_Thread(Thread) :
 			self.gatlin_mott.publishResponse("Attempting to grab "+self.object_name)
 			#open gripper
 			self.gatlin_mott.sendGripCommand(1)
+            # self.move_robot(OPEN_GRIPPER, self.limb_name, Pose())
 
 			#arm to object
 			print "sending arm pose pub"
 			print self.gatlin_mott.object_pose
-			self.gatlin_mott.arm_pose_pub.publish(self.gatlin_mott.object_pose)
+			# self.gatlin_mott.arm_pose_pub.publish(self.gatlin_mott.object_pose)
+			self.gatlin_mott.move_robot(MOVE_TO_POSE_INTERMEDIATE, self.gatlin_mott.robot_name, self.gatlin_mott.object_pose)
 
-			time.sleep(7)
+
+			# time.sleep(7)
 
 			#grab
 			print "grabbing arm"
@@ -313,7 +316,8 @@ class gatlin_mott:
 		return PointDistance(self.robot_pose.position, self.target_pose.position)
 
 	def __init__(self):
-		rospy.init_node('gatlin_mott')
+		self.robot_name = "gatlin"
+		rospy.init_node('%s_mott'%self.robot_name)
 
 		self.robot_pose = Pose()
 		self.object_pose = Pose()
@@ -328,13 +332,14 @@ class gatlin_mott:
 		self.gmap_base_pub = rospy.Publisher("/move_to_goal", Pose)
 		self.gripper_pub = rospy.Publisher("/target_pos", Vector3)
 		self.gatlin_cmd_pub = rospy.Publisher("/gatlin_cmd", Int32)
-		self.arm_pose_pub = rospy.Publisher("/arm_target_pose", Pose)
 		self.base_joystick_pub = rospy.Publisher("/cmd_vel_mux/input/teleop" , Twist)
 
+		self.arm_pose_pub = rospy.Publisher("/arm_target_pose", Pose)
 
 		rospy.Subscriber("/gatlin_mott", Mott, self.MottCallback, queue_size = 1)
 		rospy.Subscriber("/robot_pose", Pose, self.robotPoseCallback, queue_size =1)
 
+		self.move_robot = createServiceProxy("move_robot", MoveRobot, self.robot_name)
 
 		self.object_sub = rospy.Subscriber("/green_kinect0_pose", Pose, self.objectPoseCallback, queue_size = 1)
 		self.target_sub = rospy.Subscriber("/green_kinect0_pose", Pose, self.targetPoseCallback, queue_size = 1)

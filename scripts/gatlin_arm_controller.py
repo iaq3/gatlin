@@ -7,8 +7,26 @@ from geometry_msgs.msg import *
 from moveit_commander import MoveGroupCommander, PlanningSceneInterface
 from moveit_msgs.msg import *
 from moveit_msgs.srv import *
+from gatlin.msg import *
+from gatlin.srv import *
+from config import *
 from tf.transformations import *
 from copy import deepcopy
+
+class Gripper:
+	def __init__(self):
+		self.gripper_pub = rospy.Publisher('/gripper_joint/command', Float64)
+
+	def set(self, val):
+		self.gripper_pub.publish((1-val)*-2.53)
+		rospy.sleep(2)
+
+	def open(self, block=False):
+		self.set(1.0)
+
+	def close(self, block=False):
+		self.set(0.5)
+
 
 class Gatlin_Server:
 	def __init__(self):
@@ -29,13 +47,13 @@ class Gatlin_Server:
 
 		self.done = True
 
-		# init a gripper publisher because movegroup won't work
-		self.gripper_pub = rospy.Publisher('/gripper_joint/command', Float64)
-
 		self.test_pose_publisher = rospy.Publisher('/test_arm_pose', PoseStamped)
 
 
-		rospy.Subscriber("/arm_target_pose", Pose, self.arm_target_pose_cb, queue_size=1)
+		rospy.Subscriber("/arm_target_pose", Pose, self.move_arm_to_pose, queue_size=1)
+		self.robot_name = "gatlin"
+		move_robot_service = createService('move_robot', MoveRobot, self.handle_move_robot, self.robot_name)
+
 		rospy.Subscriber("/target_pos", Vector3, self.pos_callback, queue_size=1)
 		rospy.Subscriber("/target_orientation", Vector3, self.orientation_cb, queue_size=1)
 
@@ -44,6 +62,7 @@ class Gatlin_Server:
 
 		# Initialize the move group for the right arm
 		self.arm = MoveGroupCommander(self.GROUP_NAME_ARM)
+		self.gripper = Gripper()
 
 		self.robot = moveit_commander.RobotCommander()
 
@@ -89,51 +108,108 @@ class Gatlin_Server:
 
 		# Open the gripper
 		rospy.loginfo("Set Gripper: open")
-		self.gripper_set(1.0)
+		self.gripper.set(1.0)
 
-		self.arm.set_pose_target(self.rest_pose)
+		# self.arm.set_pose_target(self.rest_pose)
 		# self.arm.go()
-		rospy.sleep(1)
+		# rospy.sleep(1)
 
 		rospy.spin()
 
+	def MoveToPoseWithIntermediate(self, pose, offsets) :
+		# arm = self.limb_left if limb == 'left' else self.limb_right
+		# hand_pose = self.getCurrentPose(arm)
+		success = False
+		for offset in offsets:
+			# interpose = self.getOffsetPose(hand_pose, offset)
+			interpose = self.getOffsetPose(pose, offset)
+			success = self.MoveToPose(interpose, "MoveToIntermediatePose")
 
-	def arm_target_pose_cb(self, msg):
-		# kinectPt = PointStamped()
-		# kinectPt.header.frame_id = "/camera_rgb_optical_frame"
-		# kinectPt.header.stamp = rospy.Time(0)
-		# kinectPt.point = deepcopy(msg.position)
+		success = self.MoveToPose(pose, "MoveToPose")
 
-		# basePt = self.tfl.transformPoint(self.REFERENCE_FRAME, kinectPt)
+		return success
 
+	def MoveToPose(self, pose, name) :
+		if self.move_arm_to_pose(pose) :
+			rospy.loginfo("SUCCEEDED: %s" % name)
+			return True
+		else :
+			rospy.logerr("FAILED %s" % name)
+			return False
+
+	def move_arm_to_pose(self, pose):
 		arm_target_pose = PoseStamped()
 		arm_target_pose.header.frame_id = self.REFERENCE_FRAME
 		arm_target_pose.header.stamp = rospy.Time.now()
-		# arm_target_pose.pose.position = deepcopy(basePt.point)
-		# arm_target_pose.pose.position = deepcopy(msg.position)
-		arm_target_pose.pose = deepcopy(msg)
+		arm_target_pose.pose = deepcopy(pose)
+
 		down = Quaternion(-0.00035087, 0.73273, 0.00030411, 0.68052)
 		arm_target_pose.pose.orientation = down
-		# arm_target_pose.pose.orientation = self.current_pose.pose.orientation
-
-		# arm_target_pose.pose.position.z -= .01
 
 		self.test_pose_publisher.publish(arm_target_pose)
 		rospy.logerr(arm_target_pose)
-
-		inter_pose = deepcopy(arm_target_pose)
-		inter_pose.pose.position.z += .07
-
-		self.arm.set_pose_target(inter_pose)
-		self.arm.go()
-
-		rospy.sleep(2)
 		
 		self.arm.set_pose_target(arm_target_pose)
-		self.arm.go()
+		sucess = self.arm.go()
 
-	def gripper_set(self, val):
-		self.gripper_pub.publish((1-val)*-2.53)
+	
+
+	def handle_move_robot(self, req):
+		rospy.sleep(1)
+		success = True
+		gripper = self.gripper
+
+		# if not (req.limb == 'left' or req.limb == 'right'):
+			# rospy.logerr("No Limb Set")
+
+		if req.action == OPEN_GRIPPER:
+			rospy.loginfo("Beginning to open gripper")
+			gripper.open(block=True)
+			rospy.loginfo("Opened Gripper")
+
+		elif req.action == CLOSE_GRIPPER :
+			rospy.loginfo("Beginning to close Gripper")
+			gripper.close(block=True)
+			rospy.loginfo("Closed Gripper")
+
+		elif req.action == MOVE_TO_POSE_INTERMEDIATE :
+			rospy.loginfo("Trying to Move To Pose With Intermediate")
+			offsets = [Vector3(0,0,.07)]
+			success = self.MoveToPoseWithIntermediate(req.pose, offsets)
+
+		elif req.action == MOVE_TO_POSE :
+			rospy.loginfo("Trying to Move To Pose")
+			success = self.MoveToPose(req.pose, "FAILED MoveToPose")
+
+		# elif req.action == MOVE_TO_POS :
+		# 	rospy.loginfo("Trying to Move To Pos")
+
+		# 	new_pose = Pose()
+		# 	if req.limb == 'left':
+		# 		try:
+		# 			self.initial_left
+		# 			new_pose = deepcopy(self.initial_left)
+		# 		except AttributeError:
+		# 			new_pose = deepcopy(self.hand_pose_left)
+		# 			self.initial_left = deepcopy(self.hand_pose_left)
+		# 	elif req.limb == 'right':
+		# 		try:
+		# 			self.initial_right
+		# 			new_pose = deepcopy(self.initial_right)
+		# 		except AttributeError:
+		# 			new_pose = deepcopy(self.hand_pose_right)
+		# 			self.initial_right = deepcopy(self.hand_pose_right)
+
+		# 	new_pose.position = deepcopy(req.pose.position)
+		# 	# success = self.MoveToPose(req.limb, new_pose, "FAILED MoveToPose")
+		# 	success = self.MoveToPoseWithIntermediate(req.limb, new_pose)
+		# 	rospy.loginfo("Moved to pos: %r" % success)
+
+		else :
+			rospy.logerr("invalid action")
+
+		return MoveRobotResponse(success)
+
 
 	#takes a point from kinect to base frame
 	def kinect_to_base(self, data) :
@@ -195,7 +271,7 @@ class Gatlin_Server:
 				self.arm.go()
 
 				# rospy.loginfo("Set Gripper: open")
-				#self.gripper_set(1.0)
+				#self.gripper.set(1.0)
 
 				rospy.sleep(1)
 				return		

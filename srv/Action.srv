@@ -1,0 +1,6 @@
+uint8 action
+string limb
+string arg
+geometry_msgs/Pose pose
+---
+bool success
