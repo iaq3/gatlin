@@ -281,7 +281,7 @@ class Vision:
 			"kinect",
 			# {'H': {'max': 68, 'min': 38}, 'S': {'max': 255, 'min': 70}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 231.0, 'min': 40.0}},
 			{'H': {'max': 36, 'min': 24}, 'S': {'max': 255, 'min': 199}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 151.0, 'min': 30.0}},
-			calibrated=True, num_blobs = 1
+			calibrated=True, num_blobs = 3
 		)
 		self.masks.append(self.green_kinect_mask)
 		
