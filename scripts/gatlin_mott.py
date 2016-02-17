@@ -77,6 +77,8 @@ class Mott_Thread(Thread) :
 		actual_pos = vector3_to_numpy(obj_position)#self.gatlin_mott.object_pose.position
 		actual_pos[2] = 0
 
+		rospy.logerr(obj_position)
+
 		desired_pos = np.array([.29,0,0])
 
 		error_vec =  actual_pos - desired_pos
