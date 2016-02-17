@@ -380,6 +380,7 @@ class Vision:
 		
 		freeFilters = []
 		freePoints = []
+		addedPoints = []
 		#publishes best filter-object pairs and collects the bad ones
 		for i in xrange(len(hsv_mask.filters)) :
 			
@@ -387,6 +388,7 @@ class Vision:
 			if obj_index > -1 :
 				bestPose = object_points[obj_index][0]
 				output_object = hsv_mask.filters[i].updateFilter(bestPose.position)
+				addedPoints.append(bestPose.position)
 				if (output_object) :
 					try :
 						# hsv_mask.base_pubs[i].publish(bestPose)
@@ -402,7 +404,19 @@ class Vision:
 		#iterates throught the bad ones so they are in the system and will become good ones		
 		c = 0
 		while c < len(freeFilters) and c < len(freePoints):
-			hsv_mask.filters[freeFilters[c]].updateFilter(object_points[freePoints[c]][0].position)
+			
+			#ensures new filter location will not be too close to an existing filter
+			passedDistTest = True
+			for ap in addedPoints :
+				p_dist = PointDistance(object_points[freePoints[c]][0].position, ap)
+				if p_dist < .1 :
+					passedDistTest = False
+
+			#TODO test this
+			if passedDistTest :
+				hsv_mask.filters[freeFilters[c]].updateFilter(object_points[freePoints[c]][0].position)
+				addedPoints.append(object_points[freePoints[c]][0].position)
+
 			c += 1
 		#print "recombined ",c
 
