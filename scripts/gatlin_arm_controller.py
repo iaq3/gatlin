@@ -121,8 +121,8 @@ class Gatlin_Server:
 		# hand_pose = self.getCurrentPose(arm)
 		success = False
 		for offset in offsets:
-			# interpose = self.getOffsetPose(hand_pose, offset)
-			interpose = self.getOffsetPose(pose, offset)
+			# interpose = getOffsetPose(hand_pose, offset)
+			interpose = getOffsetPose(pose, offset)
 			success = self.MoveToPose(interpose, "MoveToIntermediatePose")
 
 		success = self.MoveToPose(pose, "MoveToPose")
@@ -130,7 +130,11 @@ class Gatlin_Server:
 		return success
 
 	def MoveToPose(self, pose, name) :
-		if self.move_arm_to_pose(pose) :
+		newpose = deepcopy(pose)
+		down = Quaternion(-0.00035087, 0.73273, 0.00030411, 0.68052)
+		newpose.orientation = down
+
+		if self.move_arm_to_pose(newpose) :
 			rospy.loginfo("SUCCEEDED: %s" % name)
 			return True
 		else :
@@ -143,14 +147,14 @@ class Gatlin_Server:
 		arm_target_pose.header.stamp = rospy.Time.now()
 		arm_target_pose.pose = deepcopy(pose)
 
-		down = Quaternion(-0.00035087, 0.73273, 0.00030411, 0.68052)
-		arm_target_pose.pose.orientation = down
-
+		
 		self.test_pose_publisher.publish(arm_target_pose)
 		rospy.logerr(arm_target_pose)
 		
 		self.arm.set_pose_target(arm_target_pose)
-		sucess = self.arm.go()
+		success = self.arm.go()
+
+		return success
 
 	
 
@@ -180,6 +184,11 @@ class Gatlin_Server:
 		elif req.action == MOVE_TO_POSE :
 			rospy.loginfo("Trying to Move To Pose")
 			success = self.MoveToPose(req.pose, "FAILED MoveToPose")
+
+		elif req.action == RESET_ARM :
+			rospy.loginfo("Trying to Move To Rest Pose")
+			success = self.move_arm_to_pose(self.rest_pose.pose)
+			# success = self.MoveToPose(self.rest_pose, "FAILED MoveToRestPose")
 
 		# elif req.action == MOVE_TO_POS :
 		# 	rospy.loginfo("Trying to Move To Pos")

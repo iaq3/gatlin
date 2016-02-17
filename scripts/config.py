@@ -4,6 +4,7 @@ import rospy
 import numpy as np
 from geometry_msgs.msg import *
 from tf.transformations import *
+from copy import deepcopy
 
 midfield_to_ball_start = 0.5334 # from field measurement
 goal_width = 0.28
@@ -20,6 +21,7 @@ OPEN_GRIPPER = 1
 MOVE_TO_POSE = 2
 MOVE_TO_POS = 3
 MOVE_TO_POSE_INTERMEDIATE = 4
+RESET_ARM = 5
 
 BLOCK = 10
 GRAB = 13
@@ -193,14 +195,14 @@ def get_current_pose(arm):
     p.orientation = Quaternion(ori[0],ori[1],ori[2],ori[3])
     return p
 
-def getOffsetPose(self, pose, offset) :
+def getOffsetPose(pose, offset) :
     offsetpose = deepcopy(pose)
     offsetpose.position.x += offset.x
     offsetpose.position.y += offset.y
     offsetpose.position.z += offset.z
     return offsetpose
 
-def getLocalOffsetPose(self, pose, offset) :
+def getLocalOffsetPose(pose, offset) :
     offsetpose = deepcopy(pose)
     q = pose.orientation
     off = np.dot(

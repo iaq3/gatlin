@@ -52,7 +52,6 @@ class Mott_Thread(Thread) :
 		# self.test_pose_pub = rospy.Publisher('/test_obj_pose', PoseStamped)
 
 
-		#todo add lock
 
 	def update_info(self, on, tn) :
 		self.object_name = on
@@ -152,27 +151,26 @@ class Mott_Thread(Thread) :
 			print "attempting to grab"
 			self.gatlin_mott.publishResponse("Attempting to grab "+self.object_name)
 			#open gripper
-			self.gatlin_mott.sendGripCommand(1)
-            # self.move_robot(OPEN_GRIPPER, self.limb_name, Pose())
+			resp = self.gatlin_mott.move_robot(OPEN_GRIPPER, Pose())
 
 			#arm to object
 			print "sending arm pose pub"
 			print self.gatlin_mott.object_pose
 			# self.gatlin_mott.arm_pose_pub.publish(self.gatlin_mott.object_pose)
-			self.gatlin_mott.move_robot(MOVE_TO_POSE_INTERMEDIATE, self.gatlin_mott.robot_name, self.gatlin_mott.object_pose)
-
-
-			# time.sleep(7)
+			resp = self.gatlin_mott.move_robot(MOVE_TO_POSE_INTERMEDIATE, self.gatlin_mott.object_pose)
+			if not resp.success:
+				rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
 
 			#grab
 			print "grabbing arm"
-			self.gatlin_mott.sendGripCommand(.5)
-			time.sleep(3)
+			# self.gatlin_mott.sendGripCommand(.5)
+			resp = self.gatlin_mott.move_robot(CLOSE_GRIPPER, Pose())
 
 			#arm up and
-			self.gatlin_mott.sendResetArm()
-
-			time.sleep(7)
+			# self.gatlin_mott.sendResetArm()
+			resp = self.gatlin_mott.move_robot(RESET_ARM, Pose())
+			if not resp.success:
+				rospy.logerr("RESET_ARM FAILED")
 
 			if time.time() - self.gatlin_mott.last_object_pose_update > 1 : #no object detection in last second, it is likely in robot's hand
 				holding_object = True
@@ -235,8 +233,8 @@ class Mott_Thread(Thread) :
 			self.grabObject()
 
 			# #self.moveBaseToTarget() TODO ready to test
-			self.servoBaseToTarget()
-			self.moveArmToTarget()
+			#self.servoBaseToTarget()
+			#self.moveArmToTarget()
 
 			self.gatlin_mott.publishResponse("finished")
 			
