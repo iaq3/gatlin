@@ -215,20 +215,12 @@ class HSVMask:
 			print self.m
 			print "#############################################"
 
-	def kinect_to_base_pt(self, kinect_pt):
-		# todo: use inverse matrix to speed up calculation
-		kinectPtStamped = PointStamped()
-		kinectPtStamped.header.frame_id = self.CAMERA_FRAME
-		kinectPtStamped.header.stamp = rospy.Time(0)
-		kinectPtStamped.point = deepcopy(kinect_pt)
-		basePt = self.tfl.transformPoint(self.BASE_FRAME, kinectPtStamped)
-		return basePt.point
-
 	def transform_publish(self, i, kinect_pose):
 		basePose = Pose()
-		basePose.position = self.kinect_to_base_pt(kinect_pose.position)
+		# basePose.position = self.kinect_to_base_pt(kinect_pose.position)
 		# rospy.logerr(basePose)
-		self.base_pubs[i].publish(basePose)
+		# self.base_pubs[i].publish(basePose)
+		self.base_pubs[i].publish(kinect_pose)
 		
 		# basePoseStamped = PoseStamped()
 		# basePoseStamped.header.frame_id = self.BASE_FRAME

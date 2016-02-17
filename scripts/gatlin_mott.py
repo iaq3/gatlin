@@ -49,29 +49,13 @@ class Mott_Thread(Thread) :
 		self.lock = Lock()
 		self.base_joystick_pub = rospy.Publisher("/cmd_vel_mux/input/teleop", Twist)
 
-		# self.test_pose_pub = rospy.Publisher('/test_obj_pose', PoseStamped)
+		self.test_pose_pub = rospy.Publisher('/test_obj_pose', PoseStamped)
 
 
 
 	def update_info(self, on, tn) :
 		self.object_name = on
 		self.target_name = tn
-
-	#find the pose of object-pose in child transform when it is a child of parent transform
-	def get_pose(self, parent, child, atom):
-		try:
-			ps = PoseStamped()
-			ps.pose.orientation = atom.orientation
-			ps.pose.position = atom.position
-			ps.header.frame_id = child
-			ps.header.stamp =  rospy.Time(0)
-			self.tfl.waitForTransform(child, parent, rospy.Time(0), rospy.Duration(4.0))
-			child_pose = self.tfl.transformPose(parent, ps)
-			return child_pose
-		except Exception as e:
-			print e
-			print "no transform"
-			return None
 
 	def servo_base_to_pose(self, obj_position) :
 		actual_pos = vector3_to_numpy(obj_position)#self.gatlin_mott.object_pose.position
@@ -89,8 +73,8 @@ class Mott_Thread(Thread) :
 		turn = error_vec[1]
 
 		error_angle = angle(error_vec, np.array([1,0,0]))
-		rospy.logerr(error_angle)
-		if error_angle > 0.174533 :
+		# rospy.logerr(error_angle)
+		if error_angle > 0.2 :
 			forward = 0
 
 		maxVel = .05
@@ -99,7 +83,7 @@ class Mott_Thread(Thread) :
 			turn = (turn/mag) * maxVel
 			forward = (forward/mag) * maxVel
 
-		turn *= 3.0
+		turn *= 2.5
 
 		msg = Twist (Point(forward, 0.0, 0.0), Point(0.0, 0.0, turn))
 		# rospy.logerr(msg)
@@ -132,16 +116,19 @@ class Mott_Thread(Thread) :
 
 			rate = rospy.Rate(30)
 			error = self.gatlin_mott.distanceToObject()
-			goal_tolerence = .05
+			goal_tolerence = .02
 
-			actual_pos = vector3_to_numpy(self.gatlin_mott.object_pose.position)
+			base_obj_pose = self.gatlin_mott.get_pose("base_link", "camera_rgb_optical_frame", self.gatlin_mott.object_pose)
+
+			actual_pos = vector3_to_numpy(base_obj_pose.pose.position)
 			actual_pos[2] = 0
-			desired_pos = np.array([.27,0,0])
+			desired_pos = np.array([.25,0,0])
 			error_vec =  actual_pos - desired_pos
 			error = np.linalg.norm(error_vec)
 
 			while error > goal_tolerence :
-				error = self.servo_base_to_pose(self.gatlin_mott.object_pose.position)#self.gatlin_mott.object_pose.position
+				base_obj_pose = self.gatlin_mott.get_pose("base_link", "camera_rgb_optical_frame", self.gatlin_mott.object_pose)
+				error = self.servo_base_to_pose(base_obj_pose.pose.position)#self.gatlin_mott.object_pose.position
 				rate.sleep()
 
 			time.sleep(1)
@@ -159,7 +146,8 @@ class Mott_Thread(Thread) :
 			print "sending arm pose pub"
 			print self.gatlin_mott.object_pose
 			# self.gatlin_mott.arm_pose_pub.publish(self.gatlin_mott.object_pose)
-			resp = self.gatlin_mott.move_robot(MOVE_TO_POSE_INTERMEDIATE, self.gatlin_mott.object_pose)
+			base_obj_pose = self.gatlin_mott.get_pose("base_link", "camera_rgb_optical_frame", self.gatlin_mott.object_pose)
+			resp = self.gatlin_mott.move_robot(MOVE_TO_POSE_INTERMEDIATE, base_obj_pose.pose)
 			if not resp.success:
 				rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
 
@@ -197,14 +185,20 @@ class Mott_Thread(Thread) :
 		error = self.gatlin_mott.distanceToTarget() #TODO
 		goal_tolerence = .05
 
-		actual_pos = vector3_to_numpy(self.gatlin_mott.target_pose.position) #TODO
+		base_target_pose = self.gatlin_mott.get_pose("base_link", "odom", self.gatlin_mott.target_pose)
+
+		actual_pos = vector3_to_numpy(base_target_pose.pose.position) #TODO
 		actual_pos[2] = 0
-		desired_pos = np.array([.27,0,0])
+		desired_pos = np.array([.25,0,0])
 		error_vec =  actual_pos - desired_pos
 		error = np.linalg.norm(error_vec)
 
 		while error > goal_tolerence :
-			error = self.servo_base_to_pose(self.gatlin_mott.target_pose.position)#TODO
+			base_target_pose = self.gatlin_mott.get_pose("base_link", "odom", self.gatlin_mott.target_pose)
+
+			self.test_pose_pub.publish(base_target_pose)
+
+			error = self.servo_base_to_pose(base_target_pose.pose.position)#TODO
 			rate.sleep()
 
 		time.sleep(1)
@@ -213,7 +207,8 @@ class Mott_Thread(Thread) :
 		#move arm to target
 		self.gatlin_mott.publishResponse("Moving Arm to "+self.target_name)
 		#self.gatlin_matt.arm_pose_pub.publish(self.gatlin_mott.target_pose)
-		resp = self.gatlin_mott.move_robot(MOVE_TO_POSE_INTERMEDIATE, self.gatlin_mott.target_pose)
+		base_target_pose = self.gatlin_mott.get_pose("base_link", "odom", self.gatlin_mott.target_pose)
+		resp = self.gatlin_mott.move_robot(MOVE_TO_POSE_INTERMEDIATE, base_target_pose.pose)
 
 		#time.sleep(1)
 
@@ -323,6 +318,21 @@ class gatlin_mott:
 	def distanceToTarget(self) :
 		return PointDistance(self.robot_pose.position, self.target_pose.position)
 
+	#find the pose of object-pose in child transform when it is a child of parent transform
+	def get_pose(self, parent, child, atom):
+		try:
+			ps = PoseStamped()
+			ps.pose = deepcopy(atom)
+			ps.header.frame_id = child
+			ps.header.stamp =  rospy.Time(0)
+			self.tfl.waitForTransform(child, parent, rospy.Time(0), rospy.Duration(4.0))
+			child_pose = self.tfl.transformPose(parent, ps)
+			return child_pose
+		except Exception as e:
+			print e
+			print "no transform"
+			return None
+
 	def __init__(self):
 		self.robot_name = "gatlin"
 		rospy.init_node('%s_mott'%self.robot_name)
@@ -350,6 +360,8 @@ class gatlin_mott:
 
 		self.object_sub = rospy.Subscriber("/green_kinect0_pose", Pose, self.objectPoseCallback, queue_size = 1)
 		self.target_sub = rospy.Subscriber("/green_kinect0_pose", Pose, self.targetPoseCallback, queue_size = 1)
+
+		self.tfl = tf.TransformListener()
 
 		rospy.spin()
 

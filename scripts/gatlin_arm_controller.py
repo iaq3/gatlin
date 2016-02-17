@@ -25,7 +25,7 @@ class Gripper:
 		self.set(1.0)
 
 	def close(self, block=False):
-		self.set(0.5)
+		self.set(0.3)
 
 
 class Gatlin_Server:
@@ -133,6 +133,7 @@ class Gatlin_Server:
 		newpose = deepcopy(pose)
 		down = Quaternion(-0.00035087, 0.73273, 0.00030411, 0.68052)
 		newpose.orientation = down
+		newpose.position.z -= .03
 
 		if self.move_arm_to_pose(newpose) :
 			rospy.loginfo("SUCCEEDED: %s" % name)
