@@ -108,17 +108,17 @@ class Mott_Thread(Thread) :
 
 	def moveBaseToObject(self) :
 		#gmap move base to object ******************************* TODO if not in visible frame, then 
-		if self.gatlin_mott.distanceToObject() > 1.5 :#these are new
+		if self.gatlin_mott.distanceToObject() > .7 :#these are new
 			self.gatlin_mott.publishResponse("Gmap base to "+self.object_name)
 			
 			#object pose is in kinect coordinates.... need them in map coordinates..... TODO test
-			object_in_map = None
-			while not object_in_map :
-				object_in_map = self.get_pose('map', 'camera_link', self.gatlin_mott.object_pose)
+			#object_in_map = None
+			#while not object_in_map :
+			#	object_in_map = self.get_pose('map', 'camera_link', self.gatlin_mott.object_pose)
 			self.gatlin_mott.gmapBaseTo(object_in_map)
 
 			#distance is from kinect...
-			while self.gatlin_mott.distanceToObject() > 3 :
+			while self.gatlin_mott.distanceToObject() > .7 :
 				time.sleep(.03)
 			#stop gmap base
 			self.gatlin_mott.cancelgmapBaseTo()
@@ -182,7 +182,7 @@ class Mott_Thread(Thread) :
 		if self.gatlin_mott.distanceToTarget() > .7 :
 			self.gatlin_mott.publishResponse("Gmap base to "+self.target_name)
 			self.gatlin_mott.gmapBaseTo(self.gatlin_mott.target_pose)
-			while self.gatlin_mott.distanceToTarget() > .6 :
+			while self.gatlin_mott.distanceToTarget() > .7 :
 				time.sleep(.03)
 			#stop gmap base
 			self.gatlin_mott.cancelgmapBaseTo()
@@ -210,10 +210,10 @@ class Mott_Thread(Thread) :
 	def moveArmToTarget(self) :
 		#move arm to target
 		self.gatlin_mott.publishResponse("Moving Arm to "+self.target_name)
-		self.gatlin_matt.arm_pose_pub.publish(self.gatlin_mott.target_pose)
-		
+		#self.gatlin_matt.arm_pose_pub.publish(self.gatlin_mott.target_pose)
+		resp = self.gatlin_mott.move_robot(MOVE_TO_POSE_INTERMEDIATE, self.gatlin_mott.target_pose)
 
-		time.sleep(7)
+		#time.sleep(1)
 
 		#release
 		self.gatlin_mott.sendGripCommand(1)
@@ -221,6 +221,7 @@ class Mott_Thread(Thread) :
 		time.sleep(2)
 
 		self.gatlin_mott.sendResetArm()
+		#resp = self.gatlin_mott.move_robot(RESET_ARM, Pose())
 
 	def run_mott_sequence(self) :
 		print "about to start with lock"
@@ -228,13 +229,13 @@ class Mott_Thread(Thread) :
 			print "inside lock"
 			#if self.quitting :
 			#	return
-			#self.moveBaseToObject()
+			self.moveBaseToObject()
 			self.servoBaseToObject()
 			self.grabObject()
 
-			# #self.moveBaseToTarget() TODO ready to test
-			#self.servoBaseToTarget()
-			#self.moveArmToTarget()
+			self.moveBaseToTarget() #TODO ready to test
+			self.servoBaseToTarget()
+			self.moveArmToTarget()
 
 			self.gatlin_mott.publishResponse("finished")
 			
