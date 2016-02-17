@@ -74,8 +74,8 @@ class Mott_Thread(Thread) :
 			print "no transform"
 			return None
 
-	def servo_base_to_pose(self) :
-		actual_pos = vector3_to_numpy(self.gatlin_mott.object_pose.position)
+	def servo_base_to_pose(self, obj_position) :
+		actual_pos = vector3_to_numpy(obj_position)#self.gatlin_mott.object_pose.position
 		actual_pos[2] = 0
 
 		desired_pos = np.array([.29,0,0])
@@ -140,7 +140,7 @@ class Mott_Thread(Thread) :
 			error = np.linalg.norm(error_vec)
 
 			while error > goal_tolerence :
-				error = self.servo_base_to_pose()
+				error = self.servo_base_to_pose(self.gatlin_mott.object_pose.position)#self.gatlin_mott.object_pose.position
 				rate.sleep()
 
 			time.sleep(1)
@@ -190,30 +190,37 @@ class Mott_Thread(Thread) :
 			self.gatlin_mott.cancelgmapBaseTo()
 
 	def servoBaseToTarget(self) :
-		#servo base to target
-		if self.gatlin_mott.distanceToTarget() > .4 :
-			self.gatlin_mott.publishResponse("Servo base to "+self.target_name)
-			while self.gatlin_mott.distanceToTarget() > .4 :
-				toTarget = PointMinus(self.gatlin_mott.target_pose.position, self.robot_pose.position)
-				self.target_servo_base(toTarget)
-				time.sleep(.03)
+		#if self.gatlin_mott.distanceToTarget() < 1.5 : #TODO these can be made variables these spots are where changes need to be made
+		self.gatlin_mott.publishResponse("Servo base to "+self.target_name) #TODO
 
-			time.sleep(2)
+		rate = rospy.Rate(30)
+		error = self.gatlin_mott.distanceToTarget() #TODO
+		goal_tolerence = .05
+
+		actual_pos = vector3_to_numpy(self.gatlin_mott.target_pose.position) #TODO
+		actual_pos[2] = 0
+		desired_pos = np.array([.27,0,0])
+		error_vec =  actual_pos - desired_pos
+		error = np.linalg.norm(error_vec)
+
+		while error > goal_tolerence :
+			error = self.servo_base_to_pose(self.gatlin_mott.target_pose.position)#TODO
+			rate.sleep()
+
+		time.sleep(1)
 
 	def moveArmToTarget(self) :
 		#move arm to target
-		target_in_kinect = None
-		while not target_in_kinect:
-			target_in_kinect = self.get_pose('camera_link', 'map', self.gatlin_mott.target_pose)
-		self.gatlin_matt.arm_pose_pub.publish(target_in_kinect)
 		self.gatlin_mott.publishResponse("Moving Arm to "+self.target_name)
+		self.gatlin_matt.arm_pose_pub.publish(self.gatlin_mott.target_pose)
+		
 
-		time.sleep(4)
+		time.sleep(7)
 
 		#release
 		self.gatlin_mott.sendGripCommand(1)
 
-		time.sleep(1)
+		time.sleep(2)
 
 		self.gatlin_mott.sendResetArm()
 
@@ -227,12 +234,12 @@ class Mott_Thread(Thread) :
 			self.servoBaseToObject()
 			self.grabObject()
 
-			# #self.moveBaseToTarget()
-			# self.servoBaseToTarget()
-			# self.moveArmToTarget()
+			# #self.moveBaseToTarget() TODO ready to test
+			self.servoBaseToTarget()
+			self.moveArmToTarget()
 
 			self.gatlin_mott.publishResponse("finished")
-			self.gatlin_mott.working = False 
+			
 
 
 	def run(self) :
@@ -323,7 +330,6 @@ class gatlin_mott:
 		self.object_pose = Pose()
 		self.last_object_pose_update = 0
 		self.target_pose = Pose()
-		self.working = False;
 
 		self.mott_thread = Mott_Thread(self)
 		self.mott_callback_lock = Lock()
