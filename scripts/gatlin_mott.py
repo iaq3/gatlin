@@ -74,16 +74,21 @@ class Mott_Thread(Thread) :
 
 		error_angle = angle(error_vec, np.array([1,0,0]))
 		# rospy.logerr(error_angle)
-		if error_angle > 0.2 :
+		if error_angle > 0.25 :
 			forward = 0
 
-		maxVel = .05
+		maxVel = .08
+		minVel = .04
 		mag = (turn**2 + forward**2)**.5
 		if (mag > maxVel) :
 			turn = (turn/mag) * maxVel
 			forward = (forward/mag) * maxVel
 
-		turn *= 2.5
+		if (mag < minVel) :
+			turn = (turn/mag) * minVel
+			forward = (forward/mag) * minVel
+
+		turn *= 1.5
 
 		msg = Twist (Point(forward, 0.0, 0.0), Point(0.0, 0.0, turn))
 		# rospy.logerr(msg)
@@ -111,27 +116,27 @@ class Mott_Thread(Thread) :
 
 	def servoBaseToObject(self) :
 		#servo base to object ************************************
-		if self.gatlin_mott.distanceToObject() < 1.5 :
-			self.gatlin_mott.publishResponse("Servo base to "+self.object_name)
+		#if self.gatlin_mott.distanceToObject() < 1.5 :
+		self.gatlin_mott.publishResponse("Servo base to "+self.object_name)
 
-			rate = rospy.Rate(30)
-			error = self.gatlin_mott.distanceToObject()
-			goal_tolerence = .02
+		rate = rospy.Rate(30)
+		error = self.gatlin_mott.distanceToObject()
+		goal_tolerence = .02
 
+		base_obj_pose = self.gatlin_mott.get_pose("base_link", "camera_rgb_optical_frame", self.gatlin_mott.object_pose)
+
+		actual_pos = vector3_to_numpy(base_obj_pose.pose.position)
+		actual_pos[2] = 0
+		desired_pos = np.array([.25,0,0])
+		error_vec =  actual_pos - desired_pos
+		error = np.linalg.norm(error_vec)
+
+		while error > goal_tolerence : #TODO maybe not a good idea to wait for transform, might need to use from kinect frame
 			base_obj_pose = self.gatlin_mott.get_pose("base_link", "camera_rgb_optical_frame", self.gatlin_mott.object_pose)
+			error = self.servo_base_to_pose(base_obj_pose.pose.position)#self.gatlin_mott.object_pose.position
+			rate.sleep()
 
-			actual_pos = vector3_to_numpy(base_obj_pose.pose.position)
-			actual_pos[2] = 0
-			desired_pos = np.array([.25,0,0])
-			error_vec =  actual_pos - desired_pos
-			error = np.linalg.norm(error_vec)
-
-			while error > goal_tolerence :
-				base_obj_pose = self.gatlin_mott.get_pose("base_link", "camera_rgb_optical_frame", self.gatlin_mott.object_pose)
-				error = self.servo_base_to_pose(base_obj_pose.pose.position)#self.gatlin_mott.object_pose.position
-				rate.sleep()
-
-			time.sleep(1)
+		time.sleep(1)
 
 	def grabObject(self) :
 		#grab object **********************************************
@@ -193,7 +198,7 @@ class Mott_Thread(Thread) :
 		error_vec =  actual_pos - desired_pos
 		error = np.linalg.norm(error_vec)
 
-		while error > goal_tolerence :
+		while error > goal_tolerence : #might be bad idea to wait for transform in visual servo system....
 			base_target_pose = self.gatlin_mott.get_pose("base_link", "odom", self.gatlin_mott.target_pose)
 
 			self.test_pose_pub.publish(base_target_pose)
