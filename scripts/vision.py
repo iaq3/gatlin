@@ -359,7 +359,7 @@ class Vision:
 		#pair of index of object for that filter and distance
 		hsv_counts = []	
 		
-		for i in xrange(hsv_mask.num_blobs) : #index, distance, 
+		for i in xrange(hsv_mask.num_blobs) : #index, distance, objects closest to filter
 			hsv_counts.append([-1, 100, []])
 		c = 0
 		#finds closest object-filter pair for the filter
@@ -367,9 +367,9 @@ class Vision:
 			if closest_filter > -1 :
 				if (hsv_counts[closest_filter][1] > dist) :
 					#print "closer obj found"
-					hsv_counts[closest_filter][0] = c
-					hsv_counts[closest_filter][1] = dist
-				hsv_counts[closest_filter][2].append(c)
+					hsv_counts[closest_filter][0] = c #index of closest object for this filter
+					hsv_counts[closest_filter][1] = dist #closest distance for this filter
+				hsv_counts[closest_filter][2].append(c) #another object close to this filter
 			c += 1
 		
 		freeFilters = []
