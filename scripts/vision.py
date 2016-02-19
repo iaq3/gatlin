@@ -320,6 +320,7 @@ class Vision:
 			self.find_project_transform_publish(mask)
 
 	#given an hsv_mask, finds the number of blobs, filters, and publishes if it's consistent
+	#TODO get multi ball tracking working and staying consistent
 	def find_project_transform_publish(self, hsv_mask):
 		objs = self.findBlobsofHue(hsv_mask, hsv_mask.num_blobs , self.rgb_image)
 		#print "-------------"
@@ -328,9 +329,10 @@ class Vision:
 		for bi in objs:
 			# bi = objs[0]
 			radius = bi[2]
+			distance = 0
 			if self.depth_image != None :
 				distance = self.depth_image[int(bi[1]), int(bi[0])]
-				if math.isnan(distance) :
+				if math.isnan(distance) : 
 					distance = self.pixel_radius / radius
 					print "NAN returning instead of using bad depth"
 					return
@@ -340,24 +342,24 @@ class Vision:
 				distance = self.pixel_radius / radius
 				obj_pose = self.project((bi[0], bi[1]), distance, self.rgb_imageCREATE .shape[1], self.rgb_image.shape[0])
 
+			if distance > .05 : #TODO added distance < .05 for a minimum, i noticed zeros in unity
+				if obj_pose != None :
+					obj_pose.position.x = obj_pose.position.x / 1000
+					obj_pose.position.y = obj_pose.position.y / 1000
+					obj_pose.position.z = obj_pose.position.z / 1000
 
-			if obj_pose != None :
-				obj_pose.position.x = obj_pose.position.x / 1000
-				obj_pose.position.y = obj_pose.position.y / 1000
-				obj_pose.position.z = obj_pose.position.z / 1000
+					# base_obj_pose = Pose()
+					# base_obj_pose.position = self.kinect_to_base_pt(obj_pose.position)
 
-				# base_obj_pose = Pose()
-				# base_obj_pose.position = self.kinect_to_base_pt(obj_pose.position)
-
-				(index,dist) = getClosestIndex( hsv_mask.filters, 10, obj_pose.position)
-				#finds closest object-filter pair for each object
-				#print index, dist
-				object_points.append((obj_pose, index, dist))
+					(index,dist) = getClosestIndex( hsv_mask.filters, 10, obj_pose.position)
+					#finds closest object-filter pair for each object
+					#print index, dist
+					object_points.append((obj_pose, index, dist))
 				
 		#pair of index of object for that filter and distance
 		hsv_counts = []	
 		
-		for i in xrange(hsv_mask.num_blobs) :
+		for i in xrange(hsv_mask.num_blobs) : #index, distance, 
 			hsv_counts.append([-1, 100, []])
 		c = 0
 		#finds closest object-filter pair for the filter
