@@ -272,10 +272,22 @@ class Vision:
 			"circle",
 			"kinect",
 			# {'H': {'max': 36, 'min': 24}, 'S': {'max': 255, 'min': 70}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 231.0, 'min': 40.0}},
-			{'H': {'max': 68, 'min': 38}, 'S': {'max': 255, 'min': 199}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 151.0, 'min': 30.0}},
+			# {'H': {'max': 68, 'min': 38}, 'S': {'max': 255, 'min': 199}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 151.0, 'min': 30.0}},
+			# {'H': {'max': 68, 'min': 30}, 'S': {'max': 197, 'min': 79}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 155.0, 'min': 92.0}},
+			{'H': {'max': 68, 'min': 30}, 'S': {'max': 255, 'min': 151}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 157, 'min': 92.0}},
 			calibrated=True, num_blobs = 3
 		)
 		self.masks.append(self.green_kinect_mask)
+		
+		self.pink_kinect_mask = HSVMask(
+			"pink",
+			"circle",
+			"kinect",
+			# {'H': {'max': 178, 'min': 160}, 'S': {'max': 255.0, 'min': 154.0}, 'D': {'max': 2500, 'min': 100}, 'V': {'max': 255.0, 'min': 70.0}},
+			{'H': {'max': 180, 'min': 124}, 'S': {'max': 219, 'min': 82}, 'D': {'max': 2500, 'min': 100}, 'V': {'max': 125, 'min': 66.0}},
+			calibrated=True, num_blobs = 1
+		)
+		self.masks.append(self.pink_kinect_mask)
 		
 
 
@@ -515,7 +527,7 @@ class Vision:
 
 				
 				# if radius > 3 and area > 80 and similarity < 2.0:
-				if radius > 3 and area > 150:
+				if radius > 3 and area > 100:
 					blobsFound.append([x,y,radius])
 					cv2.circle(res, (int(x), int(y)), int(radius), (0,255,255), 2)
 

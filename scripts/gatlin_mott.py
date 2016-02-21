@@ -57,17 +57,15 @@ class Mott_Thread(Thread) :
 		self.object_name = on
 		self.target_name = tn
 
-	def servo_base_to_pose(self, obj_position) :
+	def servo_base_to_pose(self, desired_pos, obj_position) :
 		actual_pos = vector3_to_numpy(obj_position)#self.gatlin_mott.object_pose.position
 		actual_pos[2] = 0
 
-		rospy.logerr(obj_position)
-
-		desired_pos = np.array([.29,0,0])
+		# rospy.logerr(obj_position)
 
 		error_vec =  actual_pos - desired_pos
 		error = np.linalg.norm(error_vec)
-		rospy.logerr(error_vec)
+		# rospy.logerr(error_vec)
 
 		forward = error_vec[0]
 		turn = error_vec[1]
@@ -123,7 +121,7 @@ class Mott_Thread(Thread) :
 		error = self.gatlin_mott.distanceToObject()
 		goal_tolerence = .02
 
-		base_obj_pose = self.gatlin_mott.get_pose("base_link", "camera_rgb_optical_frame", self.gatlin_mott.object_pose)
+		base_obj_pose = self.gatlin_mott.get_pose("base_link", self.gatlin_mott.FIXED_FRAME, self.gatlin_mott.object_pose)
 
 		actual_pos = vector3_to_numpy(base_obj_pose.pose.position)
 		actual_pos[2] = 0
@@ -131,9 +129,9 @@ class Mott_Thread(Thread) :
 		error_vec =  actual_pos - desired_pos
 		error = np.linalg.norm(error_vec)
 
-		while error > goal_tolerence : #TODO maybe not a good idea to wait for transform, might need to use from kinect frame
-			base_obj_pose = self.gatlin_mott.get_pose("base_link", "camera_rgb_optical_frame", self.gatlin_mott.object_pose)
-			error = self.servo_base_to_pose(base_obj_pose.pose.position)#self.gatlin_mott.object_pose.position
+		while error > goal_tolerence :
+			base_obj_pose = self.gatlin_mott.get_pose("base_link", self.gatlin_mott.FIXED_FRAME, self.gatlin_mott.object_pose)
+			error = self.servo_base_to_pose(desired_pos, base_obj_pose.pose.position)
 			rate.sleep()
 
 		time.sleep(1)
@@ -151,7 +149,7 @@ class Mott_Thread(Thread) :
 			print "sending arm pose pub"
 			print self.gatlin_mott.object_pose
 			# self.gatlin_mott.arm_pose_pub.publish(self.gatlin_mott.object_pose)
-			base_obj_pose = self.gatlin_mott.get_pose("base_link", "camera_rgb_optical_frame", self.gatlin_mott.object_pose)
+			base_obj_pose = self.gatlin_mott.get_pose("base_link", self.gatlin_mott.FIXED_FRAME, self.gatlin_mott.object_pose)
 			resp = self.gatlin_mott.move_robot(MOVE_TO_POSE_INTERMEDIATE, base_obj_pose.pose)
 			if not resp.success:
 				rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
@@ -190,7 +188,7 @@ class Mott_Thread(Thread) :
 		error = self.gatlin_mott.distanceToTarget() #TODO
 		goal_tolerence = .05
 
-		base_target_pose = self.gatlin_mott.get_pose("base_link", "odom", self.gatlin_mott.target_pose)
+		base_target_pose = self.gatlin_mott.get_pose("base_link", self.gatlin_mott.FIXED_FRAME, self.gatlin_mott.target_pose)
 
 		actual_pos = vector3_to_numpy(base_target_pose.pose.position) #TODO
 		actual_pos[2] = 0
@@ -199,11 +197,11 @@ class Mott_Thread(Thread) :
 		error = np.linalg.norm(error_vec)
 
 		while error > goal_tolerence : #might be bad idea to wait for transform in visual servo system....
-			base_target_pose = self.gatlin_mott.get_pose("base_link", "odom", self.gatlin_mott.target_pose)
+			base_target_pose = self.gatlin_mott.get_pose("base_link", self.gatlin_mott.FIXED_FRAME, self.gatlin_mott.target_pose)
 
 			self.test_pose_pub.publish(base_target_pose)
 
-			error = self.servo_base_to_pose(base_target_pose.pose.position)#TODO
+			error = self.servo_base_to_pose(desired_pos, base_target_pose.pose.position)#TODO
 			rate.sleep()
 
 		time.sleep(1)
@@ -212,7 +210,7 @@ class Mott_Thread(Thread) :
 		#move arm to target
 		self.gatlin_mott.publishResponse("Moving Arm to "+self.target_name)
 		#self.gatlin_matt.arm_pose_pub.publish(self.gatlin_mott.target_pose)
-		base_target_pose = self.gatlin_mott.get_pose("base_link", "odom", self.gatlin_mott.target_pose)
+		base_target_pose = self.gatlin_mott.get_pose("base_link", self.gatlin_mott.FIXED_FRAME, self.gatlin_mott.target_pose)
 		resp = self.gatlin_mott.move_robot(MOVE_TO_POSE_INTERMEDIATE, base_target_pose.pose)
 
 		#time.sleep(1)
@@ -278,8 +276,9 @@ class gatlin_mott:
 		self.robot_pose = data
 
 	def objectPoseCallback(self, data) :
+		fixed_obj_pose = self.get_pose(self.FIXED_FRAME, "camera_rgb_optical_frame", data)
 		self.last_object_pose_update = time.time()
-		self.object_pose = data
+		self.object_pose = fixed_obj_pose.pose
 
 	def targetPoseCallback(self, data) :
 		self.target_pose = data
@@ -349,6 +348,8 @@ class gatlin_mott:
 
 		self.mott_thread = Mott_Thread(self)
 		self.mott_callback_lock = Lock()
+
+		self.FIXED_FRAME = "odom"
 
 		self.response_pub = rospy.Publisher("/gatlin_mott_response", String)
 		self.gmap_base_pub = rospy.Publisher("/move_to_goal", Pose)
