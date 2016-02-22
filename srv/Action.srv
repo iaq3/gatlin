@@ -1,6 +1,5 @@
-uint8 action
-string limb
-string arg
-geometry_msgs/Pose pose
+string action
+string[] topics
+geometry_msgs/Pose[] poses
 ---
 bool success

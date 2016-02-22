@@ -42,23 +42,14 @@ def relativeAngle(robot_pose, toTargetPoint) :
 	print forwardRobotInMap
 	return angle(forwardRobotInMap, toTarget)
 
-class Mott_Thread(Thread) :
-	def __init__(self, gm):
-		Thread.__init__(self)
-		self.gatlin_mott = gm
-		self.lock = Lock()
-		self.base_joystick_pub = rospy.Publisher("/cmd_vel_mux/input/teleop", Twist)
-
-		self.test_pose_pub = rospy.Publisher('/test_obj_pose', PoseStamped)
-
-
+class Nav_Manip_Controller :
 
 	def update_info(self, on, tn) :
 		self.object_name = on
 		self.target_name = tn
 
 	def servo_base_to_pose(self, desired_pos, obj_position) :
-		actual_pos = vector3_to_numpy(obj_position)#self.gatlin_mott.object_pose.position
+		actual_pos = vector3_to_numpy(obj_position)#self.object_pose.position
 		actual_pos[2] = 0
 
 		# rospy.logerr(obj_position)
@@ -97,32 +88,33 @@ class Mott_Thread(Thread) :
 
 	def moveBaseToObject(self) :
 		#gmap move base to object ******************************* TODO if not in visible frame, then 
-		if self.gatlin_mott.distanceToObject() > .7 :#these are new
-			self.gatlin_mott.publishResponse("Gmap base to "+self.object_name)
+		if self.distanceToObject() > .7 :#these are new
+			self.publishResponse("Gmap base to "+self.object_name)
 			
 			#object pose is in kinect coordinates.... need them in map coordinates..... TODO test
 			#object_in_map = None
 			#while not object_in_map :
-			#	object_in_map = self.get_pose('map', 'camera_link', self.gatlin_mott.object_pose)
-			map_obj_pose = self.gatlin_mott.get_pose("map", self.gatlin_mott.FIXED_FRAME, self.gatlin_mott.object_pose)
-			self.gatlin_mott.gmapBaseTo(map_obj_pose.pose)
+			#	object_in_map = self.get_pose('map', 'camera_link', self.object_pose)
+			map_obj_pose = self.get_pose("map", self.FIXED_FRAME, self.object_pose)
+			# todo: check_transform_pose("map", self.object_pose_stamped)
+			self.gmapBaseTo(map_obj_pose.pose)
 
 			#distance is from kinect...
-			while self.gatlin_mott.distanceToObject() > .7 :
+			while self.distanceToObject() > .7 :
 				time.sleep(.03)
 			#stop gmap base
-			self.gatlin_mott.cancelgmapBaseTo()
+			self.cancelgmapBaseTo()
 
 	def servoBaseToObject(self) :
 		#servo base to object ************************************
-		#if self.gatlin_mott.distanceToObject() < 1.5 :
-		self.gatlin_mott.publishResponse("Servo base to "+self.object_name)
+		#if self.distanceToObject() < 1.5 :
+		self.publishResponse("Servo base to "+self.object_name)
 
 		rate = rospy.Rate(30)
-		error = self.gatlin_mott.distanceToObject()
+		error = self.distanceToObject()
 		goal_tolerence = .02
 
-		base_obj_pose = self.gatlin_mott.get_pose("base_link", self.gatlin_mott.FIXED_FRAME, self.gatlin_mott.object_pose)
+		base_obj_pose = self.get_pose("base_link", self.FIXED_FRAME, self.object_pose)
 
 		actual_pos = vector3_to_numpy(base_obj_pose.pose.position)
 		actual_pos[2] = 0
@@ -131,7 +123,7 @@ class Mott_Thread(Thread) :
 		error = np.linalg.norm(error_vec)
 
 		while error > goal_tolerence :
-			base_obj_pose = self.gatlin_mott.get_pose("base_link", self.gatlin_mott.FIXED_FRAME, self.gatlin_mott.object_pose)
+			base_obj_pose = self.get_pose("base_link", self.FIXED_FRAME, self.object_pose)
 			error = self.servo_base_to_pose(desired_pos, base_obj_pose.pose.position)
 			rate.sleep()
 
@@ -142,54 +134,54 @@ class Mott_Thread(Thread) :
 		holding_object = False
 		while not holding_object :
 			print "attempting to grab"
-			self.gatlin_mott.publishResponse("Attempting to grab "+self.object_name)
+			self.publishResponse("Attempting to grab "+self.object_name)
 			#open gripper
-			resp = self.gatlin_mott.move_arm(OPEN_GRIPPER, Pose())
+			resp = self.move_arm(OPEN_GRIPPER, Pose())
 
 			#arm to object
 			print "sending arm pose pub"
-			print self.gatlin_mott.object_pose
-			# self.gatlin_mott.arm_pose_pub.publish(self.gatlin_mott.object_pose)
-			base_obj_pose = self.gatlin_mott.get_pose("base_link", self.gatlin_mott.FIXED_FRAME, self.gatlin_mott.object_pose)
-			resp = self.gatlin_mott.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_obj_pose.pose)
+			print self.object_pose
+			# self.arm_pose_pub.publish(self.object_pose)
+			base_obj_pose = self.get_pose("base_link", self.FIXED_FRAME, self.object_pose)
+			resp = self.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_obj_pose.pose)
 			if not resp.success:
 				rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
 
 			#grab
 			print "grabbing arm"
-			# self.gatlin_mott.sendGripCommand(.5)
-			resp = self.gatlin_mott.move_arm(CLOSE_GRIPPER, Pose())
+			# self.sendGripCommand(.5)
+			resp = self.move_arm(CLOSE_GRIPPER, Pose())
 
 			#arm up and
-			# self.gatlin_mott.sendResetArm()
-			resp = self.gatlin_mott.move_arm(RESET_ARM, Pose())
+			# self.sendResetArm()
+			resp = self.move_arm(RESET_ARM, Pose())
 			if not resp.success:
 				rospy.logerr("RESET_ARM FAILED")
 
-			if time.time() - self.gatlin_mott.last_object_pose_update > 1 : #no object detection in last second, it is likely in robot's hand
+			if time.time() - self.last_object_pose_update > 1 : #no object detection in last second, it is likely in robot's hand
 				holding_object = True
 
-		self.gatlin_mott.publishResponse("Grabbed "+self.object_name)
+		self.publishResponse("Grabbed "+self.object_name)
 
 	def moveBaseToTarget(self) :
 		#gmap move base to target
-		if self.gatlin_mott.distanceToTarget() > .7 :
-			self.gatlin_mott.publishResponse("Gmap base to "+self.target_name)
-			self.gatlin_mott.gmapBaseTo(self.gatlin_mott.target_pose)
-			while self.gatlin_mott.distanceToTarget() > .7 :
+		if self.distanceToTarget() > .7 :
+			self.publishResponse("Gmap base to "+self.target_name)
+			self.gmapBaseTo(self.target_pose)
+			while self.distanceToTarget() > .7 :
 				time.sleep(.03)
 			#stop gmap base
-			self.gatlin_mott.cancelgmapBaseTo()
+			self.cancelgmapBaseTo()
 
 	def servoBaseToTarget(self) :
-		#if self.gatlin_mott.distanceToTarget() < 1.5 : #TODO these can be made variables these spots are where changes need to be made
-		self.gatlin_mott.publishResponse("Servo base to "+self.target_name) #TODO
+		#if self.distanceToTarget() < 1.5 : #TODO these can be made variables these spots are where changes need to be made
+		self.publishResponse("Servo base to "+self.target_name) #TODO
 
 		rate = rospy.Rate(30)
-		error = self.gatlin_mott.distanceToTarget() #TODO
+		error = self.distanceToTarget() #TODO
 		goal_tolerence = .05
 
-		base_target_pose = self.gatlin_mott.get_pose("base_link", self.gatlin_mott.FIXED_FRAME, self.gatlin_mott.target_pose)
+		base_target_pose = self.get_pose("base_link", self.FIXED_FRAME, self.target_pose)
 
 		actual_pos = vector3_to_numpy(base_target_pose.pose.position) #TODO
 		actual_pos[2] = 0
@@ -198,7 +190,7 @@ class Mott_Thread(Thread) :
 		error = np.linalg.norm(error_vec)
 
 		while error > goal_tolerence : #might be bad idea to wait for transform in visual servo system....
-			base_target_pose = self.gatlin_mott.get_pose("base_link", self.gatlin_mott.FIXED_FRAME, self.gatlin_mott.target_pose)
+			base_target_pose = self.get_pose("base_link", self.FIXED_FRAME, self.target_pose)
 
 			self.test_pose_pub.publish(base_target_pose)
 
@@ -209,69 +201,70 @@ class Mott_Thread(Thread) :
 
 	def moveArmToTarget(self) :
 		#move arm to target
-		self.gatlin_mott.publishResponse("Moving Arm to "+self.target_name)
-		#self.gatlin_matt.arm_pose_pub.publish(self.gatlin_mott.target_pose)
-		base_target_pose = self.gatlin_mott.get_pose("base_link", self.gatlin_mott.FIXED_FRAME, self.gatlin_mott.target_pose)
-		resp = self.gatlin_mott.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_target_pose.pose)
+		self.publishResponse("Moving Arm to "+self.target_name)
+		#self.gatlin_matt.arm_pose_pub.publish(self.target_pose)
+		base_target_pose = self.get_pose("base_link", self.FIXED_FRAME, self.target_pose)
+		resp = self.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_target_pose.pose)
 
 		#time.sleep(1)
 
 		#release
-		self.gatlin_mott.sendGripCommand(1)
+		self.sendGripCommand(1)
 
 		time.sleep(2)
 
-		self.gatlin_mott.sendResetArm()
-		#resp = self.gatlin_mott.move_arm(RESET_ARM, Pose())
+		self.sendResetArm()
+		#resp = self.move_arm(RESET_ARM, Pose())
 
 	def run_mott_sequence(self) :
-		print "about to start with lock"
-		with self.lock :
-			print "inside lock"
+		# print "about to start with lock"
+		# with self.lock :
+		# 	print "inside lock"
 			#if self.quitting :
 			#	return
-			self.moveBaseToObject()
-			self.servoBaseToObject()
-			self.grabObject()
+		self.moveBaseToObject()
+		self.servoBaseToObject()
+		self.grabObject()
 
-			self.moveBaseToTarget() #TODO ready to test
-			self.servoBaseToTarget()
-			self.moveArmToTarget()
+		self.moveBaseToTarget() #TODO ready to test
+		self.servoBaseToTarget()
+		self.moveArmToTarget()
 
-			self.gatlin_mott.publishResponse("finished")
-			
+		self.publishResponse("finished mott") #string must contain finished
 
-
-	def run(self) :
-		while not rospy.is_shutdown() :
-			time.sleep(1)
+	def base_to_sequence(self) :
+		
+		self.moveBaseToTarget()
+		self.servoBaseToTarget()
+		self.publishResponse("finished moving base to target")
 
 		
-
-
-class gatlin_mott:
-
 	def MottCallback(self, data) :
-		with self.mott_callback_lock : #guarantees sequential callbacks
-			if not self.mott_thread.lock.locked() : #TODO might be bad practice, but only this method calls the thread
-				print "callback of unlocked node"
-				self.object_sub.unregister()
-				self.target_sub.unregister()
+		# with self.mott_callback_lock : #guarantees sequential callbacks
+			# if not self.lock.locked() : #TODO might be bad practice, but only this method calls the thread
+		# print "callback of unlocked node"
+		self.object_sub.unregister()
+		self.target_sub.unregister()
 
-				if (not (data.object_pose_topic == "")) :
-					self.object_sub = rospy.Subscriber(data.object_pose_topic, Pose, self.objectPoseCallback, queue_size = 1)
-				if (not (data.target_pose_topic == "")) :
-					self.target_sub = rospy.Subscriber(data.target_pose_topic, Pose, self.targetPoseCallback, queue_size = 1)
+		if (not (data.object_pose_topic == "")) :
+			self.object_sub = rospy.Subscriber(data.object_pose_topic, Pose, self.objectPoseCallback, queue_size = 1)
+		if (not (data.target_pose_topic == "")) :
+			self.target_sub = rospy.Subscriber(data.target_pose_topic, Pose, self.targetPoseCallback, queue_size = 1)
 
-				if (data.object_pose) :
-					self.object_pose = data.object_pose
-				if (data.target_pose) :
-					self.target_pose = data.target_pose
-				
-				self.mott_thread.update_info(data.object_pose_topic, data.target_pose_topic) #maybe put this above?? lol
-				self.mott_thread.run_mott_sequence()
-			else :
-				print "MOTT THREAD IS LOCKED!!!"
+		if (data.object_pose) :
+			self.object_pose = data.object_pose
+		if (data.target_pose) :
+			self.target_pose = data.target_pose
+		
+		self.update_info(data.object_pose_topic, data.target_pose_topic) #maybe put this above?? lol
+		
+		if data.command == "mott" :
+			self.run_mott_sequence()
+		elif data.command == "move_base" :
+			print "Starting Move Base TO"
+			self.base_to_sequence()
+			# else :
+			# 	print "MOTT THREAD IS LOCKED!!!"
 
 	def robotPoseCallback(self, data) :
 		self.robot_pose = data
@@ -340,15 +333,17 @@ class gatlin_mott:
 
 	def __init__(self):
 		self.robot_name = "gatlin"
-		rospy.init_node('%s_mott'%self.robot_name)
+		rospy.init_node('%s_nav_manip_controller'%self.robot_name)
 
 		self.robot_pose = Pose()
 		self.object_pose = Pose()
 		self.last_object_pose_update = 0
 		self.target_pose = Pose()
 
-		self.mott_thread = Mott_Thread(self)
-		self.mott_callback_lock = Lock()
+		# self = Nav_Manip_Controller()
+		# self.mott_callback_lock = Lock()
+		self.base_joystick_pub = rospy.Publisher("/cmd_vel_mux/input/teleop", Twist)
+		self.test_pose_pub = rospy.Publisher('/test_obj_pose', PoseStamped)
 
 		self.FIXED_FRAME = "odom"
 
@@ -372,6 +367,20 @@ class gatlin_mott:
 
 		rospy.spin()
 
+class DynamicPose:
+	def __init__(self):
+		self.subscribed = False
+		self.topic = ""
+		self.ps = PoseStamped()
+
+	def subscribe(topic):
+		self.object_sub = rospy.Subscriber(data.object_pose_topic, Pose, self.objectPoseCallback, queue_size = 1)
+
+
+
+	def set_pose(ps):
+		self.ps = ps
+
 
 if __name__ == "__main__":
-	gatlin_mott()
+	Nav_Manip_Controller()

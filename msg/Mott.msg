@@ -1,3 +1,4 @@
+string command
 string object_pose_topic
 string target_pose_topic
 geometry_msgs/Pose object_pose
