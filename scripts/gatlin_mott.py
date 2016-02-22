@@ -104,7 +104,8 @@ class Mott_Thread(Thread) :
 			#object_in_map = None
 			#while not object_in_map :
 			#	object_in_map = self.get_pose('map', 'camera_link', self.gatlin_mott.object_pose)
-			self.gatlin_mott.gmapBaseTo(object_in_map)
+			map_obj_pose = self.gatlin_mott.get_pose("map", self.gatlin_mott.FIXED_FRAME, self.gatlin_mott.object_pose)
+			self.gatlin_mott.gmapBaseTo(map_obj_pose.pose)
 
 			#distance is from kinect...
 			while self.gatlin_mott.distanceToObject() > .7 :
@@ -143,25 +144,25 @@ class Mott_Thread(Thread) :
 			print "attempting to grab"
 			self.gatlin_mott.publishResponse("Attempting to grab "+self.object_name)
 			#open gripper
-			resp = self.gatlin_mott.move_robot(OPEN_GRIPPER, Pose())
+			resp = self.gatlin_mott.move_arm(OPEN_GRIPPER, Pose())
 
 			#arm to object
 			print "sending arm pose pub"
 			print self.gatlin_mott.object_pose
 			# self.gatlin_mott.arm_pose_pub.publish(self.gatlin_mott.object_pose)
 			base_obj_pose = self.gatlin_mott.get_pose("base_link", self.gatlin_mott.FIXED_FRAME, self.gatlin_mott.object_pose)
-			resp = self.gatlin_mott.move_robot(MOVE_TO_POSE_INTERMEDIATE, base_obj_pose.pose)
+			resp = self.gatlin_mott.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_obj_pose.pose)
 			if not resp.success:
 				rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
 
 			#grab
 			print "grabbing arm"
 			# self.gatlin_mott.sendGripCommand(.5)
-			resp = self.gatlin_mott.move_robot(CLOSE_GRIPPER, Pose())
+			resp = self.gatlin_mott.move_arm(CLOSE_GRIPPER, Pose())
 
 			#arm up and
 			# self.gatlin_mott.sendResetArm()
-			resp = self.gatlin_mott.move_robot(RESET_ARM, Pose())
+			resp = self.gatlin_mott.move_arm(RESET_ARM, Pose())
 			if not resp.success:
 				rospy.logerr("RESET_ARM FAILED")
 
@@ -211,7 +212,7 @@ class Mott_Thread(Thread) :
 		self.gatlin_mott.publishResponse("Moving Arm to "+self.target_name)
 		#self.gatlin_matt.arm_pose_pub.publish(self.gatlin_mott.target_pose)
 		base_target_pose = self.gatlin_mott.get_pose("base_link", self.gatlin_mott.FIXED_FRAME, self.gatlin_mott.target_pose)
-		resp = self.gatlin_mott.move_robot(MOVE_TO_POSE_INTERMEDIATE, base_target_pose.pose)
+		resp = self.gatlin_mott.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_target_pose.pose)
 
 		#time.sleep(1)
 
@@ -221,7 +222,7 @@ class Mott_Thread(Thread) :
 		time.sleep(2)
 
 		self.gatlin_mott.sendResetArm()
-		#resp = self.gatlin_mott.move_robot(RESET_ARM, Pose())
+		#resp = self.gatlin_mott.move_arm(RESET_ARM, Pose())
 
 	def run_mott_sequence(self) :
 		print "about to start with lock"
@@ -362,7 +363,7 @@ class gatlin_mott:
 		rospy.Subscriber("/gatlin_mott", Mott, self.MottCallback, queue_size = 1)
 		rospy.Subscriber("/robot_pose", Pose, self.robotPoseCallback, queue_size =1)
 
-		self.move_robot = createServiceProxy("move_robot", MoveRobot, self.robot_name)
+		self.move_arm = createServiceProxy("move/arm", MoveRobot, self.robot_name)
 
 		self.object_sub = rospy.Subscriber("/green_kinect0_pose", Pose, self.objectPoseCallback, queue_size = 1)
 		self.target_sub = rospy.Subscriber("/green_kinect0_pose", Pose, self.targetPoseCallback, queue_size = 1)

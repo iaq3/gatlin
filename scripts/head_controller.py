@@ -5,7 +5,7 @@ from math import *
 import numpy as np
 from std_msgs.msg import *
 from geometry_msgs.msg import *
-from visualization_msgs.msg import Marker
+# from visualization_msgs.msg import Marker
 from tf.transformations import *
 from copy import deepcopy
 
@@ -14,22 +14,18 @@ class Server:
 		# Give the launch a chance to catch up
 		rospy.sleep(5)
 
-		rospy.init_node('Vuforia_Server')
-		print "Launched Vuforia Server"
+		rospy.init_node('Head_Controller')
+		print "Launched Head Controller"
 
 		self.head_pan_pub = rospy.Publisher('/head_pan_joint/command', Float64)
 		self.head_tilt_pub = rospy.Publisher('/head_tilt_joint/command', Float64)
-		self.marker_pub = rospy.Publisher('/visualization_marker', Marker)
-		self.arm_target_marker_pub = rospy.Publisher('/arm_target_marker', Marker)
 
-		self.tfl = tf.TransformListener()
-
-		self.target_pos_sub = rospy.Subscriber("/target_pos", Vector3, self.pos_callback, queue_size=3)
+		# self.target_pos_sub = rospy.Subscriber("/target_pos", Vector3, self.pos_callback, queue_size=3)
 		self.head_pos_sub = rospy.Subscriber("/head_pos", Vector3, self.head_callback, queue_size=3)
 
 		# init a gripper publisher because movegroup won't work
-		self.gripper_pub = rospy.Publisher('/gripper_joint/command', Float64)
-		self.orientation_pub = rospy.Publisher('/target_orientation', Vector3)
+		# self.gripper_pub = rospy.Publisher('/gripper_joint/command', Float64)
+		# self.orientation_pub = rospy.Publisher('/target_orientation', Vector3)
 
 		rospy.sleep(5)
 
@@ -65,8 +61,8 @@ class Server:
 		self.head_pan_pub.publish(pan)
 		self.head_tilt_pub.publish(tilt)
 
-	def gripper_set(self, val):
-		self.gripper_pub.publish((1-val)*-2.53)
+	# def gripper_set(self, val):
+		# self.gripper_pub.publish((1-val)*-2.53)
 
 	def head_callback(self, data):
 		if(data.x == -1.0):
@@ -80,18 +76,18 @@ class Server:
 
 		self.head_set_xyz(headPt)
 
-	def pos_callback(self, data):
-		if(data.x == 0.0 and data.y == 0.0 and data.z == 0.0):
-			return
-		elif(data.x == -1.0 and data.y == -1.0):
-			print "################################################"
-			print "###################  Gripping!  ###################"
-			print "################################################"
+	# def pos_callback(self, data):
+	# 	if(data.x == 0.0 and data.y == 0.0 and data.z == 0.0):
+	# 		return
+	# 	elif(data.x == -1.0 and data.y == -1.0):
+	# 		print "################################################"
+	# 		print "###################  Gripping!  ###################"
+	# 		print "################################################"
 
-			self.gripper_set(data.z)
+	# 		self.gripper_set(data.z)
 		
-		elif(data.x == -1.0 and data.y == -2.0):
-			self.orientation_pub.publish(data)	
+	# 	elif(data.x == -1.0 and data.y == -2.0):
+	# 		self.orientation_pub.publish(data)	
 
 if __name__ == "__main__":
 	Server()

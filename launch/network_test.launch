@@ -27,11 +27,11 @@
   <arg name="rviz" value="$(arg rviz)"/>
 </include> -->
 
-<!-- <node pkg="gatlin" type="gatlin_arm_controller.py" name="gatlin_arm_controller" output="screen" ></node> -->
+<!-- <node pkg="gatlin" type="arm_controller.py" name="arm_controller" output="screen" ></node> -->
 
 <node pkg="gatlin" type="octomap_server" name="octomap_server" output="screen" ></node>
 
-<!-- <node pkg="gatlin" type="vuforia.py" name="vuforia" output="screen" ></node> -->
+<!-- <node pkg="gatlin" type="head_controller.py" name="head_controller" output="screen" ></node> -->
 
 <!-- <node if="$(arg calibrate)" pkg="dynamic_tf" type="server.py" name="server" output="screen" ></node> -->
 

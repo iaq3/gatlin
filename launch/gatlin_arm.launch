@@ -16,7 +16,7 @@
 
 <node pkg="gatlin" type="gatlin.py" name="gatlin" output="screen" ></node>
 
-<node pkg="gatlin" type="vuforia.py" name="vuforia" output="screen" ></node>
+<node pkg="gatlin" type="head_controller.py" name="head_controller" output="screen" ></node>
 
 <node pkg="dynamic_tf" type="server.py" name="server" output="screen" ></node>
 <!--

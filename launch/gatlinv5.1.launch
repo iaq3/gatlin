@@ -23,11 +23,11 @@
 
 <!-- <node pkg="gatlin" type="gatlin_mott.py" name="gatlin_mott" output="screen"/> -->
 
-<node pkg="gatlin" type="gatlin_arm_controller.py" name="gatlin_arm_controller" output="screen"/>
+<node pkg="gatlin" type="arm_controller.py" name="arm_controller" output="screen"/>
 
 <node pkg="gatlin" type="tf_to_unity.py" name="tf_to_unity"/>
 
-<node pkg="gatlin" type="vuforia.py" name="vuforia"/>
+<node pkg="gatlin" type="head_controller.py" name="head_controller"/>
 
 <node if="$(arg calibrate)" pkg="dynamic_tf" type="server.py" name="server"/>
 
