@@ -50,7 +50,7 @@ class Gatlin_Server:
 		self.test_pose_publisher = rospy.Publisher('/test_arm_pose', PoseStamped)
 
 
-		rospy.Subscriber("/arm_target_pose", Pose, self.move_arm_to_pose, queue_size=1)
+		rospy.Subscriber("/arm_target_pose", PoseStamped, self.move_arm_to_pose, queue_size=1)
 		self.robot_name = "gatlin"
 		move_arm_service = createService('move/arm', MoveRobot, self.handle_move_arm, self.robot_name)
 
@@ -116,23 +116,23 @@ class Gatlin_Server:
 
 		rospy.spin()
 
-	def MoveToPoseWithIntermediate(self, pose, offsets) :
+	def MoveToPoseWithIntermediate(self, ps, offsets) :
 		# arm = self.limb_left if limb == 'left' else self.limb_right
 		# hand_pose = self.getCurrentPose(arm)
 		success = False
 		for offset in offsets:
 			# interpose = getOffsetPose(hand_pose, offset)
-			interpose = getOffsetPose(pose, offset)
+			interpose = getOffsetPose(ps, offset)
 			success = self.MoveToPose(interpose, "MoveToIntermediatePose")
 
-		success = self.MoveToPose(pose, "MoveToPose")
+		success = self.MoveToPose(ps, "MoveToPose")
 
 		return success
 
-	def MoveToPose(self, pose, name) :
-		newpose = deepcopy(pose)
+	def MoveToPose(self, ps, name) :
+		newpose = deepcopy(ps)
 		down = Quaternion(-0.00035087, 0.73273, 0.00030411, 0.68052)
-		newpose.orientation = down
+		newpose.pose.orientation = down
 		# newpose.position.z -= .03
 
 		if self.move_arm_to_pose(newpose) :
@@ -142,11 +142,13 @@ class Gatlin_Server:
 			rospy.logerr("FAILED %s" % name)
 			return False
 
-	def move_arm_to_pose(self, pose):
-		arm_target_pose = PoseStamped()
-		arm_target_pose.header.frame_id = self.REFERENCE_FRAME
+	def move_arm_to_pose(self, ps):
+		# arm_target_pose = PoseStamped()
+		# arm_target_pose.header.frame_id = self.REFERENCE_FRAME
+		# arm_target_pose.header.stamp = rospy.Time.now()
+		# arm_target_pose.pose = deepcopy(pose)
+		arm_target_pose = deepcopy(ps)
 		arm_target_pose.header.stamp = rospy.Time.now()
-		arm_target_pose.pose = deepcopy(pose)
 		
 		self.test_pose_publisher.publish(arm_target_pose)
 		# rospy.logerr(arm_target_pose)
@@ -157,12 +159,8 @@ class Gatlin_Server:
 		return success
 
 	def handle_move_arm(self, req):
-		# rospy.sleep(1)
 		success = True
 		gripper = self.gripper
-
-		# if not (req.limb == 'left' or req.limb == 'right'):
-			# rospy.logerr("No Limb Set")
 
 		if req.action == OPEN_GRIPPER:
 			rospy.loginfo("Beginning to open gripper")
@@ -177,15 +175,15 @@ class Gatlin_Server:
 		elif req.action == MOVE_TO_POSE_INTERMEDIATE :
 			rospy.loginfo("Trying to Move To Pose With Intermediate")
 			offsets = [Vector3(0,0,.07)]
-			success = self.MoveToPoseWithIntermediate(req.pose, offsets)
+			success = self.MoveToPoseWithIntermediate(req.ps, offsets)
 
 		elif req.action == MOVE_TO_POSE :
 			rospy.loginfo("Trying to Move To Pose")
-			success = self.MoveToPose(req.pose, "FAILED MoveToPose")
+			success = self.MoveToPose(req.ps, "FAILED MoveToPose")
 
 		elif req.action == RESET_ARM :
 			rospy.loginfo("Trying to Move To Rest Pose")
-			success = self.move_arm_to_pose(self.rest_pose.pose)
+			success = self.move_arm_to_pose(self.rest_pose)
 			# success = self.MoveToPose(self.rest_pose, "FAILED MoveToRestPose")
 
 		# elif req.action == MOVE_TO_POS :
@@ -219,25 +217,6 @@ class Gatlin_Server:
 		return MoveRobotResponse(success)
 
 
-	# #takes a point from kinect to base frame
-	# def kinect_to_base(self, data) :
-	# 	rospy.loginfo("kinect to base!: [%f, %f, %f]"%(data.x, data.y, data.z))
-		
-	# 	target_pos = [data.x, -data.y, data.z]
-
-	# 	kinectPt = PointStamped()
-	# 	kinectPt.header.frame_id = "/camera_rgb_optical_frame"
-		
-	# 	# kinectPt.header.stamp = rospy.Time.now() - rospy.Duration(.22)
-	# 	kinectPt.header.stamp = rospy.Time(0)
-	# 	kinectPt.point = Point(target_pos[0],target_pos[1],target_pos[2])
-
-	# 	basePt = self.tfl.transformPoint(self.REFERENCE_FRAME, kinectPt)
-
-	# 	print "############# basePt #############"
-	# 	print basePt
-	# 	return basePt.point
-
 	def orientation_cb(self, data):
 		if(data.x == -1.0 and data.y == -2.0):
 			print "################################################"
@@ -253,89 +232,6 @@ class Gatlin_Server:
 			self.current_pose.pose.orientation.w = q[3]
 		else:
 			return
-
-	# def pos_callback(self, data):
-	# 	if self.done:
-	# 		if(data.x == 0.0 and data.y == 0.0 and data.z == 0.0):
-	# 			self.done = False
-	# 			print "################################################"
-	# 			print "###################  Going!  ###################"
-	# 			print "################################################"
-	# 			if self.arm.go() != True:
-	# 				rospy.logwarn("Go to target_pos failed")
-	# 			# rospy.sleep(.2)
-	# 			self.done = True
-
-	# 		elif(data.x == -1.0 and data.y == -1.0):
-	# 			return		
-	# 		elif(data.x == -1.0 and data.y == -2.0):
-	# 			return
-	# 		elif(data.x == -2.0 and data.y == -2.0 and data.z == -2.0):
-	# 			print "################################################"
-	# 			print "###################  Reset!  ###################"
-	# 			print "################################################"
-
-	# 			self.arm.set_pose_target(self.rest_pose)
-	# 			self.arm.go()
-
-	# 			# rospy.loginfo("Set Gripper: open")
-	# 			#self.gripper.set(1.0)
-
-	# 			rospy.sleep(1)
-	# 			return		
-	# 		else:
-
-	# 			rospy.loginfo("Received a target_pos message: [%f, %f, %f]"%(data.x, data.y, data.z))
-
-	# 			target_pos = [data.x, -data.y, data.z]
-
-	# 			kinectPt = PointStamped()
-	# 			kinectPt.header.frame_id = "/camera_rgb_optical_frame"
-	# 			# kinectPt.header.stamp = rospy.Time.now() - rospy.Duration(.22)
-	# 			kinectPt.header.stamp = rospy.Time(0)
-	# 			kinectPt.point = Point(target_pos[0],target_pos[1],target_pos[2])
-
-	# 			basePt = self.tfl.transformPoint("/base_link", kinectPt)
-
-	# 			print "############# basePt #############"
-	# 			print basePt
-
-	# 			# Set a target pose for the arm        
-	# 			target_pose = PoseStamped()
-	# 			target_pose = self.current_pose
-
-	# 			target_pose.pose.position = basePt.point
-
-	# 			# horiz = Quaternion(-1.56720103577e-05, -0.00267706753017, -0.00511322338149, 0.999983343867)
-	# 			q = quaternion_from_euler(0,0,0)
-	# 			horiz = Quaternion(q[0],q[1],q[2],q[3])
-
-	# 			# deg45 = Quaternion(-0.00229553611512, 0.448584123035, 0.00456900568013, 0.893725986677)
-	# 			q = quaternion_from_euler(0,.785,0)
-	# 			deg45 = Quaternion(q[0],q[1],q[2],q[3])
-
-	# 			# down = Quaternion(-0.00366978827416, 0.71742069389, 0.00356061132163, 0.696621419911)
-	# 			q = quaternion_from_euler(0,1.57,0)
-	# 			down = Quaternion(q[0],q[1],q[2],q[3])
-
-	# 			# target_pose.pose.orientation = deg45
-	# 			target_pose.pose.orientation = self.current_pose.pose.orientation
-
-	# 			print "############# current_pose #############"
-	# 			print self.arm.get_current_pose()
-
-	# 			target_pose.pose.position.z -= .03
-	# 			# target_pose.pose.position.y += .01
-
-	# 			inter_pose = deepcopy(target_pose)
-	# 			inter_pose.pose.position.z += .05
-
-	# 			self.arm.set_pose_target(inter_pose)
-	# 			self.arm.go()
-
-	# 			self.arm.set_pose_target(target_pose)
-	# 			self.arm.go()
-	# 			rospy.sleep(.05)
 
 if __name__ == "__main__":
 	Gatlin_Server()

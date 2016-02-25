@@ -94,10 +94,10 @@ class Nav_Manip_Controller :
 			#object pose is in kinect coordinates.... need them in map coordinates..... TODO test
 			#object_in_map = None
 			#while not object_in_map :
-			#	object_in_map = self.get_pose('map', 'camera_link', self.object_pose)
-			map_obj_pose = self.get_pose("map", self.FIXED_FRAME, self.object_pose)
+			#	object_in_map = self.transform_pose('map', 'camera_link', self.object_pose)
+			map_obj_pose = self.transform_pose("map", self.FIXED_FRAME, self.object_pose)
 			# todo: check_transform_pose("map", self.object_pose_stamped)
-			self.gmapBaseTo(map_obj_pose.pose)
+			self.gmapBaseTo(map_obj_pose)
 
 			#distance is from kinect...
 			while self.distanceToObject() > .7 :
@@ -114,7 +114,7 @@ class Nav_Manip_Controller :
 		error = self.distanceToObject()
 		goal_tolerence = .02
 
-		base_obj_pose = self.get_pose("base_link", self.FIXED_FRAME, self.object_pose)
+		base_obj_pose = self.transform_pose("base_link", self.FIXED_FRAME, self.object_pose)
 
 		actual_pos = vector3_to_numpy(base_obj_pose.pose.position)
 		actual_pos[2] = 0
@@ -123,7 +123,7 @@ class Nav_Manip_Controller :
 		error = np.linalg.norm(error_vec)
 
 		while error > goal_tolerence :
-			base_obj_pose = self.get_pose("base_link", self.FIXED_FRAME, self.object_pose)
+			base_obj_pose = self.transform_pose("base_link", self.FIXED_FRAME, self.object_pose)
 			error = self.servo_base_to_pose(desired_pos, base_obj_pose.pose.position)
 			rate.sleep()
 
@@ -142,7 +142,7 @@ class Nav_Manip_Controller :
 			print "sending arm pose pub"
 			print self.object_pose
 			# self.arm_pose_pub.publish(self.object_pose)
-			base_obj_pose = self.get_pose("base_link", self.FIXED_FRAME, self.object_pose)
+			base_obj_pose = self.transform_pose("base_link", self.FIXED_FRAME, self.object_pose)
 			resp = self.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_obj_pose.pose)
 			if not resp.success:
 				rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
@@ -181,7 +181,7 @@ class Nav_Manip_Controller :
 		error = self.distanceToTarget() #TODO
 		goal_tolerence = .05
 
-		base_target_pose = self.get_pose("base_link", self.FIXED_FRAME, self.target_pose)
+		base_target_pose = self.transform_pose("base_link", self.FIXED_FRAME, self.target_pose)
 
 		actual_pos = vector3_to_numpy(base_target_pose.pose.position) #TODO
 		actual_pos[2] = 0
@@ -190,7 +190,7 @@ class Nav_Manip_Controller :
 		error = np.linalg.norm(error_vec)
 
 		while error > goal_tolerence : #might be bad idea to wait for transform in visual servo system....
-			base_target_pose = self.get_pose("base_link", self.FIXED_FRAME, self.target_pose)
+			base_target_pose = self.transform_pose("base_link", self.FIXED_FRAME, self.target_pose)
 
 			self.test_pose_pub.publish(base_target_pose)
 
@@ -203,7 +203,7 @@ class Nav_Manip_Controller :
 		#move arm to target
 		self.publishResponse("Moving Arm to "+self.target_name)
 		#self.gatlin_matt.arm_pose_pub.publish(self.target_pose)
-		base_target_pose = self.get_pose("base_link", self.FIXED_FRAME, self.target_pose)
+		base_target_pose = self.transform_pose("base_link", self.FIXED_FRAME, self.target_pose)
 		resp = self.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_target_pose.pose)
 
 		#time.sleep(1)
@@ -270,7 +270,7 @@ class Nav_Manip_Controller :
 		self.robot_pose = data
 
 	def objectPoseCallback(self, data) :
-		fixed_obj_pose = self.get_pose(self.FIXED_FRAME, "camera_rgb_optical_frame", data)
+		fixed_obj_pose = self.transform_pose(self.FIXED_FRAME, "camera_rgb_optical_frame", data)
 		self.last_object_pose_update = time.time()
 		self.object_pose = fixed_obj_pose.pose
 
@@ -317,13 +317,11 @@ class Nav_Manip_Controller :
 		return PointDistance(self.robot_pose.position, self.target_pose.position)
 
 	#find the pose of object-pose in child transform when it is a child of parent transform
-	def get_pose(self, parent, child, atom):
+	def get_pose(self, parent, ps):
 		try:
-			ps = PoseStamped()
-			ps.pose = deepcopy(atom)
-			ps.header.frame_id = child
+			ps = deepcopy(ps)
 			ps.header.stamp =  rospy.Time(0)
-			self.tfl.waitForTransform(child, parent, rospy.Time(0), rospy.Duration(4.0))
+			self.tfl.waitForTransform(ps.header.frame_id, parent, rospy.Time(0), rospy.Duration(4.0))
 			child_pose = self.tfl.transformPose(parent, ps)
 			return child_pose
 		except Exception as e:
@@ -374,12 +372,10 @@ class DynamicPose:
 		self.ps = PoseStamped()
 
 	def subscribe(topic):
-		self.object_sub = rospy.Subscriber(data.object_pose_topic, Pose, self.objectPoseCallback, queue_size = 1)
-
-
+		self.object_sub = rospy.Subscriber(topic, Pose, self.set_pose, queue_size = 1)
 
 	def set_pose(ps):
-		self.ps = ps
+		self.ps = deepcopy(ps)
 
 
 if __name__ == "__main__":

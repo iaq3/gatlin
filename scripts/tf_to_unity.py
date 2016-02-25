@@ -16,7 +16,7 @@ class Tf_Transformer(Thread):
 		self.tfl = tfl
 		self.child = child
 		self.parent = parent
-		self.pose_pub = rospy.Publisher('%s_in_%s' % (child, parent), Pose, queue_size=1)
+		self.pose_pub = rospy.Publisher('%s_in_%s' % (child, parent), PoseStamped, queue_size=1)
 		self.rate = rate
 
 		self.child_pose = None
@@ -52,9 +52,9 @@ class Tf_Transformer(Thread):
 			self.child_pose = self.tfl.transformPose(self.parent, ps)
 
 			if self.child_pose != None:
-				self.pose_pub.publish(self.child_pose.pose)
+				self.pose_pub.publish(self.child_pose)
 				print '%s_in_%s' % (self.child, self.parent)
-				print self.child_pose.pose
+				print self.child_pose
 
 		except Exception as e:
 			print e

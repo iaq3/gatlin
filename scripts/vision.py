@@ -101,12 +101,12 @@ class HSVMask:
 
 		self.window_name = '%s %s vision' % (color, camera)
 		self.filters = []
-		self.base_pubs = []
+		self.obj_pose_pubs = []
 		# self.base_stamped_pubs = []
 		for i in range(0, num_blobs):
-			base_pub = rospy.Publisher("/%s_%s_%d_pose" % (color, camera, i), Pose, queue_size=1)
+			obj_pose_pub = rospy.Publisher("/%s_%s_%d_pose" % (color, camera, i), PoseStamped, queue_size=1)
 			# base_stamped_pub = rospy.Publisher("/%s_%s_%d_pose_stamped" % (color, camera, i), PoseStamped, queue_size=1)
-			self.base_pubs.append(base_pub)
+			self.obj_pose_pubs.append(obj_pose_pub)
 			# self.base_stamped_pubs.append(base_stamped_pub)
 			new_filter = LiveFilter()
 			self.filters.append(new_filter)
@@ -215,18 +215,12 @@ class HSVMask:
 			print self.m
 			print "#############################################"
 
-	def transform_publish(self, i, kinect_pose):
-		basePose = Pose()
-		# basePose.position = self.kinect_to_base_pt(kinect_pose.position)
-		# rospy.logerr(basePose)
-		# self.base_pubs[i].publish(basePose)
-		self.base_pubs[i].publish(kinect_pose)
-		
-		# basePoseStamped = PoseStamped()
-		# basePoseStamped.header.frame_id = self.BASE_FRAME
-		# basePoseStamped.header.stamp = rospy.Time.now()
-		# basePoseStamped.pose = deepcopy(basePose)
-		# self.base_stamped_pubs[i].publish(basePoseStamped)
+	def publish_stamped(self, i, kinect_pose):
+		kinectPoseStamped = PoseStamped()
+		kinectPoseStamped.header.frame_id = self.CAMERA_FRAME
+		kinectPoseStamped.header.stamp = rospy.Time.now()
+		kinectPoseStamped.pose = deepcopy(kinect_pose)
+		self.obj_pose_pubs[i].publish(kinectPoseStamped)
 
 
 class Vision:
@@ -328,12 +322,12 @@ class Vision:
 			print e
 
 		for mask in self.masks:
-			# print "self.find_project_transform_publish(%s)" % mask.color
-			self.find_project_transform_publish(mask)
+			# print "self.find_project_publish_stamped(%s)" % mask.color
+			self.find_project_publish_stamped(mask)
 
 	#given an hsv_mask, finds the number of blobs, filters, and publishes if it's consistent
 	#TODO get multi ball tracking working and staying consistent
-	def find_project_transform_publish(self, hsv_mask):
+	def find_project_publish_stamped(self, hsv_mask):
 		objs = self.findBlobsofHue(hsv_mask, hsv_mask.num_blobs , self.rgb_image)
 		#print "-------------"
 		
@@ -397,8 +391,8 @@ class Vision:
 				addedPoints.append(bestPose.position)
 				if (output_object) :
 					try :
-						# hsv_mask.base_pubs[i].publish(bestPose)
-						hsv_mask.transform_publish(i, bestPose)
+						# hsv_mask.obj_pose_pubs[i].publish(bestPose)
+						hsv_mask.publish_stamped(i, bestPose)
 					except CvBridgeError, e:
 						print e
 				for point_index in hsv_counts[i][2] :

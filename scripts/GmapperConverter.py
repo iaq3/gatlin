@@ -35,7 +35,7 @@ class GmapperConverter:
 		self.map_pub = rospy.Publisher("/map_pose" , Pose)
 
 		self.robot_pose_sub = rospy.Subscriber("/robot_pose_ekf/odom_combined_throttled", PoseWithCovarianceStamped, self.robotposecallback, queue_size = 1)
-		self.robot_pose_pub = rospy.Publisher("/robot_pose", Pose)
+		self.robot_pose_pub = rospy.Publisher("/robot_pose", PoseStamped)
 
 		
 		self.goal_pose_stamped_pub = rospy.Publisher("/goal_pose_stamped", PoseStamped)		
@@ -61,10 +61,10 @@ class GmapperConverter:
 		
 	
 	def robotposecallback(self, data) :
-		#print "print odom data"
-		#print data.pose.pose
-
-		self.robot_pose_pub.publish(data.pose.pose)
+		ps = PoseStamped()
+		ps.header = data.header
+		ps.pose = data.pose.pose
+		self.robot_pose_pub.publish(ps)
 
 
 
