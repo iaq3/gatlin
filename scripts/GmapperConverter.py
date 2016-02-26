@@ -13,6 +13,7 @@ from cv_bridge import CvBridge, CvBridgeError
 import numpy as np
 from move_base_msgs.msg import MoveBaseActionGoal, MoveBaseActionFeedback, MoveBaseGoal
 from actionlib_msgs.msg import GoalID, GoalStatusArray
+from config import *
 
 #wiki.ros.org/gmapping
 #wiki.ros.org/move_base
@@ -29,14 +30,11 @@ class GmapperConverter:
 		#self.gmapinfo_pub = rospy.Publisher("/gatlin/gmap_info", Float32MultiArray)
 		#self.time_pub = rospy.Publisher( "/gatlin/time", Time)
 
-		#sets up subscriber of unity brain move to and cancel
-
 		self.transform_listener = tf.TransformListener()
 		self.map_pub = rospy.Publisher("/map_pose" , Pose)
 
 		self.robot_pose_sub = rospy.Subscriber("/robot_pose_ekf/odom_combined_throttled", PoseWithCovarianceStamped, self.robotposecallback, queue_size = 1)
 		self.robot_pose_pub = rospy.Publisher("/robot_pose", PoseStamped)
-
 		
 		self.goal_pose_stamped_pub = rospy.Publisher("/goal_pose_stamped", PoseStamped)		
 		self.move_to_goal_sub = rospy.Subscriber("/move_to_goal", Pose, self.goalcallback, queue_size = 1)
@@ -45,67 +43,43 @@ class GmapperConverter:
 
 		self.cancel_goal_sub = rospy.Subscriber("/gatlin_cmd", Int32, self.cancelcallback, queue_size=1)
 		self.cancel_move_pub = rospy.Publisher("/move_base/cancel", GoalID) #(actionlib_msgs/GoalID)
-		self.LastStamp = None
-
 
 		#move_base/feedback (move_base_msgs/MoveBaseActionFeedback)
 
 		self.status_sub = rospy.Subscriber("/move_base/status", GoalStatusArray, self.statuscallback, queue_size = 1)
 
-		self.lastnppose = np.array([-10000.0, -100000, -10000])
-
-
-		
+		# self.lastnppose = np.array([-10000.0, -100000, -10000])
 
 		rospy.spin()
 		
-	
 	def robotposecallback(self, data) :
 		ps = PoseStamped()
 		ps.header = data.header
 		ps.pose = data.pose.pose
 		self.robot_pose_pub.publish(ps)
 
-
-
-	#receives a pose and publishes a goal for gmapper to walk t0
+	#receives a pose and publishes a goal for gmapper
 	def goalcallback(self, data):
-
 		#TODO check status of route, if on another route, cancel it first
-		#print "Creating goal Message"
-
 		self.cancelcallback
 
 		self.move_to_goal_count += 1
 
 		g = MoveBaseActionGoal();
 
-		sendtime = rospy.get_rostime()
-		g.header = Header(self.move_to_goal_count, sendtime, "/map")
-
-		g.goal_id = GoalID()
-		
-		g.goal_id.stamp = sendtime
+		t = rospy.get_rostime()
+		g.header = Header(self.move_to_goal_count, t, "/map")
+		g.goal_id.stamp = t
 		g.goal_id.id = "movement_num:"+str(self.move_to_goal_count)
-		#print "asdfasdf"
-		g.goal = MoveBaseGoal()
-		g.goal.target_pose = PoseStamped()
-		g.goal.target_pose.header = g.header #Header(self.move_to_goal_count, sendtime, "0")
-		g.goal.target_pose.pose = data
+		g.goal.target_pose = data
 
-		#print "Sending pose stamped of goal for rviz"
-		psta = PoseStamped()
-		psta.header = g.header
-		psta.pose = data
-		newnppose = np.array([data.position.x, data.position.y, data.position.z])
-		if np.linalg.norm(newnppose -self.lastnppose) >.05 :
-			self.goal_pose_stamped_pub.publish(psta)
-			#print "Sending goal Message"
-			self.move_to_goal_pub.publish(g)
+		# newnppose = vector3_to_numpy(data.pose.position)
+		# if np.linalg.norm(newnppose - self.lastnppose) >.05 :
 
-		self.lastnp_pose = newnppose
-		
+		self.goal_pose_stamped_pub.publish(data)
+		self.move_to_goal_pub.publish(g)
 
+		# self.lastnp_pose = newnppose
 
 	def cancelcallback(self, msg) :
 		print "command in"

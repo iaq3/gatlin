@@ -1,5 +1,5 @@
 string command
 string object_pose_topic
 string target_pose_topic
-geometry_msgs/Pose object_pose
-geometry_msgs/Pose target_pose
+geometry_msgs/PoseStamped object_pose
+geometry_msgs/PoseStamped target_pose

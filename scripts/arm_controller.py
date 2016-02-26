@@ -28,7 +28,7 @@ class Gripper:
 		self.set(0.3)
 
 
-class Gatlin_Server:
+class Arm_Controller:
 	def __init__(self):
 		# Give the launch a chance to catch up
 		rospy.sleep(5)
@@ -36,8 +36,8 @@ class Gatlin_Server:
 		# Initialize the move_group API
 		moveit_commander.roscpp_initialize(sys.argv)
 
-		rospy.init_node('Gatlin_Server')
-		print "Launched Gatlin Server"
+		rospy.init_node('Arm_Controller')
+		rospy.loginfo("Launched Arm Controller")
 
 		# constants
 		self.GROUP_NAME_ARM = 'arm'
@@ -49,13 +49,9 @@ class Gatlin_Server:
 
 		self.test_pose_publisher = rospy.Publisher('/test_arm_pose', PoseStamped)
 
-
 		rospy.Subscriber("/arm_target_pose", PoseStamped, self.move_arm_to_pose, queue_size=1)
 		self.robot_name = "gatlin"
 		move_arm_service = createService('move/arm', MoveRobot, self.handle_move_arm, self.robot_name)
-
-		# rospy.Subscriber("/target_pos", Vector3, self.pos_callback, queue_size=1)
-		rospy.Subscriber("/target_orientation", Vector3, self.orientation_cb, queue_size=1)
 
 		# We need a tf listener to convert poses into arm reference base
 		self.tfl = tf.TransformListener()
@@ -117,8 +113,6 @@ class Gatlin_Server:
 		rospy.spin()
 
 	def MoveToPoseWithIntermediate(self, ps, offsets) :
-		# arm = self.limb_left if limb == 'left' else self.limb_right
-		# hand_pose = self.getCurrentPose(arm)
 		success = False
 		for offset in offsets:
 			# interpose = getOffsetPose(hand_pose, offset)
@@ -130,7 +124,7 @@ class Gatlin_Server:
 		return success
 
 	def MoveToPose(self, ps, name) :
-		newpose = deepcopy(ps)
+		newpose = self.transform_pose(self.REFERENCE_FRAME, ps)
 		down = Quaternion(-0.00035087, 0.73273, 0.00030411, 0.68052)
 		newpose.pose.orientation = down
 		# newpose.position.z -= .03
@@ -143,15 +137,10 @@ class Gatlin_Server:
 			return False
 
 	def move_arm_to_pose(self, ps):
-		# arm_target_pose = PoseStamped()
-		# arm_target_pose.header.frame_id = self.REFERENCE_FRAME
-		# arm_target_pose.header.stamp = rospy.Time.now()
-		# arm_target_pose.pose = deepcopy(pose)
 		arm_target_pose = deepcopy(ps)
 		arm_target_pose.header.stamp = rospy.Time.now()
 		
 		self.test_pose_publisher.publish(arm_target_pose)
-		# rospy.logerr(arm_target_pose)
 		
 		self.arm.set_pose_target(arm_target_pose)
 		success = self.arm.go()
@@ -233,5 +222,21 @@ class Gatlin_Server:
 		else:
 			return
 
+	# transform the pose stamped to the new frame
+	def transform_pose(self, new_frame, pose):
+		if pose.header.frame_id == new_frame:
+			return pose
+		try:
+			ps = deepcopy(pose)
+			ps.header.stamp = rospy.Time(0)
+			self.tfl.waitForTransform(ps.header.frame_id, new_frame, rospy.Time(0), rospy.Duration(4.0))
+			new_pose = self.tfl.transformPose(new_frame, ps)
+			new_pose.header.stamp = deepcopy(pose.header.stamp)
+			return new_pose
+		except Exception as e:
+			rospy.logerr(e)
+			rospy.logerr("no transform")
+			return None
+
 if __name__ == "__main__":
-	Gatlin_Server()
+	Arm_Controller()

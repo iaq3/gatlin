@@ -34,16 +34,12 @@ class Tf_Transformer(Thread):
 			
 			self.rate.sleep()
 
-
 	def get_pose(self):
 		try:
 			ps = PoseStamped()
 
 			ps.pose.orientation = Quaternion(0,0,0,1)
 			ps.pose.position = Point(0,0,0)
-
-			# print "self.child, self.parent"
-			# print self.child, self.parent
 
 			ps.header.frame_id = self.child
 			# ps.header.stamp =  self.tfl.getLatestCommonTime(self.child, self.parent)
@@ -77,7 +73,7 @@ class Tf_to_Unity:
 
 		transform_pubs = []
 
-		kinect_in_base = Tf_Transformer(self.tfl, KINECT_FRAME, BASE_FRAME, rospy.Rate(10)) # stagger the rates for less msg collisions?
+		kinect_in_base = Tf_Transformer(self.tfl, KINECT_FRAME, BASE_FRAME, rospy.Rate(10)) # use different rates for less msg collisions?
 		transform_pubs.append(kinect_in_base)
 
 		gripper_in_base = Tf_Transformer(self.tfl, TOOL_FRAME, BASE_FRAME, rospy.Rate(9))
@@ -85,7 +81,6 @@ class Tf_to_Unity:
 
 		# arm_base_in_base = Tf_Transformer(self.tfl, ARM_BASE_FRAME, BASE_FRAME, rospy.Rate(1))
 		# transform_pubs.append(arm_base_in_base)
-
 
 		for tp in transform_pubs:
 			tp.start()

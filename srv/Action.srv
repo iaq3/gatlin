@@ -1,5 +1,4 @@
 string action
-string[] topics
-geometry_msgs/Pose[] poses
+string args
 ---
 bool success

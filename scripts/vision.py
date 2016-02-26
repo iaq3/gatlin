@@ -14,7 +14,7 @@ from copy import deepcopy
 import math
 import tf
 from tf.transformations import *
-#from config import *
+from config import *
 import sys, os
 
 def PointDistance (p1, p2) :
@@ -81,7 +81,6 @@ def getClosestIndex(liveFilterArray, dist, newpoint) : #, pastPoints
 	if shortestDistanceIndex >-1 :
 		return (shortestDistanceIndex, shortestDistance)
 	return (-1, 100)
-
 
 
 class HSVMask:
@@ -175,7 +174,7 @@ class HSVMask:
 
 		key = cv2.waitKey(0) & 0xFF
 
-		inc =2
+		inc = 1
 		if self.param == "D":
 			inc = 10
 
@@ -227,13 +226,13 @@ class Vision:
 
 	def __init__(self):
 
-		self.vision_type = "kinect"#rospy.get_namespace()[1:-1]
+		self.vision_type = "kinect"
 
 		rospy.init_node("%s_vision" % self.vision_type)
 
 		print "Initializing %s Vision" % self.vision_type
 
-		self.num_blocks = 3#rospy.get_param("/num_blocks")
+		# self.num_blocks = 3#rospy.get_param("/num_blocks")
 
 		rospy.set_param("/camera/driver/depth_registration", True)
 
@@ -333,7 +332,6 @@ class Vision:
 		
 		object_points = []
 		for bi in objs:
-			# bi = objs[0]
 			radius = bi[2]
 			distance = 0
 			if self.depth_image != None :
@@ -536,13 +534,6 @@ class Vision:
 	#position and size of the ball to determine pose
 	#relative to the camera, (using kinect specs)
 	def project(self, point, distance, width, height) :
-		#print point
-		#print width
-		#print height
-		#print "radius"
-		#print radius
-		#print "Not using depth"
-
 		xFOV = 63.38
 		yFOV = 48.25
 		cx = width /2
