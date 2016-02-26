@@ -127,7 +127,7 @@ class Arm_Controller:
 		newpose = self.transform_pose(self.REFERENCE_FRAME, ps)
 		down = Quaternion(-0.00035087, 0.73273, 0.00030411, 0.68052)
 		newpose.pose.orientation = down
-		newpose.pose.position.z -= .015
+		# newpose.pose.position.z -= .015
 
 		if self.move_arm_to_pose(newpose) :
 			rospy.loginfo("SUCCEEDED: %s" % name)
