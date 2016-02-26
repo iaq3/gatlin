@@ -28,12 +28,12 @@ class DynamicPose:
 		self.pose_sub = None
 		self.reset()
 
-	def subscribe(topic):
+	def subscribe(self, topic):
 		self.reset()
 		self.pose_sub = rospy.Subscriber(topic, PoseStamped, self.set_pose, queue_size = 1)
 		self.topic = topic
 
-	def reset():
+	def reset(self):
 		if self.pose_sub:
 			self.pose_sub.unregister()
 		self.ps = PoseStamped()
@@ -41,7 +41,7 @@ class DynamicPose:
 		self.pose_sub = None
 		self.topic = ""
 
-	def set_pose(ps):
+	def set_pose(self, ps):
 		self.ps = self.transform_pose(self.FIXED_FRAME, ps)
 		self.last_update = time.time()
 
@@ -66,7 +66,7 @@ class Nav_Manip_Controller :
 	def servo_base_to_pos(self, desired_pos, actual_pos) :
 		desired_pos = vector3_to_numpy(desired_pos)
 		actual_pos = vector3_to_numpy(actual_pos)
-		actual_pos[2], desired_pos[2] = 0
+		actual_pos[2] = 0
 
 		error_vec =  actual_pos - desired_pos
 		error = np.linalg.norm(error_vec)
@@ -143,13 +143,13 @@ class Nav_Manip_Controller :
 			if time.time() - dynamic_pose.last_update > 1 :
 				holding_object = True
 
-		self.publishResponse("Grabbed "+self.object_name)
+		self.publishResponse("Grabbed "+dynamic_pose.topic)
 
 	def releaseObject(self, dynamic_pose) :
 		self.publishResponse("Releasing object to "+dynamic_pose.topic)
 
-		base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.topic)
-		resp = self.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_pose.pose)
+		base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
+		resp = self.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_pose)
 		if not resp.success:
 				rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
 

@@ -21,7 +21,9 @@
 	<arg name="simulation" value="$(arg sim)"/>
 </include>
 
-<!-- <node pkg="gatlin" type="gatlin_mott.py" name="gatlin_mott" output="screen"/> -->
+<node pkg="gatlin" type="gatlin_mott.py" name="gatlin_mott" output="screen"/>
+
+<node pkg="gatlin" type="vision.py" name="vision" output="screen"/> 
 
 <node pkg="gatlin" type="arm_controller.py" name="arm_controller" output="screen"/>
 
@@ -52,7 +54,6 @@
 
 <!-- <node pkg="topic_tools" type="throttle" name="camera_throttle" args="messages camera/rgb/image_rect_color 2"/> -->
 
-<node name="vision" pkg="gatlin" type="vision.py" output="screen"/> 
 
 <include file="$(find turtlebot_navigation)/launch/includes/gmapping.launch.xml"/>
 

@@ -31,13 +31,13 @@ class GmapperConverter:
 		#self.time_pub = rospy.Publisher( "/gatlin/time", Time)
 
 		self.transform_listener = tf.TransformListener()
-		self.map_pub = rospy.Publisher("/map_pose" , Pose)
+		self.map_pub = rospy.Publisher("/map_pose" , PoseStamped)
 
 		self.robot_pose_sub = rospy.Subscriber("/robot_pose_ekf/odom_combined_throttled", PoseWithCovarianceStamped, self.robotposecallback, queue_size = 1)
 		self.robot_pose_pub = rospy.Publisher("/robot_pose", PoseStamped)
 		
 		self.goal_pose_stamped_pub = rospy.Publisher("/goal_pose_stamped", PoseStamped)		
-		self.move_to_goal_sub = rospy.Subscriber("/move_to_goal", Pose, self.goalcallback, queue_size = 1)
+		self.move_to_goal_sub = rospy.Subscriber("/move_to_goal", PoseStamped, self.goalcallback, queue_size = 1)
 		self.move_to_goal_pub = rospy.Publisher("/move_base/goal", MoveBaseActionGoal)
 		self.move_to_goal_count = 0
 
@@ -105,9 +105,5 @@ class GmapperConverter:
 				return
 		self.LastGoalID = None
 
-def main(args):
-	print "initialized node Gmapper Converter"
-	ic = GmapperConverter()
-
 if __name__ == '__main__':
-    main(sys.argv)
+    GmapperConverter()
