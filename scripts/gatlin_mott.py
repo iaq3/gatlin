@@ -74,12 +74,13 @@ class Nav_Manip_Controller :
 		forward = error_vec[0]
 		turn = error_vec[1]
 
-		error_angle = angle(error_vec, np.array([1,0,0]))
-		if error_angle > 0.25 :
+		error_angle = angle(error_vec, desired_pos)
+		# rospy.logerr(error_angle)
+		if error_angle > 0.25  and error_angle < pi - 0.25: #???
 			forward = 0
 
-		maxVel = .08
-		minVel = .04
+		maxVel = .07
+		minVel = .05
 		mag = (turn**2 + forward**2)**.5
 		if (mag > maxVel) :
 			turn = (turn/mag) * maxVel
@@ -114,8 +115,8 @@ class Nav_Manip_Controller :
 		self.publishResponse("Servo base to "+dynamic_pose.topic)
 
 		rate = rospy.Rate(30)
-		desired_pos = Point(.25,0,0)
-		goal_tolerence = .02
+		desired_pos = Point(.29,0,0)
+		goal_tolerence = .015
 
 		base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
 		while self.servo_base_to_pos(desired_pos, base_pose.pose.position) > goal_tolerence :
@@ -129,6 +130,7 @@ class Nav_Manip_Controller :
 			resp = self.move_arm(OPEN_GRIPPER, PoseStamped())
 
 			base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
+			base_pose.pose.position.z -= .015 #??? maybe not best practice
 			resp = self.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_pose)
 			if not resp.success:
 				rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
@@ -159,12 +161,18 @@ class Nav_Manip_Controller :
 
 	def run_mott_sequence(self) :
 		self.moveBaseToDynamicPos(self.object_pose)
+		rospy.sleep(1)
 		self.servoBaseToDynamicPos(self.object_pose)
+		rospy.sleep(1)
 		self.grabObject(self.object_pose)
+		rospy.sleep(1)
 
 		self.moveBaseToDynamicPos(self.target_pose)
+		rospy.sleep(1)
 		self.servoBaseToDynamicPos(self.target_pose)
+		rospy.sleep(1)
 		self.releaseObject(self.target_pose)
+		rospy.sleep(1)
 
 		self.publishResponse("finished mott") #string must contain finished
 
