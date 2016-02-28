@@ -90,7 +90,7 @@ class Nav_Manip_Controller :
 			turn = (turn/mag) * minVel
 			forward = (forward/mag) * minVel
 
-		turn *= 1.5
+		turn *= 1.7
 
 		msg = Twist (Point(forward, 0.0, 0.0), Point(0.0, 0.0, turn))
 		self.base_joystick_pub.publish(msg)
@@ -130,10 +130,14 @@ class Nav_Manip_Controller :
 			resp = self.move_arm(OPEN_GRIPPER, PoseStamped())
 
 			base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
-			base_pose.pose.position.z -= .015 #??? maybe not best practice
+			base_pose.pose.position.z -= .025 #??? maybe not best practice
 			resp = self.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_pose)
 			if not resp.success:
 				rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
+				# try moving to it again
+				self.servoBaseToDynamicPos(self.object_pose)
+				rospy.sleep(1)
+				continue
 
 			resp = self.move_arm(CLOSE_GRIPPER, PoseStamped())
 

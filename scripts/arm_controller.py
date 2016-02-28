@@ -12,12 +12,14 @@ from gatlin.srv import *
 from config import *
 from tf.transformations import *
 from copy import deepcopy
+from arbotix_python.arbotix import ArbotiX
 
 class Gripper:
 	def __init__(self):
 		self.gripper_pub = rospy.Publisher('/gripper_joint/command', Float64)
-
+		self.gripper_sub = rospy.Subscriber("/move/gripper", Int32, self.set, queue_size=1)
 	def set(self, val):
+		rospy.logerr(type(val))
 		self.gripper_pub.publish((1-val)*-2.53)
 		rospy.sleep(2)
 
@@ -27,11 +29,39 @@ class Gripper:
 	def close(self, block=False):
 		self.set(0.3)
 
+class ArbotixROS(ArbotiX):
+    
+    def __init__(self):
+        # pause = False
+
+        # load configurations    
+        port = rospy.get_param("~port", "/dev/ttyUSB0")
+        baud = int(rospy.get_param("~baud", "115200"))
+
+        # self.rate = rospy.get_param("~rate", 100.0)
+        # self.fake = rospy.get_param("~sim", False)
+
+        # self.use_sync_read = rospy.get_param("~sync_read",True)      # use sync read?
+        # self.use_sync_write = rospy.get_param("~sync_write",True)    # use sync write?
+
+        # setup publishers
+        # self.diagnostics = DiagnosticsPublisher()
+        # self.joint_state_publisher = JointStatePublisher()
+
+        # start an arbotix driver
+        # if not self.fake:
+        ArbotiX.__init__(self, port, baud)        
+        rospy.sleep(1.0)
+        rospy.loginfo("Started ArbotiX connection on port " + port + ".")
+        # else:
+        #     rospy.loginfo("ArbotiX being simulated.")
+
+
 
 class Arm_Controller:
 	def __init__(self):
 		# Give the launch a chance to catch up
-		rospy.sleep(5)
+		# rospy.sleep(5)
 
 		# Initialize the move_group API
 		moveit_commander.roscpp_initialize(sys.argv)
@@ -110,6 +140,17 @@ class Arm_Controller:
 		# self.arm.go()
 		# rospy.sleep(1)
 
+		self.ar = ArbotixROS()
+
+		rate = rospy.Rate(30)
+		while not rospy.is_shutdown():
+			
+			# rospy.logerr(self.ar.getVoltage(4))
+			# rospy.logerr(self.ar.getSpeed(5))
+			rospy.logerr(self.ar.getPosition(1))
+
+			rate.sleep()
+
 		rospy.spin()
 
 	def MoveToPoseWithIntermediate(self, ps, offsets) :
@@ -118,6 +159,7 @@ class Arm_Controller:
 			# interpose = getOffsetPose(hand_pose, offset)
 			interpose = getOffsetPose(ps, offset)
 			success = self.MoveToPose(interpose, "MoveToIntermediatePose")
+			rospy.sleep(1)
 
 		success = self.MoveToPose(ps, "MoveToPose")
 
