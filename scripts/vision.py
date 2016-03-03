@@ -14,7 +14,7 @@ from copy import deepcopy
 import math
 import tf
 from tf.transformations import *
-#from config import *
+from config import *
 import sys, os
 
 def PointDistance (p1, p2) :
@@ -83,7 +83,6 @@ def getClosestIndex(liveFilterArray, dist, newpoint) : #, pastPoints
 	return (-1, 100)
 
 
-
 class HSVMask:
 	def __init__(self, color, shape_name, camera, mask, num_blobs=1, calibrated=True):
 		self.color = color
@@ -101,12 +100,12 @@ class HSVMask:
 
 		self.window_name = '%s %s vision' % (color, camera)
 		self.filters = []
-		self.base_pubs = []
+		self.obj_pose_pubs = []
 		# self.base_stamped_pubs = []
 		for i in range(0, num_blobs):
-			base_pub = rospy.Publisher("/%s_%s_%d_pose" % (color, camera, i), Pose, queue_size=1)
+			obj_pose_pub = rospy.Publisher("/%s_%s_%d_pose" % (color, camera, i), PoseStamped, queue_size=1)
 			# base_stamped_pub = rospy.Publisher("/%s_%s_%d_pose_stamped" % (color, camera, i), PoseStamped, queue_size=1)
-			self.base_pubs.append(base_pub)
+			self.obj_pose_pubs.append(obj_pose_pub)
 			# self.base_stamped_pubs.append(base_stamped_pub)
 			new_filter = LiveFilter()
 			self.filters.append(new_filter)
@@ -175,7 +174,7 @@ class HSVMask:
 
 		key = cv2.waitKey(0) & 0xFF
 
-		inc =2
+		inc = 1
 		if self.param == "D":
 			inc = 10
 
@@ -215,31 +214,25 @@ class HSVMask:
 			print self.m
 			print "#############################################"
 
-	def transform_publish(self, i, kinect_pose):
-		basePose = Pose()
-		# basePose.position = self.kinect_to_base_pt(kinect_pose.position)
-		# rospy.logerr(basePose)
-		# self.base_pubs[i].publish(basePose)
-		self.base_pubs[i].publish(kinect_pose)
-		
-		# basePoseStamped = PoseStamped()
-		# basePoseStamped.header.frame_id = self.BASE_FRAME
-		# basePoseStamped.header.stamp = rospy.Time.now()
-		# basePoseStamped.pose = deepcopy(basePose)
-		# self.base_stamped_pubs[i].publish(basePoseStamped)
+	def publish_stamped(self, i, kinect_pose):
+		kinectPoseStamped = PoseStamped()
+		kinectPoseStamped.header.frame_id = self.CAMERA_FRAME
+		kinectPoseStamped.header.stamp = rospy.Time.now()
+		kinectPoseStamped.pose = deepcopy(kinect_pose)
+		self.obj_pose_pubs[i].publish(kinectPoseStamped)
 
 
 class Vision:
 
 	def __init__(self):
 
-		self.vision_type = "kinect"#rospy.get_namespace()[1:-1]
+		self.vision_type = "kinect"
 
 		rospy.init_node("%s_vision" % self.vision_type)
 
 		print "Initializing %s Vision" % self.vision_type
 
-		self.num_blocks = 3#rospy.get_param("/num_blocks")
+		# self.num_blocks = 3#rospy.get_param("/num_blocks")
 
 		rospy.set_param("/camera/driver/depth_registration", True)
 
@@ -272,10 +265,23 @@ class Vision:
 			"circle",
 			"kinect",
 			# {'H': {'max': 36, 'min': 24}, 'S': {'max': 255, 'min': 70}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 231.0, 'min': 40.0}},
-			{'H': {'max': 68, 'min': 38}, 'S': {'max': 255, 'min': 199}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 151.0, 'min': 30.0}},
+			# {'H': {'max': 68, 'min': 38}, 'S': {'max': 255, 'min': 199}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 151.0, 'min': 30.0}},
+			# {'H': {'max': 68, 'min': 30}, 'S': {'max': 197, 'min': 79}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 155.0, 'min': 92.0}},
+			# {'H': {'max': 68, 'min': 30}, 'S': {'max': 255, 'min': 151}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 157, 'min': 92.0}},
+			{'H': {'max': 68, 'min': 30}, 'S': {'max': 255, 'min': 100}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 185, 'min': 103.0}},
 			calibrated=True, num_blobs = 3
 		)
 		self.masks.append(self.green_kinect_mask)
+		
+		self.pink_kinect_mask = HSVMask(
+			"pink",
+			"circle",
+			"kinect",
+			# {'H': {'max': 178, 'min': 160}, 'S': {'max': 255.0, 'min': 154.0}, 'D': {'max': 2500, 'min': 100}, 'V': {'max': 255.0, 'min': 70.0}},
+			{'H': {'max': 180, 'min': 124}, 'S': {'max': 219, 'min': 82}, 'D': {'max': 2500, 'min': 100}, 'V': {'max': 125, 'min': 66.0}},
+			calibrated=True, num_blobs = 1
+		)
+		self.masks.append(self.pink_kinect_mask)
 		
 
 
@@ -316,18 +322,17 @@ class Vision:
 			print e
 
 		for mask in self.masks:
-			# print "self.find_project_transform_publish(%s)" % mask.color
-			self.find_project_transform_publish(mask)
+			# print "self.find_project_publish_stamped(%s)" % mask.color
+			self.find_project_publish_stamped(mask)
 
 	#given an hsv_mask, finds the number of blobs, filters, and publishes if it's consistent
 	#TODO get multi ball tracking working and staying consistent
-	def find_project_transform_publish(self, hsv_mask):
+	def find_project_publish_stamped(self, hsv_mask):
 		objs = self.findBlobsofHue(hsv_mask, hsv_mask.num_blobs , self.rgb_image)
 		#print "-------------"
 		
 		object_points = []
 		for bi in objs:
-			# bi = objs[0]
 			radius = bi[2]
 			distance = 0
 			if self.depth_image != None :
@@ -385,8 +390,8 @@ class Vision:
 				addedPoints.append(bestPose.position)
 				if (output_object) :
 					try :
-						# hsv_mask.base_pubs[i].publish(bestPose)
-						hsv_mask.transform_publish(i, bestPose)
+						# hsv_mask.obj_pose_pubs[i].publish(bestPose)
+						hsv_mask.publish_stamped(i, bestPose)
 					except CvBridgeError, e:
 						print e
 				for point_index in hsv_counts[i][2] :
@@ -515,7 +520,7 @@ class Vision:
 
 				
 				# if radius > 3 and area > 80 and similarity < 2.0:
-				if radius > 3 and area > 150:
+				if radius > 3 and area > 100:
 					blobsFound.append([x,y,radius])
 					cv2.circle(res, (int(x), int(y)), int(radius), (0,255,255), 2)
 
@@ -530,13 +535,6 @@ class Vision:
 	#position and size of the ball to determine pose
 	#relative to the camera, (using kinect specs)
 	def project(self, point, distance, width, height) :
-		#print point
-		#print width
-		#print height
-		#print "radius"
-		#print radius
-		#print "Not using depth"
-
 		xFOV = 63.38
 		yFOV = 48.25
 		cx = width /2

@@ -195,11 +195,11 @@ def get_current_pose(arm):
     p.orientation = Quaternion(ori[0],ori[1],ori[2],ori[3])
     return p
 
-def getOffsetPose(pose, offset) :
-    offsetpose = deepcopy(pose)
-    offsetpose.position.x += offset.x
-    offsetpose.position.y += offset.y
-    offsetpose.position.z += offset.z
+def getOffsetPose(ps, offset) :
+    offsetpose = deepcopy(ps)
+    offsetpose.pose.position.x += offset.x
+    offsetpose.pose.position.y += offset.y
+    offsetpose.pose.position.z += offset.z
     return offsetpose
 
 def getLocalOffsetPose(pose, offset) :

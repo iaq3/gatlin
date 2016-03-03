@@ -1,6 +1,4 @@
-uint8 action
-string limb
-string arg
-geometry_msgs/Pose pose
+string action
+string args
 ---
 bool success
