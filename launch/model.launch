@@ -37,7 +37,7 @@
 
 	<include file="$(find gatlin)/launch/arm_minimal.launch">
 		<arg name="gui" value="$(arg gui)"/>
-		<arg name="simulation" value="$(arg sim)"/>
+		<arg name="sim" value="$(arg sim)"/>
 		<arg name="rviz" value="false"/>
 	</include>
 
