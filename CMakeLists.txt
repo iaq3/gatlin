@@ -13,7 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   moveit_commander
   octomap
   octomap_msgs
-  rgbdslam
+#  rgbdslam
 )
 
 ## System dependencies are found with CMake's conventions
@@ -168,6 +168,6 @@ include_directories(
 # catkin_add_nosetests(test)
 
 
-include_directories(include ${catkin_INCLUDE_DIRS} ${OCTOMAP_INCLUDE_DIRS})
-add_executable(octomap_server scripts/octomap_server.cpp)
-target_link_libraries(octomap_server ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES})
+# include_directories(include ${catkin_INCLUDE_DIRS} ${OCTOMAP_INCLUDE_DIRS})
+# add_executable(octomap_server scripts/octomap_server.cpp)
+# target_link_libraries(octomap_server ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES})

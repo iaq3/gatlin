@@ -21,3 +21,12 @@ Autopilot Control
     click Send to transmit commands to the autopilot's command queue (automatically sets Control Source to Autopilot).
     click Clear to clear autopilot command queue and current target.
     click Reset to reset Autopilot, PTAM and EKF.
+
+
+Simulator:
+roslaunch turtlebot_gazebo turtlebot_world.launch
+roslaunch turtlebot_rviz_launchers view_robot.launch
+
+rosdep update
+rosdep install rgbdslam
+catkin_make 
