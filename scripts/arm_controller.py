@@ -140,16 +140,16 @@ class Arm_Controller:
 		# self.arm.go()
 		# rospy.sleep(1)
 
-		self.ar = ArbotixROS()
+		# self.ar = ArbotixROS()
 
-		rate = rospy.Rate(30)
-		while not rospy.is_shutdown():
+		# rate = rospy.Rate(30)
+		# while not rospy.is_shutdown():
 			
-			# rospy.logerr(self.ar.getVoltage(4))
-			# rospy.logerr(self.ar.getSpeed(5))
-			rospy.logerr(self.ar.getPosition(1))
+		# 	# rospy.logerr(self.ar.getVoltage(4))
+		# 	# rospy.logerr(self.ar.getSpeed(5))
+		# 	rospy.logerr(self.ar.getPosition(1))
 
-			rate.sleep()
+		# 	rate.sleep()
 
 		rospy.spin()
 

@@ -128,6 +128,24 @@ class HSVMask:
 
 
 
+	def resetMask(self):
+		limit = {}
+		limit["H"] = {}
+		limit["S"] = {}
+		limit["V"] = {}
+		limit["D"] = {}
+		limit["H"]["min"] = 0
+		limit["S"]["min"] = 0
+		limit["V"]["min"] = 0
+		limit["D"]["min"] = -1.0
+		limit["H"]["max"] = 180
+		limit["S"]["max"] = 255
+		limit["V"]["max"] = 255
+		limit["D"]["max"] = 10000.0
+		for param in self.m:
+			for arg in self.m[param]:
+				self.m[param][arg] = limit[param][arg]
+
 	def changeMask(self, param, arg, inc):
 		limit = {}
 		limit["H"] = {}
@@ -158,6 +176,18 @@ class HSVMask:
 		
 		print "%s %s" % (param, arg)
 		print self.m[param][arg]
+
+	def auto_calibrate(self):
+
+		# set all ranges to max, min
+		self.resetMask()
+		# tune H
+		inc = 1
+		self.param = "H"
+		self.changeMask(self.param, "min", inc)
+		# tune S and V
+
+
 
 	def calibrate(self):
 		if self.prompt :
@@ -260,6 +290,7 @@ class Vision:
 		# )
 		# self.masks.append(self.blue_kinect_mask)
 
+
 		self.green_kinect_mask = HSVMask(
 			"green",
 			"circle",
@@ -268,8 +299,10 @@ class Vision:
 			# {'H': {'max': 68, 'min': 38}, 'S': {'max': 255, 'min': 199}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 151.0, 'min': 30.0}},
 			# {'H': {'max': 68, 'min': 30}, 'S': {'max': 197, 'min': 79}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 155.0, 'min': 92.0}},
 			# {'H': {'max': 68, 'min': 30}, 'S': {'max': 255, 'min': 151}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 157, 'min': 92.0}},
-			{'H': {'max': 68, 'min': 30}, 'S': {'max': 255, 'min': 100}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 185, 'min': 103.0}},
-			calibrated=True, num_blobs = 3
+			
+			# {'H': {'max': 68, 'min': 30}, 'S': {'max': 255, 'min': 100}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 185, 'min': 103.0}},
+			{'H': {'max': 180, 'min': 0}, 'S': {'max': 255, 'min': 0}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 255, 'min': 0.0}},
+			calibrated=False, num_blobs = 3
 		)
 		self.masks.append(self.green_kinect_mask)
 		
@@ -528,6 +561,7 @@ class Vision:
 
 		if not hsv_mask.calibrated:
 			hsv_mask.calibrate()
+			# hsv_mask.auto_calibrate()
 
 		return blobsFound
 
