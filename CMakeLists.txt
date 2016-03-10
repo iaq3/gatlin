@@ -11,9 +11,9 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   geometry_msgs
   moveit_commander
-  octomap
-  octomap_msgs
-#  rgbdslam
+  # octomap
+  # octomap_msgs
+  # rgbdslam
 )
 
 ## System dependencies are found with CMake's conventions
