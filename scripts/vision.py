@@ -279,11 +279,21 @@ class Vision:
 		# 	"blue",
 		# 	"square",
 		# 	"kinect",
-		# 	{'H': {'max': 140.0, 'min': 100.0}, 'S': {'max': 180.0, 'min': 83.0}, 'D': {'max': 1.7, 'min': 1.4}, 'V': {'max': 255, 'min': 115.0}},
+		# 	# {'H': {'max': 140.0, 'min': 100.0}, 'S': {'max': 180.0, 'min': 83.0}, 'D': {'max': 1.7, 'min': 1.4}, 'V': {'max': 255, 'min': 115.0}},
 		# 	calibrated=True,
-		# 	num_blobs=self.num_blocks
+		# 	# num_blobs=self.num_blocks
 		# )
 		# self.masks.append(self.blue_kinect_mask)
+
+
+		self.purple_kinect_mask = HSVMask(
+			"purple",
+			"circle",
+			"kinect",
+			{'H': {'max': 130, 'min': 113}, 'S': {'max': 210, 'min': 144}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 107, 'min': 51}},
+			calibrated=False, num_blobs=1
+		)
+		self.masks.append(self.purple_kinect_mask)
 
 
 		self.green_kinect_mask = HSVMask(
@@ -296,7 +306,7 @@ class Vision:
 			# {'H': {'max': 68, 'min': 30}, 'S': {'max': 255, 'min': 151}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 157, 'min': 92.0}},
 			
 			{'H': {'max': 68, 'min': 30}, 'S': {'max': 255, 'min': 100}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 185, 'min': 103.0}},
-			calibrated=False, num_blobs = 3
+			calibrated=True, num_blobs = 3
 		)
 		self.masks.append(self.green_kinect_mask)
 		
@@ -316,10 +326,10 @@ class Vision:
 
 		if self.vision_type == "kinect":
 			self.rgb_topic = "/camera/rgb/image_rect_color_throttled"
-			# self.rgb_topic = "/camera/rgb/image_color"
+			self.rgb_topic = "/camera/rgb/image_color"
 
 			self.depth_topic = "/camera/depth_registered/hw_registered/image_rect_raw_throttled"
-			# self.depth_topic = "/camera/depth/image"
+			self.depth_topic = "/camera/depth/image"
 			#self.depth_topic = "/camera/depth_registered/hw_registered/image_rect_raw/compressed"
 			#rostopic list "/camera/depth/image_rect/compressed"
 			#self.depth_topic = "/camera/depth_registered/hw_registered/image_rect_raw"
@@ -573,7 +583,8 @@ class Vision:
 				try:
 					self.select_mask[y+c-region][x+r-region] = 255 if select else 0 
 				except:
-					rospy.logerr("Error selectRegion")
+					continue
+					# rospy.logerr("Error selectRegion")
 
 	def onmouse(self,event,x,y,flags,params):
 		if event == cv2.EVENT_LBUTTONDOWN:
@@ -623,7 +634,8 @@ class Vision:
 			if self.prompt :
 				# set all ranges to max, min
 				hsv_mask.resetMask()
-				print "Calibrating %s %s HSV Mask" % (hsv_mask.color, hsv_mask.camera)
+				print "Auto Calibrating %s %s HSV Mask" % (hsv_mask.color, hsv_mask.camera)
+				print "L Click to select pixels, R Click to unselect."
 				print "Please select region to calibrate with, then press space."
 				self.prompt = False
 			cv2.imshow(window_name, self.select_img)
@@ -635,10 +647,9 @@ class Vision:
 
 		def tune(in_thresh, out_thresh, param, arg, inc):
 			print "Tuning %s %s" % (param, arg)
-			init_in_mask, init_out_mask = self.getSelectionStats(hsv_mask, rgb_image_in, depth_image_in)
-			in_mask, out_mask = init_in_mask, init_out_mask
+			in_mask, out_mask = 1.0, 1.0
 			changed = True
-			while changed and in_mask > init_in_mask*in_thresh or out_mask > init_out_mask*out_thresh:
+			while changed and in_mask > in_thresh or out_mask > out_thresh:
 				changed = hsv_mask.changeMask(param, arg, inc)
 				in_mask, out_mask = self.getSelectionStats(hsv_mask, rgb_image_in, depth_image_in)
 				# time.sleep(.05)
@@ -647,16 +658,15 @@ class Vision:
 			print "%s %s: %d" % (param, arg, hsv_mask.m[param][arg])
 			print "######################################"
 
-		in_thresh = .92
-		tune(in_thresh, 1.0, "H", "min", 1)
-		tune(in_thresh, 1.0, "H", "max", -1)
-		tune(in_thresh, 1.0, "S", "min", 1)
-		tune(in_thresh, 1.0, "S", "max", -1)
-		tune(in_thresh, 1.0, "V", "min", 1)
-		tune(in_thresh, 1.0, "V", "max", -1)
+		tune(.92, 1.0, "H", "min", 1)
+		tune(.91, 1.0, "H", "max", -1)
+		tune(.90, 1.0, "S", "min", 1)
+		tune(.89, 1.0, "S", "max", -1)
+		tune(.88, 1.0, "V", "min", 1)
+		tune(.87, 1.0, "V", "max", -1)
 
 		hsv_mask.calibrated = True
-		print "############## Calibrated %s %s Mask ##############" % (hsv_mask.color, hsv_mask.camera)
+		print "############## Auto Calibrated %s %s Mask ##############" % (hsv_mask.color, hsv_mask.camera)
 		print hsv_mask.m
 		print "#############################################"
 
