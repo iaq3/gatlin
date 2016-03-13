@@ -227,8 +227,8 @@ class Nav_Manip_Controller :
 			self.publishResponse("quitting on user command") 
 
 	def base_to_sequence(self) :
-		self.moveBaseToDynamicPos()
-		self.servoBaseToDynamicPos()
+		self.moveBaseToDynamicPos(self.target_pose)
+		self.servoBaseToDynamicPos(self.target_pose)
 		
 		if self.action_state == self.RUNNING :
 			self.publishResponse("finished moving base to target")
