@@ -12,6 +12,7 @@ from gatlin.msg import *
 from gatlin.srv import *
 from config import *
 
+
 def distance(v1,v2):
 	return np.linalg.norm(vector3_to_numpy(v1) - vector3_to_numpy(v2))
 
@@ -98,6 +99,9 @@ class Nav_Manip_Controller :
 		return error
 
 	def moveBaseToDynamicPos(self, dynamic_pose) :
+		if self.command_state == self.CANCELLED :
+			return
+
 		rate = rospy.Rate(30)
 		goal_tolerence = .7
 
@@ -105,13 +109,27 @@ class Nav_Manip_Controller :
 			self.publishResponse("Gmap base to "+dynamic_pose.topic)
 			
 			self.gmapBaseTo(dynamic_pose.ps)
-
-			while self.distanceToPose(dynamic_pose.ps) > goal_tolerence :
+			#now this contains logic to cancel, pause, and resume
+			while self.distanceToPose(dynamic_pose.ps) > goal_tolerence : 
+				if self.command_state == self.CANCELLED :
+					self.cancelgmapBaseTo()
+					return
+				paused = False
+				while self.command_state == self.PAUSING :
+					if not paused :
+						paused = True
+						self.cancelgmapBaseTo()
+					rate.sleep()
+				if paused and self.command_state == self.RUNNING:
+					self.gmapBaseTo(dynamic_pose.ps)
 				rate.sleep()
 
 			self.cancelgmapBaseTo()
 
 	def servoBaseToDynamicPos(self, dynamic_pose) :
+		if self.command_state == self.CANCELLED :
+			return
+
 		self.publishResponse("Servo base to "+dynamic_pose.topic)
 
 		rate = rospy.Rate(30)
@@ -120,12 +138,21 @@ class Nav_Manip_Controller :
 
 		base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
 		while self.servo_base_to_pos(desired_pos, base_pose.pose.position) > goal_tolerence :
-			base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
+			if self.command_state == self.CANCELLED :
+				return
+			if self.command_state == self.RUNNING :
+				base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
 			rate.sleep()
 
 	def grabObject(self, dynamic_pose) :
+		
+
 		holding_object = False
 		while not holding_object :
+			if self.command_state == self.CANCELLED :
+				return
+			self.pauseCommand()
+
 			self.publishResponse("Attempting to grab "+dynamic_pose.topic)
 			resp = self.move_arm(OPEN_GRIPPER, PoseStamped())
 
@@ -136,10 +163,13 @@ class Nav_Manip_Controller :
 				rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
 				# try moving to it again
 				self.servoBaseToDynamicPos(self.object_pose)
+				#TODO check this
 				rospy.sleep(1)
 				continue
 
 			resp = self.move_arm(CLOSE_GRIPPER, PoseStamped())
+
+			self.pauseCommand()
 
 			resp = self.move_arm(RESET_ARM, PoseStamped())
 			if not resp.success:
@@ -151,39 +181,62 @@ class Nav_Manip_Controller :
 
 		self.publishResponse("Grabbed "+dynamic_pose.topic)
 
-	def releaseObject(self, dynamic_pose) :
-		self.publishResponse("Releasing object to "+dynamic_pose.topic)
+	def pauseCommand(self) :
+		while self.command_state == self.PAUSING :
+			rospy.sleep(.03)
 
+	def releaseObject(self, dynamic_pose) :
+		if self.command_state == self.CANCELLED :
+			return
+
+		self.pauseCommand()
+
+		self.publishResponse("Releasing object to "+dynamic_pose.topic)
 		base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
 		resp = self.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_pose)
 		if not resp.success:
 				rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
-
 		resp = self.move_arm(OPEN_GRIPPER, PoseStamped())
 
+		self.pauseCommand()
 		resp = self.move_arm(RESET_ARM, PoseStamped())
 
+	def interActionDelay(self, delay) : #if user tells command to quit, then you don't want delays to stack
+	 	if self.command_state == self.RUNNING :
+			rospy.sleep(delay)
+
 	def run_mott_sequence(self) :
+
 		self.moveBaseToDynamicPos(self.object_pose)
-		rospy.sleep(1)
 		self.servoBaseToDynamicPos(self.object_pose)
-		rospy.sleep(1)
+		self.interActionDelay(1)
 		self.grabObject(self.object_pose)
-		rospy.sleep(1)
+		
+		self.interActionDelay(1)
 
 		self.moveBaseToDynamicPos(self.target_pose)
-		rospy.sleep(1)
 		self.servoBaseToDynamicPos(self.target_pose)
-		rospy.sleep(1)
+		self.interActionDelay(1)
 		self.releaseObject(self.target_pose)
-		rospy.sleep(1)
 
-		self.publishResponse("finished mott") #string must contain finished
+		if self.command_state == self.RUNNING :
+			self.publishResponse("finished mott") #string must contain finished
+		elif self.command_state == self.PAUSING :
+			self.publishResponse("finished mott while pausing!?!?") 
+		elif self.command_state == self.CANCELLED :
+			self.publishResponse("quitting on user command") 
 
 	def base_to_sequence(self) :
-		self.moveBaseToDynamicPos()
-		self.servoBaseToDynamicPos()
-		self.publishResponse("finished moving base to target")
+		self.moveBaseToDynamicPos(self.target_pose)
+		self.servoBaseToDynamicPos(self.target_pose)
+		
+		if self.command_state == self.RUNNING :
+			self.publishResponse("finished moving base to target")
+		elif self.command_state == self.PAUSING :
+			self.publishResponse("finished move base while pausing!?!?") 
+		elif self.command_state == self.CANCELLED :
+			self.publishResponse("quitting on user command") 
+				
 
 	def MottCallback(self, data) :
 		if data.object_pose_topic != "" :
@@ -204,6 +257,19 @@ class Nav_Manip_Controller :
 			print "Starting Move Base TO"
 			self.base_to_sequence()
 
+	def MottCommandCallback(self, data) :
+		print "received "+data
+		data = data.lower()
+		if "cancel" in data :
+			print "State = cancelling action"
+			self.command_state = self.CANCELLED
+		elif "paus" in data :
+			print "state = pausing"
+			self.command_state = self.PAUSING
+		elif "run" in data :
+			print "state = running"
+			self.command_state = self.RUNNING
+
 	def baseJoystickPublish (msg) :
 		self.base_joystick_pub.publish(msg)
 
@@ -213,7 +279,7 @@ class Nav_Manip_Controller :
 	def gmapBaseTo(self, ps) :
 		map_target_pose = self.transform_pose("map", ps)
 		map_robot_pose = self.transform_pose("map", self.robot_pose.ps)
-		map_target_pose.pose.orientation = map_robot_pose.ps.pose.orientation
+		map_target_pose.pose.orientation = map_robot_pose.pose.orientation
 		self.gmap_base_pub.publish(map_target_pose)
 
 	def publishResponse(self, statement) :
@@ -252,6 +318,11 @@ class Nav_Manip_Controller :
 		self.object_pose = DynamicPose()
 		self.target_pose = DynamicPose()
 
+		self.RUNNING = 0
+		self.PAUSING = 1
+		self.CANCELLED = 2
+		self.command_state = 0 #keeps track of running, pausing, cancelled
+
 		self.FIXED_FRAME = "odom"
 		self.BASE_FAME = "base_link"
 
@@ -262,6 +333,7 @@ class Nav_Manip_Controller :
 		self.base_joystick_pub = rospy.Publisher("/cmd_vel_mux/input/teleop" , Twist)
 
 		rospy.Subscriber("/gatlin_mott", Mott, self.MottCallback, queue_size = 1)
+		rospy.Subscriber("/gatlin_mott_command", String, self.MottCommandCallback, queue_size = 1)
 
 		self.move_arm = createServiceProxy("move/arm", MoveRobot, self.robot_name)
 

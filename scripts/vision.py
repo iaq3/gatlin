@@ -316,7 +316,7 @@ class Vision:
 			"kinect",
 			# {'H': {'max': 178, 'min': 160}, 'S': {'max': 255.0, 'min': 154.0}, 'D': {'max': 2500, 'min': 100}, 'V': {'max': 255.0, 'min': 70.0}},
 			{'H': {'max': 180, 'min': 124}, 'S': {'max': 219, 'min': 82}, 'D': {'max': 2500, 'min': 100}, 'V': {'max': 125, 'min': 66.0}},
-			calibrated=True, num_blobs = 1
+			calibrated=False, num_blobs = 1
 		)
 		self.masks.append(self.pink_kinect_mask)
 		
