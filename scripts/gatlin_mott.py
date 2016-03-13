@@ -202,7 +202,7 @@ class Nav_Manip_Controller :
 		resp = self.move_arm(RESET_ARM, PoseStamped())
 
 	def interActionDelay(self, delay) : #if user tells command to quit, then you don't want delays to stack
-	 	if self.action_state == self.RUNNING :
+	 	if self.command_state == self.RUNNING :
 			rospy.sleep(delay)
 
 	def run_mott_sequence(self) :
@@ -219,22 +219,22 @@ class Nav_Manip_Controller :
 		self.interActionDelay(1)
 		self.releaseObject(self.target_pose)
 
-		if self.action_state == self.RUNNING :
+		if self.command_state == self.RUNNING :
 			self.publishResponse("finished mott") #string must contain finished
-		elif self.action_state == self.PAUSING :
+		elif self.command_state == self.PAUSING :
 			self.publishResponse("finished mott while pausing!?!?") 
-		elif self.action_state == self.CANCELLED :
+		elif self.command_state == self.CANCELLED :
 			self.publishResponse("quitting on user command") 
 
 	def base_to_sequence(self) :
 		self.moveBaseToDynamicPos(self.target_pose)
 		self.servoBaseToDynamicPos(self.target_pose)
 		
-		if self.action_state == self.RUNNING :
+		if self.command_state == self.RUNNING :
 			self.publishResponse("finished moving base to target")
-		elif self.action_state == self.PAUSING :
+		elif self.command_state == self.PAUSING :
 			self.publishResponse("finished move base while pausing!?!?") 
-		elif self.action_state == self.CANCELLED :
+		elif self.command_state == self.CANCELLED :
 			self.publishResponse("quitting on user command") 
 				
 
@@ -258,13 +258,16 @@ class Nav_Manip_Controller :
 			self.base_to_sequence()
 
 	def MottCommandCallback(self, data) :
-
+		print "received "+data
 		data = data.lower()
-		if data.contain("cancel") :
+		if "cancel" in data :
+			print "State = cancelling action"
 			self.command_state = self.CANCELLED
-		elif data.contain("paus") :
+		elif "paus" in data :
+			print "state = pausing"
 			self.command_state = self.PAUSING
-		elif data.contain("run") :
+		elif "run" in data :
+			print "state = running"
 			self.command_state = self.RUNNING
 
 	def baseJoystickPublish (msg) :
@@ -276,7 +279,7 @@ class Nav_Manip_Controller :
 	def gmapBaseTo(self, ps) :
 		map_target_pose = self.transform_pose("map", ps)
 		map_robot_pose = self.transform_pose("map", self.robot_pose.ps)
-		map_target_pose.pose.orientation = map_robot_pose.ps.pose.orientation
+		map_target_pose.pose.orientation = map_robot_pose.pose.orientation
 		self.gmap_base_pub.publish(map_target_pose)
 
 	def publishResponse(self, statement) :
