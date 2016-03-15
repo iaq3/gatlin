@@ -2,7 +2,7 @@
   base_minimal launch   
  -->
 <launch>
-  <arg name="simulation" default="false"/>
+  <arg name="sim" default="false"/>
 <!-- ######################################## minimal.launch ######################################## -->
 
   <arg name="base"       default="create"/>  <!-- create, rhoomba -->
@@ -10,7 +10,7 @@
   <arg name="stacks"     default="circles"/>  <!-- circles, hexagons -->
   <arg name="3d_sensor"  default="kinect"/>  <!-- kinect, asus_xtion_pro -->
 
-  <param name="/use_sim_time" value="$(arg simulation)"/>
+  <param name="/use_sim_time" value="$(arg sim)"/>
   
   <!-- ######################################## robot.launch.xml ######################################## -->
   <!--

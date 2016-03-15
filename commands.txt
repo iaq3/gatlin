@@ -26,6 +26,7 @@ Autopilot Control
 Simulator:
 roslaunch turtlebot_gazebo turtlebot_world.launch
 roslaunch turtlebot_rviz_launchers view_robot.launch
+roslaunch turtlebot_gazebo gmapping_demo.launch 
 
 roslaunch youbot_moveit move_group.launch
 

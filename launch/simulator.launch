@@ -1,12 +1,14 @@
 <launch>
   <arg name="world_file"  default="$(env TURTLEBOT_GAZEBO_WORLD_FILE)"/>
 
-  <arg name="base"      value="$(optenv TURTLEBOT_BASE kobuki)"/> <!-- create, roomba -->
-  <arg name="battery"   value="$(optenv TURTLEBOT_BATTERY /proc/acpi/battery/BAT0)"/>  <!-- /proc/acpi/battery/BAT0 --> 
-  <arg name="gui" default="true"/>
-  <arg name="stacks"    value="$(optenv TURTLEBOT_STACKS hexagons)"/>  <!-- circles, hexagons --> 
-  <arg name="3d_sensor" value="$(optenv TURTLEBOT_3D_SENSOR kinect)"/>  <!-- kinect, asus_xtion_pro --> 
+  <arg name="sim" default="true"/>
+  <arg name="gui" default="true" />
+  <arg name="battery"    default="$(optenv TURTLEBOT_BATTERY /sys/class/power_supply/BAT0)"/> 
+  <arg name="base"       default="create"/>
+  <arg name="stacks"     default="circles"/>
+  <arg name="3d_sensor"  default="kinect"/>
 
+  <param name="/use_sim_time" value="$(arg sim)"/>
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <arg name="use_sim_time" value="true"/>
     <arg name="debug" value="false"/>
@@ -14,11 +16,39 @@
     <arg name="world_name" value="$(arg world_file)"/>
   </include>
   
-  <include file="$(find turtlebot_gazebo)/launch/includes/$(arg base).launch.xml">
+ <!--  <include file="$(find turtlebot_gazebo)/launch/includes/$(arg base).launch.xml">
     <arg name="base" value="$(arg base)"/>
     <arg name="stacks" value="$(arg stacks)"/>
     <arg name="3d_sensor" value="$(arg 3d_sensor)"/>
-  </include>
+  </include> -->
+  <!-- create.launch.xml -->
+    <arg name="urdf_file" default="$(find xacro)/xacro.py '$(find turtlebot_description)/robots/$(arg base)_$(arg stacks)_$(arg 3d_sensor).urdf.xacro'" />
+    <!-- <arg name="urdf_file" default="$(find xacro)/xacro.py '$(find gatlin)/robots/gatlin_with_arm_and_head.urdf.xacro'" /> -->
+    <param name="robot_description" command="$(arg urdf_file)" />
+    
+    <!-- Gazebo model spawner -->
+    <node name="spawn_turtlebot_model" pkg="gazebo_ros" type="spawn_model" args="$(optenv ROBOT_INITIAL_POSE) -unpause -urdf -param robot_description -model turtlebot"/>
+    
+    <!-- Odometry estimator -->
+    <node pkg="robot_pose_ekf" type="robot_pose_ekf" name="robot_pose_ekf">
+      <remap from="imu_data" to="turtlebot_node/imu/data"/>
+      <remap from="robot_pose_ekf/odom" to="odom_combined"/>
+      <param name="freq" value="30.0"/>
+      <param name="sensor_timeout" value="1.0"/>
+      <param name="odom_used" value="true"/>
+      <param name="imu_used" value="true"/>
+      <param name="vo_used" value="false"/>
+      <param name="output_frame" value="odom"/>
+    </node>
+    
+    <!-- Velocity muxer -->
+    <node pkg="nodelet" type="nodelet" name="mobile_base_nodelet_manager" args="manager"/>
+    <node pkg="nodelet" type="nodelet" name="cmd_vel_mux"
+          args="load yocs_cmd_vel_mux/CmdVelMuxNodelet mobile_base_nodelet_manager">
+      <param name="yaml_cfg_file" value="$(find turtlebot_bringup)/param/mux.yaml" />
+      <remap from="cmd_vel_mux/output" to="turtlebot_node/cmd_vel" />
+    </node>
+  <!-- create.launch.xml -->
   
   <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
     <param name="publish_frequency" type="double" value="30.0" />
@@ -34,4 +64,11 @@
     <remap from="image" to="/camera/depth/image_raw"/>
     <remap from="scan" to="/scan"/>
   </node>
+
+  <include file="$(find turtlebot_navigation)/launch/includes/gmapping.launch.xml"/>
+
+  <include file="$(find turtlebot_navigation)/launch/includes/move_base.launch.xml"/>
+
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find gatlin)/config/navigation.rviz"/>
+
 </launch>

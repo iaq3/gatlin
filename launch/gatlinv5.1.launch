@@ -18,7 +18,7 @@
 </include>
 
 <include file="$(find gatlin)/launch/base_minimal.launch">
-	<!-- <arg name="sim" value="$(arg sim)"/> -->
+	<arg name="sim" value="$(arg sim)"/>
 </include>
 
 <!--<node pkg="gatlin" type="gatlin_mott.py" name="gatlin_mott" output="screen"/> -->
