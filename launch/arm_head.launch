@@ -20,6 +20,6 @@
   </node>
 
   <node name="gripper_controller" pkg="arbotix_controllers" type="gripper_controller" output="screen">
-    <rosparam file="$(find turtlebot_arm_bringup)/config/$(arg arm_type)_gripper.yaml" command="load" />
+    <rosparam file="$(find gatlin)/config/pincher_gripper.yaml" command="load" />
   </node>
 </launch>

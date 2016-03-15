@@ -26,9 +26,24 @@ Autopilot Control
 Simulator:
 roslaunch turtlebot_gazebo turtlebot_world.launch
 roslaunch turtlebot_rviz_launchers view_robot.launch
+roslaunch turtlebot_gazebo gmapping_demo.launch 
+
+roslaunch youbot_moveit move_group.launch
 
 roslaunch gatlin youbot_simulator.launch
 
 rosdep update
 rosdep install rgbdslam
 catkin_make 
+
+Recording topics for playback later:
+
+XYZRGB data:
+rosbag record camera/depth_registered/image_raw camera/depth_registered/camera_info camera/rgb/image_raw camera/rgb/camera_info --limit=60 -O kinect
+rosbag play --clock kinect.bag
+
+rosbag record /camera/depth_registered/hw_registered/image_rect_raw_throttled camera/depth_registered/camera_info /camera/rgb/image_rect_color_throttled camera/rgb/camera_info --limit=300
+
+rosbag info small.bag
+rosparam set use_sim_time true
+rosbag play --clock small.bag

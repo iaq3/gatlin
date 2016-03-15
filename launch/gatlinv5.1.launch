@@ -13,17 +13,17 @@
 </include>
 
 <include file="$(find gatlin)/launch/arm_minimal.launch">
-	<arg name="simulation" value="$(arg sim)"/>
+	<arg name="sim" value="$(arg sim)"/>
 	<arg name="rviz" value="$(arg rviz)"/>
 </include>
 
 <include file="$(find gatlin)/launch/base_minimal.launch">
-	<arg name="simulation" value="$(arg sim)"/>
+	<arg name="sim" value="$(arg sim)"/>
 </include>
 
-<!-- <node pkg="gatlin" type="gatlin_mott.py" name="gatlin_mott" output="screen"/> -->
+<!--<node pkg="gatlin" type="gatlin_mott.py" name="gatlin_mott" output="screen"/> -->
 
-<node pkg="gatlin" type="vision.py" name="vision" output="screen"/> 
+<node pkg="gatlin" type="vision.py" name="vision" output="screen"/>
 
 <node pkg="gatlin" type="arm_controller.py" name="arm_controller" output="screen"/>
 

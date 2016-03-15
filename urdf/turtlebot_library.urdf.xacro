@@ -8,12 +8,9 @@
   <xacro:include filename="$(find gatlin)/urdf/turtlebot_properties.urdf.xacro"/>
   <!-- Bases -->
   <xacro:include filename="$(find gatlin)/urdf/create.urdf.xacro"/>
-  <!-- <xacro:include filename="$(find kobuki_description)/urdf/kobuki.urdf.xacro" /> -->
   <!-- Stacks -->
   <xacro:include filename="$(find gatlin)/urdf/stacks/circles.urdf.xacro"/>
   <xacro:include filename="$(find gatlin)/urdf/stacks/squares.urdf.xacro"/>
-  <!-- <xacro:include filename="$(find turtlebot_description)/urdf/stacks/hexagons.urdf.xacro"/> -->
   <!-- 3D Sensors -->
-  <!-- <xacro:include filename="$(find turtlebot_description)/urdf/sensors/kinect.urdf.xacro"/> -->
-  <!-- <xacro:include filename="$(find turtlebot_description)/urdf/sensors/asus_xtion_pro.urdf.xacro"/> -->
+  <xacro:include filename="$(find gatlin)/urdf/sensors/kinect.urdf.xacro"/>
 </robot>

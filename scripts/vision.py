@@ -128,6 +128,24 @@ class HSVMask:
 
 
 
+	def resetMask(self):
+		limit = {}
+		limit["H"] = {}
+		limit["S"] = {}
+		limit["V"] = {}
+		limit["D"] = {}
+		limit["H"]["min"] = 0
+		limit["S"]["min"] = 0
+		limit["V"]["min"] = 0
+		limit["D"]["min"] = -1.0
+		limit["H"]["max"] = 180
+		limit["S"]["max"] = 255
+		limit["V"]["max"] = 255
+		limit["D"]["max"] = 10000.0
+		for param in self.m:
+			for arg in self.m[param]:
+				self.m[param][arg] = limit[param][arg]
+
 	def changeMask(self, param, arg, inc):
 		limit = {}
 		limit["H"] = {}
@@ -144,20 +162,27 @@ class HSVMask:
 		limit["D"]["max"] = 10000.0
 
 		self.m[param][arg] += inc
+		changed = True
 
 		if arg == "min":
 			if self.m[param][arg] < limit[param][arg]:
 				self.m[param][arg] = limit[param][arg]
+				changed = False
 			elif self.m[param][arg] > self.m[param]["max"]:
 				self.m[param][arg] = self.m[param]["max"]
+				changed = False
 		elif arg == "max":
 			if self.m[param][arg] > limit[param][arg]:
 				self.m[param][arg] = limit[param][arg]
+				changed = False
 			elif self.m[param][arg] < self.m[param]["min"]:
 				self.m[param][arg] = self.m[param]["min"]
+				changed = False
 		
-		print "%s %s" % (param, arg)
-		print self.m[param][arg]
+		# print "%s %s" % (param, arg)
+		# print self.m[param][arg]
+
+		return changed
 
 	def calibrate(self):
 		if self.prompt :
@@ -169,7 +194,7 @@ class HSVMask:
 			print "use O and L to change max"
 			print ""
 			print "press any other key to get a new frame"
-			print "Press space whena done"
+			print "Press space when done"
 			self.prompt = False
 
 		key = cv2.waitKey(0) & 0xFF
@@ -254,11 +279,22 @@ class Vision:
 		# 	"blue",
 		# 	"square",
 		# 	"kinect",
-		# 	{'H': {'max': 140.0, 'min': 100.0}, 'S': {'max': 180.0, 'min': 83.0}, 'D': {'max': 1.7, 'min': 1.4}, 'V': {'max': 255, 'min': 115.0}},
+		# 	# {'H': {'max': 140.0, 'min': 100.0}, 'S': {'max': 180.0, 'min': 83.0}, 'D': {'max': 1.7, 'min': 1.4}, 'V': {'max': 255, 'min': 115.0}},
 		# 	calibrated=True,
-		# 	num_blobs=self.num_blocks
+		# 	# num_blobs=self.num_blocks
 		# )
 		# self.masks.append(self.blue_kinect_mask)
+
+
+		self.purple_kinect_mask = HSVMask(
+			"purple",
+			"circle",
+			"kinect",
+			{'H': {'max': 130, 'min': 113}, 'S': {'max': 210, 'min': 144}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 107, 'min': 51}},
+			calibrated=False, num_blobs=1
+		)
+		self.masks.append(self.purple_kinect_mask)
+
 
 		self.green_kinect_mask = HSVMask(
 			"green",
@@ -268,6 +304,7 @@ class Vision:
 			# {'H': {'max': 68, 'min': 38}, 'S': {'max': 255, 'min': 199}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 151.0, 'min': 30.0}},
 			# {'H': {'max': 68, 'min': 30}, 'S': {'max': 197, 'min': 79}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 155.0, 'min': 92.0}},
 			# {'H': {'max': 68, 'min': 30}, 'S': {'max': 255, 'min': 151}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 157, 'min': 92.0}},
+			
 			{'H': {'max': 68, 'min': 30}, 'S': {'max': 255, 'min': 100}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 185, 'min': 103.0}},
 			calibrated=True, num_blobs = 3
 		)
@@ -279,7 +316,7 @@ class Vision:
 			"kinect",
 			# {'H': {'max': 178, 'min': 160}, 'S': {'max': 255.0, 'min': 154.0}, 'D': {'max': 2500, 'min': 100}, 'V': {'max': 255.0, 'min': 70.0}},
 			{'H': {'max': 180, 'min': 124}, 'S': {'max': 219, 'min': 82}, 'D': {'max': 2500, 'min': 100}, 'V': {'max': 125, 'min': 66.0}},
-			calibrated=True, num_blobs = 1
+			calibrated=False, num_blobs = 1
 		)
 		self.masks.append(self.pink_kinect_mask)
 		
@@ -289,10 +326,11 @@ class Vision:
 
 		if self.vision_type == "kinect":
 			self.rgb_topic = "/camera/rgb/image_rect_color_throttled"
+			self.rgb_topic = "/camera/rgb/image_color"
 
-
-			#self.depth_topic = "/camera/depth_registered/hw_registered/image_rect_raw/compressed"
 			self.depth_topic = "/camera/depth_registered/hw_registered/image_rect_raw_throttled"
+			self.depth_topic = "/camera/depth/image"
+			#self.depth_topic = "/camera/depth_registered/hw_registered/image_rect_raw/compressed"
 			#rostopic list "/camera/depth/image_rect/compressed"
 			#self.depth_topic = "/camera/depth_registered/hw_registered/image_rect_raw"
 			#self.depth_topic = "/camera/depth_registered/sw_registered/image_rect"
@@ -328,7 +366,7 @@ class Vision:
 	#given an hsv_mask, finds the number of blobs, filters, and publishes if it's consistent
 	#TODO get multi ball tracking working and staying consistent
 	def find_project_publish_stamped(self, hsv_mask):
-		objs = self.findBlobsofHue(hsv_mask, hsv_mask.num_blobs , self.rgb_image)
+		objs = self.findBlobsofHue(hsv_mask, hsv_mask.num_blobs, self.rgb_image, self.depth_image)
 		#print "-------------"
 		
 		object_points = []
@@ -425,10 +463,7 @@ class Vision:
 		except CvBridgeError, e:
 			print e
 
-	def findBlobsofHue(self, hsv_mask, num_blobs, rgb_image) :
-		if self.vision_type == 'kinect' and self.depth_image == None:
-			print("Error: no depth image")
-			return []
+	def applyHSVMask(self, hsv_mask, rgb_image, depth_image):
 
 		colorLower = (
 			hsv_mask.m["H"]["min"], 
@@ -441,10 +476,7 @@ class Vision:
 			hsv_mask.m["V"]["max"]
 		)
 
-		rgb_image = self.rgb_image.copy()
-
-		if self.vision_type == "kinect" and self.depth_image != None:
-			depth_image = self.depth_image.copy()
+		if self.vision_type == "kinect" and depth_image != None:
 			mask = cv2.inRange(depth_image, hsv_mask.m["D"]["min"], hsv_mask.m["D"]["max"])
 			rgb_image = cv2.bitwise_and(rgb_image, rgb_image, mask = mask)
 
@@ -453,6 +485,18 @@ class Vision:
 		mask = cv2.inRange(hsv, colorLower, colorUpper)
 
 		res = cv2.bitwise_and(rgb_image,rgb_image, mask = mask)
+		return res, mask
+
+	def findBlobsofHue(self, hsv_mask, num_blobs, rgb_image_in, depth_image_in) :
+		if self.vision_type == 'kinect' and self.depth_image == None:
+			print("Error: no depth image")
+			return []
+
+		
+		rgb_image = rgb_image_in.copy()
+		depth_image = depth_image_in.copy()
+		res, mask = self.applyHSVMask(hsv_mask, rgb_image, depth_image)
+		
 
 		blobsFound = []
 		cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)[-2]
@@ -527,9 +571,137 @@ class Vision:
 		cv2.imshow(hsv_mask.window_name, res)
 
 		if not hsv_mask.calibrated:
-			hsv_mask.calibrate()
+			# hsv_mask.calibrate()
+			self.auto_calibrate(hsv_mask, num_blobs, rgb_image, depth_image)
 
 		return blobsFound
+
+	def selectRegion(self, x,y, select):
+		region = 5
+		for r in range(0, 2*region):
+			for c in range(0, 2*region):
+				try:
+					self.select_mask[y+c-region][x+r-region] = 255 if select else 0 
+				except:
+					continue
+					# rospy.logerr("Error selectRegion")
+
+	def onmouse(self,event,x,y,flags,params):
+		if event == cv2.EVENT_LBUTTONDOWN:
+			self.Lclick_down = True
+
+		elif event == cv2.EVENT_MOUSEMOVE:
+			if self.Lclick_down:
+				self.selectRegion(x,y, False)
+
+		elif event == cv2.EVENT_LBUTTONUP:
+			self.Lclick_down = False
+
+		if event == cv2.EVENT_RBUTTONDOWN:
+			self.Rclick_down = True
+
+		elif event == cv2.EVENT_MOUSEMOVE:
+			if self.Rclick_down:
+				self.selectRegion(x,y, True)
+
+		elif event == cv2.EVENT_RBUTTONUP:
+			self.Rclick_down = False
+
+		# print "select_mask"
+		# print cv2.countNonZero(self.select_mask)
+		self.select_img = cv2.bitwise_and(self.original_img, self.original_img, mask=self.select_mask)
+		
+
+	def auto_calibrate(self, hsv_mask, num_blobs, rgb_image_in, depth_image_in):
+		height,width,depth = rgb_image_in.shape
+		self.select_mask = np.zeros((height,width), np.uint8)
+		self.select_mask = cv2.bitwise_not(self.select_mask)
+		self.Lclick_down = False
+		self.Rclick_down = False
+
+		self.prompt = True
+		self.selected = False
+
+		self.original_img = rgb_image_in.copy()
+		self.select_img = rgb_image_in.copy()
+		
+		cv2.startWindowThread()
+		window_name = 'Auto Calibrate'
+		cv2.namedWindow(window_name)
+		cv2.setMouseCallback(window_name, self.onmouse)
+
+		while not self.selected :
+			if self.prompt :
+				# set all ranges to max, min
+				hsv_mask.resetMask()
+				print "Auto Calibrating %s %s HSV Mask" % (hsv_mask.color, hsv_mask.camera)
+				print "L Click to select pixels, R Click to unselect."
+				print "Please select region to calibrate with, then press space."
+				self.prompt = False
+			cv2.imshow(window_name, self.select_img)
+			key = cv2.waitKey(1) & 0xFF
+			if key == ord(" "):
+				self.selected = True
+
+		self.inv_select_mask = cv2.bitwise_not(self.select_mask)
+
+		def tune(in_thresh, out_thresh, param, arg, inc):
+			print "Tuning %s %s" % (param, arg)
+			in_mask, out_mask = 1.0, 1.0
+			changed = True
+			while changed and in_mask > in_thresh or out_mask > out_thresh:
+				changed = hsv_mask.changeMask(param, arg, inc)
+				in_mask, out_mask = self.getSelectionStats(hsv_mask, rgb_image_in, depth_image_in)
+				# time.sleep(.05)
+			hsv_mask.changeMask(param, arg, -5*inc)
+			print "######################################"
+			print "%s %s: %d" % (param, arg, hsv_mask.m[param][arg])
+			print "######################################"
+
+		tune(.92, 1.0, "H", "min", 1)
+		tune(.91, 1.0, "H", "max", -1)
+		tune(.90, 1.0, "S", "min", 1)
+		tune(.89, 1.0, "S", "max", -1)
+		tune(.88, 1.0, "V", "min", 1)
+		tune(.87, 1.0, "V", "max", -1)
+
+		hsv_mask.calibrated = True
+		print "############## Auto Calibrated %s %s Mask ##############" % (hsv_mask.color, hsv_mask.camera)
+		print hsv_mask.m
+		print "#############################################"
+
+		cv2.destroyWindow(window_name)
+
+	def getSelectionStats(self, hsv_mask, rgb_image_in, depth_image_in):
+		total_pixels_out_mask = float(cv2.countNonZero(self.select_mask))
+		total_pixels_in_mask = float(cv2.countNonZero(self.inv_select_mask))
+		print "total_pixels_in_mask, total_pixels_out_mask"
+		print total_pixels_in_mask, total_pixels_out_mask
+
+		# self.findBlobsofHue(hsv_mask, num_blobs, rgb_image_in)
+		res, mask = self.applyHSVMask(hsv_mask, rgb_image_in, depth_image_in)
+
+		self.select_img = cv2.bitwise_and(res, self.original_img, mask=self.select_mask)
+		self.inv_select_img = cv2.bitwise_and(res, self.original_img, mask=self.inv_select_mask)
+
+		img2gray = cv2.cvtColor(self.select_img,cv2.COLOR_BGR2GRAY)
+		ret, outmask = cv2.threshold(img2gray, 0, 255, cv2.THRESH_BINARY)
+		
+		img2gray = cv2.cvtColor(self.inv_select_img,cv2.COLOR_BGR2GRAY)
+		ret, inmask = cv2.threshold(img2gray, 0, 255, cv2.THRESH_BINARY)
+		
+		window_name = 'Auto Calibrate'
+		cv2.imshow(window_name, inmask)
+		# key = cv2.waitKey(0)
+
+
+		curr_pixels_out_mask = cv2.countNonZero(outmask)/total_pixels_out_mask
+		curr_pixels_in_mask = cv2.countNonZero(inmask)/total_pixels_in_mask
+		# print "curr_pixels_in_mask, curr_pixels_out_mask"
+		print curr_pixels_in_mask, curr_pixels_out_mask
+
+		return curr_pixels_in_mask, curr_pixels_out_mask
+
 
 	#creates an intrinsic camera matrix and uses the 
 	#position and size of the ball to determine pose
