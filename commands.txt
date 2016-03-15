@@ -27,6 +27,8 @@ Simulator:
 roslaunch turtlebot_gazebo turtlebot_world.launch
 roslaunch turtlebot_rviz_launchers view_robot.launch
 
+roslaunch gatlin youbot_simulator.launch
+
 rosdep update
 rosdep install rgbdslam
 catkin_make 
