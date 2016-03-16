@@ -1,6 +1,7 @@
 <launch>
   <arg name="world_file"  default="$(env TURTLEBOT_GAZEBO_WORLD_FILE)"/>
 
+  <arg name="rviz" default="true"/>
   <arg name="sim" default="true"/>
   <arg name="gui" default="true" />
   <arg name="battery"    default="$(optenv TURTLEBOT_BATTERY /sys/class/power_supply/BAT0)"/> 
@@ -57,16 +58,29 @@
     <remap from="scan" to="/scan"/>
   </node>
 
-  <!-- For Arm -->
-  <param name="use_gui" value="$(arg gui)"/>
-  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
-
-  <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" />
-
   <include file="$(find turtlebot_navigation)/launch/includes/gmapping.launch.xml"/>
 
   <include file="$(find turtlebot_navigation)/launch/includes/move_base.launch.xml"/>
 
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find gatlin)/rviz/navigation.rviz"/>
+  <!-- <node if="$(arg rviz)" name="rviz" pkg="rviz" type="rviz" args="-d $(find gatlin)/rviz/navigation.rviz" required="true" /> -->
+  <!-- <node if="$(arg rviz)" name="rviz" pkg="rviz" type="rviz" args="-d $(find gatlin)/rviz/moveit.rviz" required="true" /> -->
+
+  <!-- For Arm -->
+  <!-- <param name="use_gui" value="$(arg gui)"/> -->
+  <!-- <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" /> -->
+
+  <!-- already in arm_minimal -->
+  <!-- <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" /> -->
+
+  <node if="$(arg sim)" name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
+    <param name="/use_gui" value="$(arg gui)"/> 
+    <rosparam param="/source_list">[/move_group/fake_controller_joint_states]</rosparam>
+  </node>
+
+  <include file="$(find gatlin)/launch/arm_minimal.launch">
+    <arg name="gui" value="$(arg gui)"/>
+    <arg name="sim" value="$(arg sim)"/>
+    <arg name="rviz" value="false"/>
+  </include>
 
 </launch>
