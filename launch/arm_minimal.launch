@@ -9,7 +9,7 @@
   <arg name="sim" default="false"/>
   <arg name="arm_type" default="pincher"/>
 
-  <node if="$(arg sim)" name="fake_joint_pub" pkg="turtlebot_arm_bringup" type="fake_joint_pub.py"/>
+  <!-- <node if="$(arg sim)" name="fake_joint_pub" pkg="turtlebot_arm_bringup" type="fake_joint_pub.py"/> -->
 
   <node name="arbotix" pkg="arbotix_python" type="arbotix_driver" output="screen">
     <rosparam file="$(find gatlin)/config/gatlin_robot.yaml" command="load"/>

@@ -1,13 +1,12 @@
 <?xml version="1.0"?>
 
-<robot name="turtlebot" xmlns:xacro="http://ros.org/wiki/xacro">
-<!-- <robot name="gatlin_robot" xmlns:xacro="http://ros.org/wiki/xacro"> -->
+<robot name="gatlin_robot" xmlns:xacro="http://ros.org/wiki/xacro">
 
    <xacro:property name="PI" value="3.1415"/>
 
    <!-- Define a number of dimensions using properties -->   
    <property name="head_offset_x" value="0.075" />
-   <property name="head_offset_y" value="0.02" />
+   <property name="head_offset_y" value="0.00" />
    <property name="head_offset_z" value="0.035" />
    <property name="head_offset_rotz" value="0.02" />
    
@@ -41,19 +40,17 @@
    <create/>
 
    <!-- Attach the stacks -->
-   <!-- <stack_circles parent="base_link"/> -->
    <stack_squares parent="base_link" offset="${stacks_offset}" top_plate="${top_plate}"/>
 
    <!-- Attach the pan and tilt head -->
-   <!-- <sensor_kinect  parent="base_link"/> -->
    <head name="head_base" parent="plate_3" color="White">
       <origin xyz="${head_offset_x} ${head_offset_y} ${head_offset_z}" rpy="${PI/2} 0 ${PI/2+head_offset_rotz}" />
    </head>  
 
    <!-- Attach the arm -->
-   <!-- <turtlebot_arm parent="base_link" color="Gray" gripper_color="Gray" pincher_gripper="true" turtlebot_gripper="false">
+   <turtlebot_arm parent="base_link" color="Gray" gripper_color="Gray" pincher_gripper="true" turtlebot_gripper="false">
       <origin xyz="${arm_offset_x} ${arm_offset_y} ${arm_offset_z}" rpy="0 0 0" />
-   </turtlebot_arm> -->
+   </turtlebot_arm>
 
 </robot>
 

@@ -2,15 +2,15 @@
 
 <robot name="pan_tilt_head" xmlns:xacro="http://ros.org/wiki/xacro">
 
-  <property name="camera_offset_x" value="0.0" />
-  <property name="camera_offset_y" value="0.0" />
-  <property name="camera_offset_z" value="0.0615" />
+  <property name="camera_offset_x" value="0.02" />
+  <property name="camera_offset_y" value="-0.013" />
+  <property name="camera_offset_z" value="0.07" />
    
   <property name="camera_mesh_scale" value="1.0" />
    
   <xacro:include filename="$(find turtlebot_arm_description)/urdf/arm_hardware.xacro"/>
   <!-- <xacro:include filename="$(find gatlin)/urdf/dynamixel_head_hardware.xacro" /> -->
-  <xacro:include filename="$(find gatlin)/urdf/kinect.urdf.xacro" />
+  <xacro:include filename="$(find gatlin)/urdf/sensors/kinect.urdf.xacro" />
 
   <macro name="head" params="parent name color *origin">
     <!-- head base joint -->
@@ -63,10 +63,12 @@
        <origin xyz="0 0 0" rpy="0 0 0" />
     </bioloid_F2_revolute>
    
-   <!-- Attach the camera -->
-   <camera name="camera" parent="head_tilt" color="Black">
+    <!-- Attach the camera -->
+    <!-- <camera name="camera" parent="head_tilt" color="Black">
       <origin xyz="${camera_offset_x} ${camera_offset_y} ${camera_offset_z}" rpy="0 0 0" />
-   </camera>
-
- </macro>
+    </camera> -->
+    <sensor_kinect  parent="head_tilt_link" >
+      <origin xyz="${camera_offset_x} ${camera_offset_y} ${camera_offset_z}" rpy="0 0 0" />
+    </sensor_kinect>
+  </macro>
 </robot>
