@@ -286,14 +286,14 @@ class Vision:
 		# self.masks.append(self.blue_kinect_mask)
 
 
-		self.purple_kinect_mask = HSVMask(
-			"purple",
-			"circle",
-			"kinect",
-			{'H': {'max': 130, 'min': 113}, 'S': {'max': 210, 'min': 144}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 107, 'min': 51}},
-			calibrated=False, num_blobs=1
-		)
-		self.masks.append(self.purple_kinect_mask)
+		# self.purple_kinect_mask = HSVMask(
+		# 	"purple",
+		# 	"circle",
+		# 	"kinect",
+		# 	{'H': {'max': 130, 'min': 113}, 'S': {'max': 210, 'min': 144}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 107, 'min': 51}},
+		# 	calibrated=True, num_blobs=1
+		# )
+		# self.masks.append(self.purple_kinect_mask)
 
 
 		self.green_kinect_mask = HSVMask(
@@ -305,7 +305,9 @@ class Vision:
 			# {'H': {'max': 68, 'min': 30}, 'S': {'max': 197, 'min': 79}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 155.0, 'min': 92.0}},
 			# {'H': {'max': 68, 'min': 30}, 'S': {'max': 255, 'min': 151}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 157, 'min': 92.0}},
 			
-			{'H': {'max': 68, 'min': 30}, 'S': {'max': 255, 'min': 100}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 185, 'min': 103.0}},
+			# {'H': {'max': 68, 'min': 30}, 'S': {'max': 255, 'min': 100}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 185, 'min': 103.0}},
+			# {'H': {'max': 49, 'min': 26}, 'S': {'max': 232, 'min': 146}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 113, 'min': 47}},
+			{'H': {'max': 49, 'min': 32}, 'S': {'max': 202, 'min': 130}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 142, 'min': 72}},
 			calibrated=True, num_blobs = 3
 		)
 		self.masks.append(self.green_kinect_mask)
@@ -315,8 +317,12 @@ class Vision:
 			"circle",
 			"kinect",
 			# {'H': {'max': 178, 'min': 160}, 'S': {'max': 255.0, 'min': 154.0}, 'D': {'max': 2500, 'min': 100}, 'V': {'max': 255.0, 'min': 70.0}},
-			{'H': {'max': 180, 'min': 124}, 'S': {'max': 219, 'min': 82}, 'D': {'max': 2500, 'min': 100}, 'V': {'max': 125, 'min': 66.0}},
-			calibrated=False, num_blobs = 1
+			# {'H': {'max': 180, 'min': 124}, 'S': {'max': 219, 'min': 82}, 'D': {'max': 2500, 'min': 100}, 'V': {'max': 125, 'min': 66.0}},
+
+			# {'H': {'max': 180, 'min': 0}, 'S': {'max': 253, 'min': 205}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 99, 'min': 65}},
+			{'H': {'max': 180, 'min': 169}, 'S': {'max': 251, 'min': 210}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 111, 'min': 84}},
+
+			calibrated=True, num_blobs = 1
 		)
 		self.masks.append(self.pink_kinect_mask)
 		
@@ -326,10 +332,10 @@ class Vision:
 
 		if self.vision_type == "kinect":
 			self.rgb_topic = "/camera/rgb/image_rect_color_throttled"
-			self.rgb_topic = "/camera/rgb/image_color"
+			# self.rgb_topic = "/camera/rgb/image_color"
 
 			self.depth_topic = "/camera/depth_registered/hw_registered/image_rect_raw_throttled"
-			self.depth_topic = "/camera/depth/image"
+			# self.depth_topic = "/camera/depth/image"
 			#self.depth_topic = "/camera/depth_registered/hw_registered/image_rect_raw/compressed"
 			#rostopic list "/camera/depth/image_rect/compressed"
 			#self.depth_topic = "/camera/depth_registered/hw_registered/image_rect_raw"

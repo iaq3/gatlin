@@ -140,8 +140,11 @@ class Nav_Manip_Controller :
 		while self.servo_base_to_pos(desired_pos, base_pose.pose.position) > goal_tolerence :
 			if self.command_state == self.CANCELLED :
 				return
+			
+			self.pauseCommand() #TODO move fr
 			if self.command_state == self.RUNNING :
 				base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
+
 			rate.sleep()
 
 	def grabObject(self, dynamic_pose) :
@@ -258,15 +261,15 @@ class Nav_Manip_Controller :
 			self.base_to_sequence()
 
 	def MottCommandCallback(self, data) :
-		print "received "+data
-		data = data.lower()
-		if "cancel" in data :
+		print "received "+data.data
+		data.data = data.data.lower()
+		if "cancel" in data.data :
 			print "State = cancelling action"
 			self.command_state = self.CANCELLED
-		elif "paus" in data :
+		elif "paus" in data.data :
 			print "state = pausing"
 			self.command_state = self.PAUSING
-		elif "run" in data :
+		elif "run" in data.data :
 			print "state = running"
 			self.command_state = self.RUNNING
 
