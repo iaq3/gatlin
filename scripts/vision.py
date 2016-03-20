@@ -16,6 +16,7 @@ import tf
 from tf.transformations import *
 from config import *
 import sys, os
+from gatlin.msg import *
 
 def PointDistance (p1, p2) :
 	return ((p1.x-p2.x)** 2 + (p1.y - p2.y)** 2 + (p1.z - p2.z)**2)**.5
@@ -100,12 +101,12 @@ class HSVMask:
 
 		self.window_name = '%s %s vision' % (color, camera)
 		self.filters = []
-		self.obj_pose_pubs = []
+		# self.obj_pose_pubs = []
 		# self.base_stamped_pubs = []
 		for i in range(0, num_blobs):
-			obj_pose_pub = rospy.Publisher("/%s_%s_%d_pose" % (color, camera, i), PoseStamped, queue_size=1)
+			# obj_pose_pub = rospy.Publisher("/%s_%s_%d_pose" % (color, camera, i), PoseStamped, queue_size=1)
 			# base_stamped_pub = rospy.Publisher("/%s_%s_%d_pose_stamped" % (color, camera, i), PoseStamped, queue_size=1)
-			self.obj_pose_pubs.append(obj_pose_pub)
+			# self.obj_pose_pubs.append(obj_pose_pub)
 			# self.base_stamped_pubs.append(base_stamped_pub)
 			new_filter = LiveFilter()
 			self.filters.append(new_filter)
@@ -122,10 +123,7 @@ class HSVMask:
 		cv2.startWindowThread()
 		cv2.namedWindow(self.window_name)
 
-		self.tfl = tf.TransformListener()
-		self.BASE_FRAME = "base_link"
-		self.CAMERA_FRAME = "camera_rgb_optical_frame"
-
+		
 
 
 	def resetMask(self):
@@ -239,12 +237,7 @@ class HSVMask:
 			print self.m
 			print "#############################################"
 
-	def publish_stamped(self, i, kinect_pose):
-		kinectPoseStamped = PoseStamped()
-		kinectPoseStamped.header.frame_id = self.CAMERA_FRAME
-		kinectPoseStamped.header.stamp = rospy.Time.now()
-		kinectPoseStamped.pose = deepcopy(kinect_pose)
-		self.obj_pose_pubs[i].publish(kinectPoseStamped)
+	
 
 
 class Vision:
@@ -266,49 +259,12 @@ class Vision:
 
 		self.masks = []
 
-		#self.pink_kinect_mask = HSVMask(
-		#	"pink",
-		#	"circle",
-		#	"kinect",
-		#	{'H': {'max': 178, 'min': 160}, 'S': {'max': 255.0, 'min': 154.0}, 'D': {'max': 2500, 'min': 100}, 'V': {'max': 255.0, 'min': 70.0}},
-		#	calibrated=True
-		#)
-		#self.masks.append(self.pink_kinect_mask)
-
-		# self.blue_kinect_mask = HSVMask(
-		# 	"blue",
-		# 	"square",
-		# 	"kinect",
-		# 	# {'H': {'max': 140.0, 'min': 100.0}, 'S': {'max': 180.0, 'min': 83.0}, 'D': {'max': 1.7, 'min': 1.4}, 'V': {'max': 255, 'min': 115.0}},
-		# 	calibrated=True,
-		# 	# num_blobs=self.num_blocks
-		# )
-		# self.masks.append(self.blue_kinect_mask)
-
-
-		# self.purple_kinect_mask = HSVMask(
-		# 	"purple",
-		# 	"circle",
-		# 	"kinect",
-		# 	{'H': {'max': 130, 'min': 113}, 'S': {'max': 210, 'min': 144}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 107, 'min': 51}},
-		# 	calibrated=True, num_blobs=1
-		# )
-		# self.masks.append(self.purple_kinect_mask)
-
-
 		self.green_kinect_mask = HSVMask(
 			"green",
 			"circle",
 			"kinect",
-			# {'H': {'max': 36, 'min': 24}, 'S': {'max': 255, 'min': 70}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 231.0, 'min': 40.0}},
-			# {'H': {'max': 68, 'min': 38}, 'S': {'max': 255, 'min': 199}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 151.0, 'min': 30.0}},
-			# {'H': {'max': 68, 'min': 30}, 'S': {'max': 197, 'min': 79}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 155.0, 'min': 92.0}},
-			# {'H': {'max': 68, 'min': 30}, 'S': {'max': 255, 'min': 151}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 157, 'min': 92.0}},
-			
-			# {'H': {'max': 68, 'min': 30}, 'S': {'max': 255, 'min': 100}, 'D': {'max': 2000, 'min': 0}, 'V': {'max': 185, 'min': 103.0}},
-			# {'H': {'max': 49, 'min': 26}, 'S': {'max': 232, 'min': 146}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 113, 'min': 47}},
-			{'H': {'max': 49, 'min': 32}, 'S': {'max': 202, 'min': 130}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 142, 'min': 72}},
-			calibrated=True, num_blobs = 3
+			{'H': {'max': 47, 'min': 34}, 'S': {'max': 200, 'min': 146}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 253, 'min': 185}},
+			calibrated=True, num_blobs = 2
 		)
 		self.masks.append(self.green_kinect_mask)
 		
@@ -316,17 +272,43 @@ class Vision:
 			"pink",
 			"circle",
 			"kinect",
-			# {'H': {'max': 178, 'min': 160}, 'S': {'max': 255.0, 'min': 154.0}, 'D': {'max': 2500, 'min': 100}, 'V': {'max': 255.0, 'min': 70.0}},
-			# {'H': {'max': 180, 'min': 124}, 'S': {'max': 219, 'min': 82}, 'D': {'max': 2500, 'min': 100}, 'V': {'max': 125, 'min': 66.0}},
-
-			# {'H': {'max': 180, 'min': 0}, 'S': {'max': 253, 'min': 205}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 99, 'min': 65}},
-			{'H': {'max': 180, 'min': 169}, 'S': {'max': 251, 'min': 210}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 111, 'min': 84}},
-
+			{'H': {'max': 180, 'min': 170}, 'S': {'max': 255, 'min': 192}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 178, 'min': 124}},
 			calibrated=True, num_blobs = 1
 		)
-		self.masks.append(self.pink_kinect_mask)
-		
+		# self.masks.append(self.pink_kinect_mask)
 
+		self.red_kinect_mask = HSVMask(
+			"red",
+			"circle",
+			"kinect",
+			{'H': {'max': 178, 'min': 164}, 'S': {'max': 214, 'min': 180}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 234, 'min': 148}},
+			calibrated=True, num_blobs = 1
+		)
+		self.masks.append(self.red_kinect_mask)
+
+		self.yellow_kinect_mask = HSVMask(
+			"yellow",
+			"circle",
+			"kinect",
+			{'H': {'max': 35, 'min': 20}, 'S': {'max': 242, 'min': 131}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 195, 'min': 96}},
+			calibrated=True, num_blobs = 1
+		)
+		# self.masks.append(self.yellow_kinect_mask)
+
+		self.blue_kinect_mask = HSVMask(
+			"blue",
+			"circle",
+			"kinect",
+			{'H': {'max': 124, 'min': 109}, 'S': {'max': 234, 'min': 136}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 159, 'min': 26}},
+			calibrated=True, num_blobs = 1
+		)
+		# self.masks.append(self.blue_kinect_mask)
+
+		self.objectlistpub = rospy.Publisher("/gatlin/objectlist", ObjectList, queue_size=3)
+
+		self.tfl = tf.TransformListener()
+		self.BASE_FRAME = "base_link"
+		self.CAMERA_FRAME = "camera_rgb_optical_frame"
 
 		self.bridge = CvBridge()	
 
@@ -360,18 +342,22 @@ class Vision:
 		rospy.spin()
 
 	def rgb_callback(self,data):
+		self.objectlist = ObjectList()
+
 		try:
 			self.rgb_image = self.bridge.imgmsg_to_cv2(data, "passthrough")#rgba8 "bgr8"
 		except CvBridgeError, e:
 			print e
 
 		for mask in self.masks:
-			# print "self.find_project_publish_stamped(%s)" % mask.color
-			self.find_project_publish_stamped(mask)
+			# print "self.find_project_stamped(%s)" % mask.color
+			self.find_project_stamped(mask)
+
+		self.objectlistpub.publish(self.objectlist)
 
 	#given an hsv_mask, finds the number of blobs, filters, and publishes if it's consistent
 	#TODO get multi ball tracking working and staying consistent
-	def find_project_publish_stamped(self, hsv_mask):
+	def find_project_stamped(self, hsv_mask):
 		objs = self.findBlobsofHue(hsv_mask, hsv_mask.num_blobs, self.rgb_image, self.depth_image)
 		#print "-------------"
 		
@@ -435,7 +421,20 @@ class Vision:
 				if (output_object) :
 					try :
 						# hsv_mask.obj_pose_pubs[i].publish(bestPose)
-						hsv_mask.publish_stamped(i, bestPose)
+						# hsv_mask.publish_stamped(i, bestPose)
+
+						ps = PoseStamped()
+						ps.header.frame_id = self.CAMERA_FRAME
+						ps.header.stamp = rospy.Time.now()
+						ps.pose = deepcopy(bestPose)
+						# rospy.logerr(ps)
+
+						o = Object()
+						o.id = "%d" % i
+						o.color = hsv_mask.color
+						o.pose = deepcopy(ps)
+						# rospy.logerr(o)
+						self.objectlist.objects.append(o)
 					except CvBridgeError, e:
 						print e
 				for point_index in hsv_counts[i][2] :
