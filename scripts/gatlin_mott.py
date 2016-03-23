@@ -253,8 +253,12 @@ class Nav_Manip_Controller :
 
 	def run_mott_sequence(self) :
 
+
 		self.moveBaseToDynamicPos(self.object)
+
+		#if not self.joystick_topic == "" : TODO
 		self.servoBaseToDynamicPos(self.object)
+
 		self.interActionDelay(1)
 		self.grabObject(self.object)
 		
@@ -360,6 +364,9 @@ class Nav_Manip_Controller :
 
 	def __init__(self):
 		self.robot_name = "gatlin"
+
+
+
 		rospy.init_node('%s_nav_manip_controller'%self.robot_name)
 
 		self.robot_pose = DynamicPose()
@@ -378,7 +385,16 @@ class Nav_Manip_Controller :
 		self.FIXED_FRAME = "odom"
 		self.BASE_FAME = "base_link"
 
-		self.base_joystick_pub = rospy.Publisher("/cmd_vel_mux/input/teleop", Twist)
+		
+		''' 
+		TODO
+		add 
+		self.joystick_topic = "/cmd_vel_mux/input/teleop"
+
+		'''
+
+
+		self.base_joystick_pub = rospy.Publisher("/cmd_vel_mux/input/teleop", Twist) #<--- joystick topic
 		self.response_pub = rospy.Publisher("/gatlin_mott_response", String)
 		self.gmap_base_pub = rospy.Publisher("/move_to_goal", PoseStamped)
 		self.gatlin_cmd_pub = rospy.Publisher("/gatlin_cmd", Int32)

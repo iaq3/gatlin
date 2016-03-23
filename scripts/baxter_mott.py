@@ -66,123 +66,59 @@ class DynamicPose:
 
 class Nav_Manip_Controller :
 
-	def servo_base_to_pos(self, desired_pos, actual_pos) :
-		desired_pos = vector3_to_numpy(desired_pos)
-		actual_pos = vector3_to_numpy(actual_pos)
-		actual_pos[2] = 0
 
-		error_vec =  actual_pos - desired_pos
-		error = np.linalg.norm(error_vec)
-
-		forward = error_vec[0]
-		turn = error_vec[1]
-
-		error_angle = angle(error_vec, desired_pos)
-		# rospy.logerr(error_angle)
-		if error_angle > 0.25  and error_angle < pi - 0.25: #???
-			forward = 0
-
-		maxVel = .07
-		minVel = .05
-		mag = (turn**2 + forward**2)**.5
-		if (mag > maxVel) :
-			turn = (turn/mag) * maxVel
-			forward = (forward/mag) * maxVel
-
-		if (mag < minVel) :
-			turn = (turn/mag) * minVel
-			forward = (forward/mag) * minVel
-
-		turn *= 1.7
-
-		msg = Twist (Point(forward, 0.0, 0.0), Point(0.0, 0.0, turn))
-		self.base_joystick_pub.publish(msg)
-
-		return error
-
-	def moveBaseToDynamicPos(self, dynamic_pose) :
-		if self.command_state == self.CANCELLED :
-			return
-
-		rate = rospy.Rate(30)
-		goal_tolerence = .7
-
-		if self.distanceToPose(dynamic_pose.ps) > goal_tolerence :
-			self.publishResponse("Gmap base to "+dynamic_pose.topic)
-			
-			self.gmapBaseTo(dynamic_pose.ps)
-			#now this contains logic to cancel, pause, and resume
-			while self.distanceToPose(dynamic_pose.ps) > goal_tolerence : 
-				if self.command_state == self.CANCELLED :
-					self.cancelgmapBaseTo()
-					return
-				paused = False
-				while self.command_state == self.PAUSING :
-					if not paused :
-						paused = True
-						self.cancelgmapBaseTo()
-					rate.sleep()
-				if paused and self.command_state == self.RUNNING:
-					self.gmapBaseTo(dynamic_pose.ps)
-				rate.sleep()
-
-			self.cancelgmapBaseTo()
-
-	def servoBaseToDynamicPos(self, dynamic_pose) :
-		if self.command_state == self.CANCELLED :
-			return
-
-		self.publishResponse("Servo base to "+dynamic_pose.topic)
-
-		rate = rospy.Rate(30)
-		desired_pos = Point(.29,0,0)
-		goal_tolerence = .015
-
-		base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
-		while self.servo_base_to_pos(desired_pos, base_pose.pose.position) > goal_tolerence :
-			if self.command_state == self.CANCELLED :
-				return
-			
-			self.pauseCommand() #TODO move fr
-			if self.command_state == self.RUNNING :
-				base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
-
-			rate.sleep()
 
 	def grabObject(self, dynamic_pose) :
 		
 
-		holding_object = False
-		while not holding_object :
-			if self.command_state == self.CANCELLED :
-				return
-			self.pauseCommand()
+		#holding_object = False
+		#while not holding_object :
 
-			self.publishResponse("Attempting to grab "+dynamic_pose.topic)
-			resp = self.move_arm(OPEN_GRIPPER, PoseStamped())
 
-			base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
-			base_pose.pose.position.z -= .025 #??? maybe not best practice
-			resp = self.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_pose)
-			if not resp.success:
-				rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
-				# try moving to it again
-				self.servoBaseToDynamicPos(self.object_pose)
-				#TODO check this
-				rospy.sleep(1)
-				continue
+		if self.command_state == self.CANCELLED :
+			return
+		self.pauseCommand()
 
-			resp = self.move_arm(CLOSE_GRIPPER, PoseStamped())
+		self.publishResponse("Attempting to grab "+dynamic_pose.topic)
 
-			self.pauseCommand()
+		#open gripper
+		#resp = self.move_arm(OPEN_GRIPPER, PoseStamped()) OPEN GRIPPER!!!
+		#mr = MoveRobot()
+		#mr.action = 1
+		#mr.limb = "left"
+		#mr.pose = Pose()
+		resp = self.move_arm(1, self.limb, Pose())
 
-			resp = self.move_arm(RESET_ARM, PoseStamped())
-			if not resp.success:
-				rospy.logerr("RESET_ARM FAILED")
+		base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
+		#base_pose.pose.position.z -= .025 #??? maybe not best practice
+		#resp = self.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_pose)
+		resp = self.move_arm(3, self.limb, base_pose.pose)
 
-			# no object detection in last second, it is likely in robot's hand
-			if time.time() - dynamic_pose.last_update > 1 :
-				holding_object = True
+		if not resp.success:
+			rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
+			# try moving to it again
+			#self.servoBaseToDynamicPos(self.object_pose)
+			#TODO check this
+			rospy.sleep(1)
+			continue
+
+
+		self.pauseCommand()
+
+		#resp = self.move_arm(CLOSE_GRIPPER, PoseStamped())
+		resp = self.move_arm(0, self.limb, Pose())
+
+		self.pauseCommand()
+
+		#resp = self.move_arm(RESET_ARM, PoseStamped())
+		base_pose.pose.position.z += .1
+		resp = self.move_arm(3, self.limb, base_pose.pose)
+		if not resp.success:
+			rospy.logerr("RESET_ARM FAILED")
+
+		# no object detection in last second, it is likely in robot's hand
+		#if time.time() - dynamic_pose.last_update > 1 :
+		#holding_object = True
 
 		self.publishResponse("Grabbed "+dynamic_pose.topic)
 
@@ -198,13 +134,20 @@ class Nav_Manip_Controller :
 
 		self.publishResponse("Releasing object to "+dynamic_pose.topic)
 		base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
-		resp = self.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_pose)
-		if not resp.success:
-				rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
-		resp = self.move_arm(OPEN_GRIPPER, PoseStamped())
+		#resp = self.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_pose)
+		resp = self.move_arm(3, self.limb, base_pose.pose)
 
 		self.pauseCommand()
-		resp = self.move_arm(RESET_ARM, PoseStamped())
+
+		if not resp.success:
+				rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
+		#resp = self.move_arm(OPEN_GRIPPER, PoseStamped())
+		resp = self.move_arm(1, self.limb, Pose())
+
+		self.pauseCommand()
+		#resp = self.move_arm(RESET_ARM, PoseStamped())
+		base_pose.pose.position.z += .1
+		resp = self.move_arm(3, self.limb, base_pose.pose)
 
 	def interActionDelay(self, delay) : #if user tells command to quit, then you don't want delays to stack
 	 	if self.command_state == self.RUNNING :
@@ -213,16 +156,11 @@ class Nav_Manip_Controller :
 	
 	def run_mott_sequence(self) :
 
-		self.moveBaseToDynamicPos(self.object_pose)
-		self.servoBaseToDynamicPos(self.object_pose)
-		self.interActionDelay(1)
+		
 		self.grabObject(self.object_pose)
 		
 		self.interActionDelay(1)
 
-		self.moveBaseToDynamicPos(self.target_pose)
-		self.servoBaseToDynamicPos(self.target_pose)
-		self.interActionDelay(1)
 		self.releaseObject(self.target_pose)
 
 		if self.command_state == self.RUNNING :
@@ -232,20 +170,12 @@ class Nav_Manip_Controller :
 		elif self.command_state == self.CANCELLED :
 			self.publishResponse("quitting on user command") 
 
-	#velocity sequence
-	def base_to_sequence(self) :
-		self.moveBaseToDynamicPos(self.target_pose)
-		self.servoBaseToDynamicPos(self.target_pose)
-		
-		if self.command_state == self.RUNNING :
-			self.publishResponse("finished moving base to target")
-		elif self.command_state == self.PAUSING :
-			self.publishResponse("finished move base while pausing!?!?") 
-		elif self.command_state == self.CANCELLED :
-			self.publishResponse("quitting on user command") 
 				
 
 	def MottCallback(self, data) :
+
+		self.command_state = self.RUNNING
+
 		if data.object_pose_topic != "" :
 			self.object_pose.subscribe(data.object_pose_topic)
 
@@ -260,9 +190,7 @@ class Nav_Manip_Controller :
 
 		if data.command == "mott" :
 			self.run_mott_sequence()
-		elif data.command == "move_base" :
-			print "Starting Move Base TO"
-			self.base_to_sequence()
+
 
 	def MottCommandCallback(self, data) :
 		print "received "+data.data
@@ -305,6 +233,18 @@ class Nav_Manip_Controller :
 			rospy.logerr("no transform")
 			return None
 
+
+	def createServiceProxy(service,srv_type,limb):
+		name = ""
+		if limb == "":
+			name = "/%s" % (service)
+		else:
+			name = "/%s/%s" % (limb,service)
+		rospy.wait_for_service(name)
+		rospy.loginfo("Initialized service proxy for %s" % name)
+		return rospy.ServiceProxy(name, srv_type)
+
+
 	def __init__(self):
 		limb = "left"#TODO change to param or sumthing
 
@@ -332,6 +272,7 @@ class Nav_Manip_Controller :
 		rospy.Subscriber("/baxter_mott_command"+limb, String, self.MottCommandCallback, queue_size = 1)
 
 		#self.move_arm = createServiceProxy("move/arm", MoveRobot, self.robot_name) TODO 
+		self.move_arm = createServiceProxy("baxter/move/arm", MoveRobot, self.robot_name)
 
 		self.test_pose_pub = rospy.Publisher('/test_obj_pose', PoseStamped)
 
