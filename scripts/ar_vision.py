@@ -35,12 +35,18 @@ class AR_Vision :
 		self.FIXED_FRAME = "odom"
 		self.BASE_FAME = "base_link"
 
+		self.br = tf.TransformBroadcaster()
+
+		self.ar_marker_dict = {}
+		self.ar_marker_dict["3"] = "baxter"
+
 		rospy.spin()
 
 	def tf_callback(self, tfmsg):
 		for trans in tfmsg.transforms:
 			if trans.child_frame_id.startswith("ar_marker_"):
 				i = trans.child_frame_id.split("ar_marker_",1)[1]
+				if i == "255": return
 				rospy.logerr(i)
 				# rospy.logerr(trans.header.frame_id)
 				rospy.logerr(trans.child_frame_id)
@@ -49,6 +55,25 @@ class AR_Vision :
 				# TODO: republish for use later or 
 				# maybe use the frame as the parent of baxter
 				# create static transform from ar_marker_# to baxter base link
+				# also filter with an EKF
+
+				# transform to fixed global map frame
+				try:
+					frame_id = self.ar_marker_dict[i]
+				except:
+					rospy.logerr("No attached frame for marker %s" % i)
+					continue
+
+				T = trans.transform.translation
+				R = trans.transform.rotation
+
+				self.br.sendTransform(
+					(T.x, T.y, T.z),
+					(R.x, R.y, R.z, R.w),
+					rospy.Time.now(),
+					"%s_link" % self.ar_marker_dict[i],
+					"global_map"
+				)
 
 				# ps = PoseStamped()
 				# ps.header.frame_id = self.CAMERA_FRAME

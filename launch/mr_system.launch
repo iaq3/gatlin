@@ -1,0 +1,18 @@
+<!--
+  mr system launch
+ -->
+<launch>
+
+<include file="$(find gatlin)/launch/gatlin.launch">
+	<arg name="sim" default="false"/>
+	<arg name="rviz" default="true"/>
+	<arg name="calibrate" default="false"/>
+</include>
+
+<include file="$(find gatlin)/launch/baxter.launch">
+	<arg name="sim" default="false"/>
+	<arg name="rviz" default="true"/>
+	<arg name="calibrate" default="false"/>
+</include>
+
+</launch>

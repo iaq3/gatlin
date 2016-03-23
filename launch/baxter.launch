@@ -1,0 +1,12 @@
+<!--
+  baxter launch
+ -->
+<launch>
+
+<arg name="sim" default="false"/>
+<arg name="rviz" default="true"/>
+<arg name="calibrate" default="false"/>
+
+<node pkg="tf" type="static_transform_publisher" name="baxter_link_tf" args="0 0 0 0 0 0 1 /ar_marker_3 /baxter_link 100"/>
+	
+</launch>
