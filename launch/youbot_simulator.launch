@@ -1,4 +1,5 @@
 <launch>
+  <arg name="debug" default="false" />
  
   <!-- <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <arg name="use_sim_time" value="true"/>
@@ -14,6 +15,15 @@
   <!-- <remap from="/cmd_vel_mux/input/teleop" to="/cmd_vel_mux/input/teleop"/> -->
 
   <include file="$(find youbot_gazebo_robot)/launch/youbot.launch"/>
+
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find gatlin)/rviz/youbot_moveit.rviz" required="true" />
+
+  <include file="$(find youbot_moveit_config)/launch/move_group.launch">
+    <arg name="allow_trajectory_execution" value="true"/>
+    <arg name="fake_execution" value="true"/>
+    <arg name="info" value="true"/>
+    <arg name="debug" value="$(arg debug)"/>
+  </include>
   
   <node pkg="gatlin" type="remapper.py" name="remapper" output="screen"/> 
 

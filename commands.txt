@@ -31,6 +31,7 @@ roslaunch turtlebot_gazebo gmapping_demo.launch
 roslaunch youbot_moveit move_group.launch
 
 roslaunch gatlin youbot_simulator.launch
+rosrun youbot_driver_ros_interface youbot_keyboard_teleop.py
 
 rosdep update
 rosdep install rgbdslam

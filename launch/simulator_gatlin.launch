@@ -1,6 +1,7 @@
 <launch>
   <arg name="world_file"  default="$(env TURTLEBOT_GAZEBO_WORLD_FILE)"/>
 
+  <arg name="arm_name" default="pincher"/>
   <arg name="rviz" default="true"/>
   <arg name="sim" default="true"/>
   <arg name="gui" default="true" />
@@ -16,6 +17,27 @@
     <arg name="gui" value="$(arg gui)" />
     <arg name="world_name" value="$(arg world_file)"/>
   </include>
+
+
+  
+  <!-- <param name="/use_sim_time" value="true" /> -->
+
+  <!-- <node name="gazebo" pkg="gazebo" type="gazebo" args="-u $(find turtlebot_gazebo)/worlds/empty.world" respawn="false" output="screen"/> -->
+  <node name="gazebo_gui" pkg="gazebo" type="gui" />
+  
+  <!-- <group ns="brazo"> -->
+    
+  <!-- <param name="robot_description" command="$(find xacro)/xacro.py '$(find myrabot_robot_model)/urdf/myrabot.urdf.xacro'" /> -->
+
+  <node name="spawn_myrabot" pkg="gazebo" type="spawn_model" args="-urdf -param robot_description -model MYRAbot" respawn="false" output="screen" /> 
+
+  <rosparam file="$(find myrabot_arm_model)/controller.yaml" command="load"/>
+
+  <node name="spawn_controller" pkg="pr2_controller_manager" type="spawner" args="base_pos_controller arti1_pos_controller arti2_pos_controller arti3_pos_controller pinza_pos_controller base_vel_controller arti1_vel_controller arti2_vel_controller arti3_vel_controller pinza_vel_controller" respawn="false" output="screen" />
+
+  <!-- </group> -->
+
+
   
 
   <!-- ############################## create.launch.xml ############################## -->
@@ -23,8 +45,13 @@
     <param name="robot_description" command="$(arg urdf_file)" />
     
     <!-- Gazebo model spawner -->
-    <node name="spawn_turtlebot_model" pkg="gazebo_ros" type="spawn_model" args="$(optenv ROBOT_INITIAL_POSE) -unpause -urdf -param robot_description -model turtlebot"/>
+    <node name="spawn_gatlin" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description -model turtlebot"/>
     
+    <rosparam file="$(find gatlin)/config/gatlin_robot.yaml" command="load"/>
+  
+    <node pkg="controller_manager" type="spawner" name="$(arg arm_name)_arm_controller_spawner"  args="$(arg arm_name)/arm_controller" respawn="false" output="screen" />
+
+
     <!-- Odometry estimator -->
     <node pkg="robot_pose_ekf" type="robot_pose_ekf" name="robot_pose_ekf">
       <remap from="imu_data" to="turtlebot_node/imu/data"/>
@@ -58,12 +85,41 @@
     <remap from="scan" to="/scan"/>
   </node>
 
-  <include file="$(find turtlebot_navigation)/launch/includes/gmapping.launch.xml"/>
+  <!-- <include file="$(find turtlebot_navigation)/launch/includes/gmapping.launch.xml"/> -->
 
-  <include file="$(find turtlebot_navigation)/launch/includes/move_base.launch.xml"/>
+  <!-- <include file="$(find turtlebot_navigation)/launch/includes/move_base.launch.xml"/> -->
 
   <!-- <node if="$(arg rviz)" name="rviz" pkg="rviz" type="rviz" args="-d $(find gatlin)/rviz/navigation.rviz" required="true" /> -->
   <!-- <node if="$(arg rviz)" name="rviz" pkg="rviz" type="rviz" args="-d $(find gatlin)/rviz/moveit.rviz" required="true" /> -->
+
+  <!-- <arg name="world" default="robocup_at_work_2012"/> -->
+  <!-- <arg name="init_pos_x" default="0.0"/> -->
+  <!-- <arg name="init_pos_y" default="0.0"/> -->
+  <!-- <arg name="init_pos_z" default="0.0"/> -->
+
+  <!-- launch world -->
+  <!-- <include file="$(find youbot_gazebo_worlds)/launch/$(arg world).launch" /> -->
+
+  <!-- <param name="robot_description" command="$(find xacro)/xacro.py $(find youbot_description)/robots/youbot.urdf.xacro" /> -->
+
+  <!-- <node pkg="gazebo_ros" type="spawn_model" name="spawn_robot" respawn="false" output="screen"
+    args="-param robot_description
+          -urdf
+          -x $(arg init_pos_x)
+          -y $(arg init_pos_y)
+          -z $(arg init_pos_z)
+          -model youbot">
+  </node> -->
+
+  <!-- launch joint state controller -->
+  <!-- <include file="$(find youbot_gazebo_control)/launch/joint_state_controller.launch" /> -->
+
+  <!-- launch arm and gripper controller -->
+  <!-- <include file="$(find youbot_gazebo_control)/launch/arm_controller.launch" /> -->
+
+  <!-- <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher"> -->
+    <!-- <param name="publish_frequency" type="double" value="100.0" /> -->
+  <!-- </node> -->
 
   <!-- For Arm -->
   <!-- <param name="use_gui" value="$(arg gui)"/> -->
@@ -72,15 +128,21 @@
   <!-- already in arm_minimal -->
   <!-- <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" /> -->
 
-  <node if="$(arg sim)" name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
+ <!--  <node if="$(arg sim)" name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
     <param name="/use_gui" value="$(arg gui)"/> 
     <rosparam param="/source_list">[/move_group/fake_controller_joint_states]</rosparam>
-  </node>
+  </node> -->
 
-  <include file="$(find gatlin)/launch/arm_minimal.launch">
+  <!-- <include file="$(find gatlin)/launch/arm_minimal.launch">
     <arg name="gui" value="$(arg gui)"/>
     <arg name="sim" value="$(arg sim)"/>
     <arg name="rviz" value="false"/>
+  </include> -->
+
+  <include file="$(find gatlin)/launch/turtlebot_arm_moveit.launch">
+    <arg name="gui" value="$(arg gui)" />
+    <arg name="sim" value="$(arg sim)" />
+    <arg name="rviz" value="$(arg rviz)"/>
   </include>
 
 </launch>

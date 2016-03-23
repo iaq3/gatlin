@@ -13,7 +13,7 @@
   <arg name="debug" default="false" />
   
   <!-- Arm_type from environ.  NOTE: setting from arg not yet supported -->
-  <arg name="arm_type" default="$(optenv TURTLEBOT_ARM1 turtlebot)"/>
+  <!-- <arg name="arm_type" default="$(optenv TURTLEBOT_ARM1 turtlebot)"/> -->
 
   <!-- If needed, broadcast static tf for robot root -->
   
@@ -42,17 +42,14 @@
         - without trajectory execution on simulation -->
   <include file="$(find gatlin)/launch/move_group.launch">
     <arg name="allow_trajectory_execution" value="true"/>  
-    <arg name="fake_execution" value="false"/>
+    <arg name="fake_execution" value="$(arg sim)"/>
     <arg name="info" value="true"/>
     <arg name="debug" value="$(arg debug)"/>
   </include>
 
   <!-- Run Rviz and load the default config to see the state of the move_group node -->
-  <include if="$(arg rviz)" file="$(find turtlebot_arm_moveit_config)/launch/moveit_rviz.launch">
-    <arg name="config" value="true"/>
-    <arg name="debug" value="$(arg debug)"/>
-  </include>
-
+  <node if="$(arg rviz)" name="rviz" pkg="rviz" type="rviz" args="-d $(find gatlin)/rviz/moveit.rviz" required="true" />
+  
   <!-- If database loading was enabled, start mongodb as well -->
   <include file="$(find turtlebot_arm_moveit_config)/launch/default_warehouse_db.launch" if="$(arg db)"/>
 

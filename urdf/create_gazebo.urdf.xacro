@@ -9,7 +9,8 @@
 	      <left_wheel_joint>left_wheel_joint</left_wheel_joint>
 	      <right_wheel_joint>right_wheel_joint</right_wheel_joint>
 	      <front_castor_joint>front_castor_joint</front_castor_joint>
-	      <rear_castor_joint>rear_castor_joint</rear_castor_joint>
+        <rear_castor_joint>rear_castor_joint</rear_castor_joint>
+	      <!-- <back_castor_joint>back_castor_joint</back_castor_joint> -->
 	      <wheel_separation>.260</wheel_separation>
 	      <wheel_diameter>0.066</wheel_diameter>
 	      <base_geom>base_footprint_collision_base_link</base_geom>

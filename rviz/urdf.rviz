@@ -59,91 +59,32 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
-        arm_base_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        arm_elbow_F10_0_link:
+        arm_link_0:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        arm_elbow_F10_1_link:
+        arm_link_1:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        arm_elbow_F10_2_link:
+        arm_link_2:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        arm_elbow_F3_0_link:
+        arm_link_3:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        arm_elbow_flex_link:
+        arm_link_4:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        arm_elbow_flex_servo_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        arm_shoulder_F10_0_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        arm_shoulder_F10_1_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        arm_shoulder_F10_2_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        arm_shoulder_F3_0_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        arm_shoulder_lift_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        arm_shoulder_lift_servo_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        arm_shoulder_pan_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        arm_shoulder_pan_servo_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        arm_wrist_F3_0_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        arm_wrist_flex_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        arm_wrist_flex_servo_link:
+        arm_link_5:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -153,170 +94,72 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
+        base_laser_front_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
         base_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        camera_depth_frame:
+        caster_link_bl:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        camera_depth_optical_frame:
+        caster_link_br:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        camera_link:
+        caster_link_fl:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-          Value: true
-        camera_rgb_frame:
+        caster_link_fr:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        camera_rgb_optical_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        front_wheel_link:
+        gripper_finger_link_l:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        gripper_active2_link:
+        gripper_finger_link_r:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        gripper_active_link:
+        gripper_palm_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        gripper_finger_base_link:
+        plate_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        gripper_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        gripper_servo_link:
+        wheel_link_bl:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        gyro_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        head_base_link:
+        wheel_link_br:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        head_pan_link:
+        wheel_link_fl:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        head_pan_servo_link:
+        wheel_link_fr:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        head_tilt_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        head_tilt_servo_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        laser:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        left_cliff_sensor_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        left_wheel_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        leftfront_cliff_sensor_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        plate_0_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        plate_1_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        plate_2_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        plate_3_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        rear_wheel_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        right_cliff_sensor_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        right_wheel_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        rightfront_cliff_sensor_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        support_0_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        support_1_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        support_2_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        support_3_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        wall_sensor_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
       Name: RobotModel
       Robot Description: robot_description
       TF Prefix: ""
@@ -424,10 +267,10 @@ Visualization Manager:
         Z: 0.15311
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.700398
+      Pitch: 0.0703984
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.650396
+      Yaw: 0.805396
     Saved: ~
 Window Geometry:
   Displays:
