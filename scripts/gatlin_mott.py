@@ -177,7 +177,7 @@ class Nav_Manip_Controller :
 
 		rate = rospy.Rate(30)
 		desired_pos = Point(.29,0,0)
-		goal_tolerence = .015
+		goal_tolerence = .025
 
 		base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
 		while self.servo_base_to_pos(desired_pos, base_pose.pose.position) > goal_tolerence :

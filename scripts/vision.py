@@ -263,7 +263,8 @@ class Vision:
 			"green",
 			"circle",
 			"kinect",
-			{'H': {'max': 47, 'min': 34}, 'S': {'max': 200, 'min': 146}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 253, 'min': 185}},
+			# {'H': {'max': 47, 'min': 34}, 'S': {'max': 200, 'min': 146}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 253, 'min': 185}},
+			{'H': {'max': 61, 'min': 44}, 'S': {'max': 126, 'min': 79}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 189, 'min': 128}},
 			calibrated=True, num_blobs = 2
 		)
 		self.masks.append(self.green_kinect_mask)
