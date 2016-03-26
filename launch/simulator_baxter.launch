@@ -1,6 +1,7 @@
 <launch>
   <!-- <arg name="world_file"  default="$(env TURTLEBOT_GAZEBO_WORLD_FILE)"/> -->
 
+  <arg name="gazebo" default="true"/>
   <arg name="rviz" default="true"/>
   <arg name="sim" default="true"/>
   <!-- <arg name="gui" default="true" /> -->
@@ -27,7 +28,7 @@
         command="$(find xacro)/xacro.py --inorder $(find baxter_description)/urdf/baxter.urdf.xacro gazebo:=true"/>
 
     <!-- We resume the logic in empty_world.launch, changing the name of the world to be launched -->
-    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <include if="$(arg gazebo)" file="$(find gazebo_ros)/launch/empty_world.launch">
       <arg name="world_name" value="$(find baxter_gazebo)/worlds/baxter.world"/>
       <arg name="debug" value="$(arg debug)" />
       <arg name="gui" value="$(arg gui)" />
@@ -40,11 +41,17 @@
     <param name="rethink/software_version" value="1.2.0" />
 
     <!-- Publish a static transform between the world and the base of the robot -->
-    <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_world" args="0 0 0 0 0 0 1 world base" />
+    <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_world" args="0 0 0 0 0 0 1 world base" /> -->
+
+    <arg name="robot_name" default="baxter"/>
+    <arg name="init_pose" default="-x 0 -y 0 -z 0.93"/>
+
+    <!-- The odometry estimator, throttling, fake laser etc. go here -->
+    <!-- All the stuff as from usual robot launch file -->
 
     <!-- Run a python script to the send a service call to gazebo_ros to spawn a URDF robot -->
      <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
-    args="-param robot_description -urdf -z 0.93 -model baxter
+    args="$(arg init_pose) -param robot_description -urdf -model $(arg robot_name)
           -J baxter::right_s0 -0.272659
           -J baxter::right_s1 1.04701
           -J baxter::right_e0 -0.00123203
@@ -68,7 +75,7 @@
 
   <node pkg="tf" type="static_transform_publisher" name="baxter_link_tf" args="0 0 0 0 0 0 1 /ar_marker_3 /baxter_link 100"/>
 
-  <node pkg="tf" type="static_transform_publisher" name="base_link_tf" args="0 0 0 0 0 0 1 /baxter_link /base_link 100"/>
+  <node pkg="tf" type="static_transform_publisher" name="base_link_tf" args="0 0 0 0 0 0 1 /baxter_link /base 100"/>
 
   <!-- <node pkg="gatlin" type="baxter_arm_controller.py" name="baxter_arm_controller" output="screen"/> -->
 

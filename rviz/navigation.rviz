@@ -5,12 +5,14 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
+        - /RobotModel1
         - /TF1/Frames1
         - /TF1/Tree1
         - /Global Map1/Costmap1
         - /Global Map1/Planner1
         - /Local Map1/Costmap1
         - /Local Map1/Planner1
+        - /PointCloud21
       Splitter Ratio: 0.5
     Tree Height: 663
   - Class: rviz/Selection
@@ -30,7 +32,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: LaserScan
+    SyncSource: ""
 Visualization Manager:
   Class: ""
   Displays:
@@ -253,8 +255,8 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
       Name: RobotModel
-      Robot Description: robot_description
-      TF Prefix: ""
+      Robot Description: turtlebot1/robot_description
+      TF Prefix: turtlebot1
       Update Interval: 0
       Value: true
       Visual Enabled: true
@@ -422,14 +424,14 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.01
       Style: Flat Squares
-      Topic: /camera/depth/points
+      Topic: /turtlebot1/camera/depth/points
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: odom
+    Fixed Frame: turtlebot1/base_footprint
     Frame Rate: 30
   Name: root
   Tools:

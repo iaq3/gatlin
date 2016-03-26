@@ -10,5 +10,7 @@
 
   <create/>
   <stack_circles parent="base_link"/>
-  <sensor_kinect  parent="base_link"/>
+  <sensor_kinect  parent="base_link" >
+    <origin xyz="${cam_px} 0 ${cam_pz}" rpy="0 0 0" />
+  </sensor_kinect>
 </robot>
