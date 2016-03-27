@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Gatlin Networker</title>
+    <script type="text/javascript" src="eventemitter2.min.js"></script>
+    <script type="text/javascript" src="roslib.min.js"></script>
+    <script src="../dist/jquery.min.js"></script>
+    <style></style>
+</head>
+<body>
+<div class="container">
+    <h1>Gatlin Networker</h1>
+</div>
+
+<script>
+    var gatlin_ip = "192.168.4.82"
+    var baxter_ip = "128.84.103.242"
+    var gatlin_ros = new ROSLIB.Ros({
+        url : "ws://"+gatlin_ip+":9090"
+    });
+
+    gatlin_ros.on('connection', function() {
+        console.log('Connected to websocket server.');
+    });
+
+    gatlin_ros.on('error', function(error) {
+        console.log('Error connecting to websocket server: ', error);
+    });
+
+    gatlin_ros.on('close', function() {
+        console.log('Connection to websocket server closed.');
+    });
+
+    var baxter_ros = new ROSLIB.Ros({
+        url : "ws://"+baxter_ip+":9090"
+    });
+
+    baxter_ros.on('connection', function() {
+        console.log('Connected to websocket server.');
+    });
+
+    baxter_ros.on('error', function(error) {
+        console.log('Error connecting to websocket server: ', error);
+    });
+
+    baxter_ros.on('close', function() {
+        console.log('Connection to websocket server closed.');
+    });
+
+    var baxter_test_string = new ROSLIB.Topic({
+        ros : baxter_ros,
+        name : '/test_string',
+        messageType : 'std_msgs/String'
+    });
+    
+    var gatlin_test_string = new ROSLIB.Topic({
+        ros : gatlin_ros,
+        name : '/test_string',
+        messageType : 'std_msgs/String'
+    });
+
+    gatlin_test_string.subscribe(function(message) {
+        console.log('Received message on ' + gatlin_test_string.name + ': ' + message.data);
+        baxter_test_string.publish(message);
+        console.log('Sent message on ' + baxter_test_string.name + ': ' + message.data);
+    });
+
+</script>
+</body>
+</html>

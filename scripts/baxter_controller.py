@@ -4,6 +4,7 @@ import rospy
 import numpy as np
 from std_msgs.msg import *
 from geometry_msgs.msg import *
+from sensor_msgs.msg import *
 from gatlin.srv import *
 from gatlin.msg import *
 from baxter_core_msgs.msg import *
@@ -12,8 +13,9 @@ from baxter_interface import *
 from config import *
 from copy import deepcopy
 from tf.transformations import *
+import cv2, cv_bridge, rospkg
 
-class RobotInterface():
+class BaxterController():
     def __init__(self):
         rospy.init_node('position_control')
         rospy.loginfo("Initialized Position Control")
@@ -29,7 +31,6 @@ class RobotInterface():
         self.limb = Limb(self.limb_name)
         
         self.gripper = Gripper(self.limb_name)
-    
 
         rospy.Subscriber("/robot/limb/"+self.limb_name+"/endpoint_state", EndpointState, self.respondToEndpoint)
         
@@ -38,7 +39,6 @@ class RobotInterface():
         # self.position_srv = createService('end_effector_position', EndEffectorPosition, self.get_position_response, self.limb)
 
         try :
-            rospy.loginfo("Initializing service proxy for /SolvePositionIK...")
             ns = "ExternalTools/"+self.limb_name+"/PositionKinematicsNode/IKService"
             rospy.wait_for_service(ns, 5.0)
             self.iksvc = rospy.ServiceProxy(ns, SolvePositionIK)
@@ -48,7 +48,20 @@ class RobotInterface():
 
         print "Ready to move baxter " +self.limb_name
 
+        self.show_ARmarker_face()
+
         rospy.spin()
+
+    def show_ARmarker_face(self):
+        rospack = rospkg.RosPack()
+        img_name = "marker3_baxter.png"
+        img = cv2.imread(rospack.get_path('gatlin')+"/img/"+img_name)
+        img_msg = cv_bridge.CvBridge().cv2_to_imgmsg(img, encoding="bgr8")
+
+        self.display_pub = rospy.Publisher('/robot/xdisplay', Image, latch=True, queue_size=1)
+        self.display_pub.publish(img_msg)
+        rospy.loginfo(img_name+" sent to Baxter Display")
+        rospy.sleep(1)
 
     def get_position_response(self, args):
         position = self.get_position()
@@ -178,15 +191,13 @@ class RobotInterface():
                 header = hdr,
                 pose = ourpose
             ),
-        }         
+        }
         ikreq.pose_stamp.append(poses[limb])
-
-        iksvc = self.iksvc
 
         try :
             ns = "ExternalTools/"+limb+"/PositionKinematicsNode/IKService"
             rospy.wait_for_service(ns, 5.0)
-            resp = iksvc(ikreq)
+            resp = self.iksvc(ikreq)
         except (rospy.ServiceException, rospy.ROSException), e:
             rospy.logerr("Service call failed: %s" % (e,))
             return []
@@ -200,6 +211,6 @@ class RobotInterface():
 
 if __name__ == '__main__':
     try:
-        RobotInterface()
+        BaxterController()
     except rospy.ROSInterruptException:
         pass
