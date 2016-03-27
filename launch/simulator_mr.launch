@@ -1,7 +1,7 @@
 <launch>
 
   <group ns="turtlebot1">
-    <param name="tf_prefix" value="turtlebot1" />
+    <param name="tf_prefix" value="turtlebot1_tf" />
     <include file="$(find gatlin)/launch/simulator_turtlebot.launch" >
       <arg name="rviz" value="false"/>
       <arg name="gazebo" value="false"/>
@@ -17,7 +17,7 @@
     <arg name="init_pose" value="-x 0 -y 0 -z 0.93"/>
   </include> -->
 
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find gatlin)/rviz/navigation.rviz"/>
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find gatlin)/rviz/mr.rviz"/>
 
   <arg name="world_file"  default="$(env TURTLEBOT_GAZEBO_WORLD_FILE)"/>
   <arg name="gui" default="true" />
