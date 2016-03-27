@@ -26,7 +26,7 @@
 <!-- <node pkg="gatlin" type="ar_vision.py" name="vision" output="screen"/> -->
 <include file="$(find gatlin)/launch/ar_gatlin_indiv.launch" />
 
-<node pkg="gatlin" type="vision.py" name="vision" output="screen"/>
+<!-- <node pkg="gatlin" type="vision.py" name="vision" output="screen"/> -->
 
 <node pkg="gatlin" type="arm_controller.py" name="arm_controller" output="screen"/>
 
@@ -75,5 +75,8 @@
 <node pkg="tf" type="static_transform_publisher" name="map_tf" args="0 0 0 0 0 0 1 /gatlin_link /map 100"/>
 
 <node pkg="tf" type="static_transform_publisher" name="gatlin_link_tf" args="0 0 0 0 0 0 1 /global_map /gatlin_link 100"/>
+
+<node pkg="tf" type="static_transform_publisher" name="expected_ar_marker_0_tf" args="0 0 -0.04 1.5707 -3.1415 0.0 /gripper_servo_link /expected_ar_marker_0 100"/>
+
 
 </launch>

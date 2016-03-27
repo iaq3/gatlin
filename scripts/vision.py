@@ -260,46 +260,39 @@ class Vision:
 		self.masks = []
 
 		self.green_kinect_mask = HSVMask(
-			"green",
-			"circle",
-			"kinect",
-			# {'H': {'max': 47, 'min': 34}, 'S': {'max': 200, 'min': 146}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 253, 'min': 185}},
-			{'H': {'max': 61, 'min': 44}, 'S': {'max': 126, 'min': 79}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 189, 'min': 128}},
+			"green", "circle", "kinect", 
+			# {'H': {'max': 61, 'min': 44}, 'S': {'max': 126, 'min': 79}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 189, 'min': 128}},
+			# {'H': {'max': 48, 'min': 34}, 'S': {'max': 191, 'min': 145}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 229, 'min': 163}},
+			{'H': {'max': 52, 'min': 28}, 'S': {'max': 214, 'min': 153}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 231, 'min': 154}},
 			calibrated=True, num_blobs = 2
 		)
 		self.masks.append(self.green_kinect_mask)
 		
 		self.pink_kinect_mask = HSVMask(
-			"pink",
-			"circle",
-			"kinect",
+			"pink", "circle", "kinect", 
 			{'H': {'max': 180, 'min': 170}, 'S': {'max': 255, 'min': 192}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 178, 'min': 124}},
 			calibrated=True, num_blobs = 1
 		)
 		# self.masks.append(self.pink_kinect_mask)
 
 		self.red_kinect_mask = HSVMask(
-			"red",
-			"circle",
-			"kinect",
-			{'H': {'max': 178, 'min': 164}, 'S': {'max': 214, 'min': 180}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 234, 'min': 148}},
+			"red", "square", "kinect", 
+			# {'H': {'max': 178, 'min': 164}, 'S': {'max': 214, 'min': 180}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 234, 'min': 148}},
+			# {'H': {'max': 178, 'min': 164}, 'S': {'max': 211, 'min': 143}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 208, 'min': 158}},
+			{'H': {'max': 180, 'min': 168}, 'S': {'max': 248, 'min': 184}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 225, 'min': 182}},
 			calibrated=True, num_blobs = 1
 		)
 		self.masks.append(self.red_kinect_mask)
 
 		self.yellow_kinect_mask = HSVMask(
-			"yellow",
-			"circle",
-			"kinect",
+			"yellow", "circle", "kinect", 
 			{'H': {'max': 35, 'min': 20}, 'S': {'max': 242, 'min': 131}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 195, 'min': 96}},
 			calibrated=True, num_blobs = 1
 		)
 		# self.masks.append(self.yellow_kinect_mask)
 
 		self.blue_kinect_mask = HSVMask(
-			"blue",
-			"circle",
-			"kinect",
+			"blue", "circle", "kinect", 
 			{'H': {'max': 124, 'min': 109}, 'S': {'max': 234, 'min': 136}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 159, 'min': 26}},
 			calibrated=True, num_blobs = 1
 		)
@@ -555,7 +548,8 @@ class Vision:
 				box = np.int0(box)
 				
 				radius = math.sqrt(cv2.contourArea(c))
-				if radius > 5 and area > 150 and similarity < 10.0:
+				# if radius > 5 and area > 150 and similarity < 10.0:
+				if radius > 3 and area > 150:
 					# get the centroid
 					M = cv2.moments(c)
 					cx = int(M['m10']/M['m00'])
@@ -583,14 +577,15 @@ class Vision:
 		return blobsFound
 
 	def selectRegion(self, x,y, select):
-		region = 5
-		for r in range(0, 2*region):
-			for c in range(0, 2*region):
-				try:
-					self.select_mask[y+c-region][x+r-region] = 255 if select else 0 
-				except:
-					continue
-					# rospy.logerr("Error selectRegion")
+		region = 6
+		for r in range(-region, region):
+			for c in range(-region, region):
+				if (c**2+r**2)**.5 <= region-1:
+					try:
+						self.select_mask[y+c][x+r] = 255 if select else 0 
+					except:
+						continue
+						# rospy.logerr("Error selectRegion")
 
 	def onmouse(self,event,x,y,flags,params):
 		if event == cv2.EVENT_LBUTTONDOWN:
@@ -659,17 +654,19 @@ class Vision:
 				changed = hsv_mask.changeMask(param, arg, inc)
 				in_mask, out_mask = self.getSelectionStats(hsv_mask, rgb_image_in, depth_image_in)
 				# time.sleep(.05)
-			hsv_mask.changeMask(param, arg, -5*inc)
+			hsv_mask.changeMask(param, arg, -10*inc)
 			print "######################################"
 			print "%s %s: %d" % (param, arg, hsv_mask.m[param][arg])
 			print "######################################"
 
-		tune(.92, 1.0, "H", "min", 1)
-		tune(.91, 1.0, "H", "max", -1)
-		tune(.90, 1.0, "S", "min", 1)
-		tune(.89, 1.0, "S", "max", -1)
-		tune(.88, 1.0, "V", "min", 1)
-		tune(.87, 1.0, "V", "max", -1)
+		start = .95
+		change = .005
+		tune(start-change*0, 1.0, "H", "min", 1)
+		tune(start-change*1, 1.0, "H", "max", -1)
+		tune(start-change*2, 1.0, "S", "min", 1)
+		tune(start-change*3, 1.0, "S", "max", -1)
+		tune(start-change*4, 1.0, "V", "min", 1)
+		tune(start-change*5, 1.0, "V", "max", -1)
 
 		hsv_mask.calibrated = True
 		print "############## Auto Calibrated %s %s Mask ##############" % (hsv_mask.color, hsv_mask.camera)

@@ -5,9 +5,9 @@
    <xacro:property name="PI" value="3.1415"/>
 
    <!-- Define a number of dimensions using properties -->   
-   <property name="head_offset_x" value="0.075" />
-   <property name="head_offset_y" value="0.02" />
-   <property name="head_offset_z" value="0.035" />
+   <property name="head_offset_x" value="0.096" />
+   <property name="head_offset_y" value="0.0124" />
+   <property name="head_offset_z" value="0.0339" />
    <property name="head_offset_rotz" value="0.02" />
    
    <property name="arm_offset_x" value="0.13" />

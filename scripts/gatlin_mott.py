@@ -48,6 +48,7 @@ class DynamicObject:
 		for obj in objectlist.objects:
 			if obj.color == self.color and obj.id == self.id:
 				self.ps = self.transform_pose(self.FIXED_FRAME, obj.pose)
+				self.last_update = time.time()
 
 	# transform the pose stamped to the new frame
 	def transform_pose(self, new_frame, pose):
@@ -176,7 +177,7 @@ class Nav_Manip_Controller :
 		# self.publishResponse("Servo base to "+dynamic_pose.topic)
 
 		rate = rospy.Rate(30)
-		desired_pos = Point(.29,0,0)
+		desired_pos = Point(.25,0,0)
 		goal_tolerence = .025
 
 		base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
@@ -191,7 +192,6 @@ class Nav_Manip_Controller :
 			rate.sleep()
 
 	def grabObject(self, dynamic_pose) :
-		
 
 		holding_object = False
 		while not holding_object :
@@ -222,7 +222,8 @@ class Nav_Manip_Controller :
 				rospy.logerr("RESET_ARM FAILED")
 
 			# no object detection in last second, it is likely in robot's hand
-			if time.time() - dynamic_pose.last_update > 1 :
+			since_update = time.time() - dynamic_pose.last_update
+			if since_update > 1 :
 				holding_object = True
 
 		# self.publishResponse("Grabbed "+dynamic_pose.topic)
@@ -241,7 +242,7 @@ class Nav_Manip_Controller :
 		base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
 		resp = self.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_pose)
 		if not resp.success:
-				rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
+			rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
 		resp = self.move_arm(OPEN_GRIPPER, PoseStamped())
 
 		self.pauseCommand()
