@@ -27,8 +27,8 @@
 <script>
 
     var total_size = 0;
-    var topic_sizes = {};
-    var topic_count = {};
+    var mapping_bytes = {};
+    var mapping_count = {};
     var bandwith_cells = {};
     var rate_cells = {};
 
@@ -39,11 +39,11 @@
     var ms = 1000 / update_rate;
     function getDataRate() {
         var rate = total_size / ms;
-        for(mapping_id in topic_sizes) {
-            var topic_bandwith = topic_sizes[mapping_id] / ms;
-            var topic_rate = topic_count[mapping_id] / (ms/1000);
-            topic_sizes[mapping_id] = 0;
-            topic_count[mapping_id] = 0;
+        for(mapping_id in mapping_bytes) {
+            var topic_bandwith = mapping_bytes[mapping_id] / ms;
+            var topic_rate = mapping_count[mapping_id] / (ms/1000);
+            mapping_bytes[mapping_id] = 0;
+            mapping_count[mapping_id] = 0;
             bandwith_cells[mapping_id].innerHTML = topic_bandwith.toFixed(2);
             rate_cells[mapping_id].innerHTML = topic_rate.toFixed(2);
         }
@@ -64,8 +64,8 @@
     }
 
     function update_topic_size(mapping_id, size) {
-        topic_sizes[mapping_id] += size;
-        topic_count[mapping_id] += 1;
+        mapping_bytes[mapping_id] += size;
+        mapping_count[mapping_id] += 1;
         total_size += size;
     }
 
@@ -95,8 +95,8 @@
     function forwardTopic(sub_ros, pub_ros, topic, type) { remapTopic(sub_ros, pub_ros, topic, topic, type); }
     function remapTopic(sub_ros, pub_ros, sub_topic_name, pub_topic_name, type) {
         var mapping_id = sub_ros.name+sub_topic_name+"->"+pub_ros.name+pub_topic_name;
-        topic_sizes[mapping_id] = 0;
-        topic_count[mapping_id] = 0;
+        mapping_bytes[mapping_id] = 0;
+        mapping_count[mapping_id] = 0;
         var row = mapping_rate_table.insertRow();
         row.insertCell().innerHTML = sub_ros.name;
         row.insertCell().innerHTML = pub_ros.name;
@@ -133,9 +133,12 @@
         forwardTopic(server_ros, client_ros, name+'/response', resp_type);        
     }
 
-    var hub_ip = "192.168.4.83";
-    var gatlin_ip = "192.168.4.82";
-    var baxter_ip = "128.84.103.242";
+    // var hub_ip = "192.168.4.83";
+    var hub_ip = "192.168.1.103";
+    // var hub_ip = "10.0.2.15";
+    // var gatlin_ip = "192.168.4.82";
+    // var baxter_ip = "128.84.103.242";
+    var baxter_ip = "192.168.1.100";
 
     // test_ros = createROS("test", "192.168.1.100", 9090);
     // test2_ros = createROS("test2", "127.0.0.1", 9090);
@@ -147,30 +150,30 @@
 
 
     hub_ros = createROS("hub", hub_ip, 9090);
-    gatlin_ros = createROS("gatlin", gatlin_ip, 9090);
+    // gatlin_ros = createROS("gatlin", gatlin_ip, 9090);
     baxter_ros = createROS("baxter", baxter_ip, 9090);
 
-    // gatlin -> unity
-    forwardTopic(gatlin_ros, hub_ros, '/gatlin_mott_response', 'std_msgs/String');
-    forwardTopic(gatlin_ros, hub_ros, '/tool_tip_link_in_base_link', 'geometry_msgs/PoseStamped');
-    forwardTopic(gatlin_ros, hub_ros, '/octomap_array', 'std_msgs/UInt16MultiArray');
-    forwardTopic(gatlin_ros, hub_ros, '/map', 'nav_msgs/OccupancyGrid');
-    forwardTopic(gatlin_ros, hub_ros, '/robot_pose', 'geometry_msgs/PoseStamped');
-    forwardTopic(gatlin_ros, hub_ros, '/camera_link_in_base_link', 'geometry_msgs/PoseStamped');
-    forwardTopic(gatlin_ros, hub_ros, '/map_pose', 'geometry_msgs/PoseStamped');
-    forwardTopic(gatlin_ros, hub_ros, '/gatlin/objectlist', 'gatlin/ObjectList');
+    // // gatlin -> unity
+    // forwardTopic(gatlin_ros, hub_ros, '/gatlin_mott_response', 'std_msgs/String');
+    // forwardTopic(gatlin_ros, hub_ros, '/tool_tip_link_in_base_link', 'geometry_msgs/PoseStamped');
+    // forwardTopic(gatlin_ros, hub_ros, '/octomap_array', 'std_msgs/UInt16MultiArray');
+    // forwardTopic(gatlin_ros, hub_ros, '/map', 'nav_msgs/OccupancyGrid');
+    // forwardTopic(gatlin_ros, hub_ros, '/robot_pose', 'geometry_msgs/PoseStamped');
+    // forwardTopic(gatlin_ros, hub_ros, '/camera_link_in_base_link', 'geometry_msgs/PoseStamped');
+    // forwardTopic(gatlin_ros, hub_ros, '/map_pose', 'geometry_msgs/PoseStamped');
+    // forwardTopic(gatlin_ros, hub_ros, '/gatlin/objectlist', 'gatlin/ObjectList');
 
-    // unity -> gatlin
-    forwardTopic(hub_ros, gatlin_ros, '/gatlin_cmd', 'std_msgs/Int32');
-    forwardTopic(hub_ros, gatlin_ros, '/gatlin_res', 'std_msgs/Float32');
-    forwardTopic(hub_ros, gatlin_ros, '/cmd_vel_mux/input/teleop', 'geometry_msgs/Twist');
-    forwardTopic(hub_ros, gatlin_ros, '/target_pos', 'geometry_msgs/Vector3');
-    forwardTopic(hub_ros, gatlin_ros, '/head_pos', 'geometry_msgs/Vector3');
-    forwardTopic(hub_ros, gatlin_ros, '/move/gripper', 'std_msgs/Float32');
-    forwardTopic(hub_ros, gatlin_ros, '/move_to_goal', 'geometry_msgs/PoseStamped');
-    forwardTopic(hub_ros, gatlin_ros, '/arm_target_pose', 'geometry_msgs/PoseStamped');
-    forwardTopic(hub_ros, gatlin_ros, '/gatlin_mott', 'gatlin/Mott');
-    forwardTopic(hub_ros, gatlin_ros, '/gatlin_mott_command', 'std_msgs/String');
+    // // unity -> gatlin
+    // forwardTopic(hub_ros, gatlin_ros, '/gatlin_cmd', 'std_msgs/Int32');
+    // forwardTopic(hub_ros, gatlin_ros, '/gatlin_res', 'std_msgs/Float32');
+    // forwardTopic(hub_ros, gatlin_ros, '/cmd_vel_mux/input/teleop', 'geometry_msgs/Twist');
+    // forwardTopic(hub_ros, gatlin_ros, '/target_pos', 'geometry_msgs/Vector3');
+    // forwardTopic(hub_ros, gatlin_ros, '/head_pos', 'geometry_msgs/Vector3');
+    // forwardTopic(hub_ros, gatlin_ros, '/move/gripper', 'std_msgs/Float32');
+    // forwardTopic(hub_ros, gatlin_ros, '/move_to_goal', 'geometry_msgs/PoseStamped');
+    // forwardTopic(hub_ros, gatlin_ros, '/arm_target_pose', 'geometry_msgs/PoseStamped');
+    // forwardTopic(hub_ros, gatlin_ros, '/gatlin_mott', 'gatlin/Mott');
+    // forwardTopic(hub_ros, gatlin_ros, '/gatlin_mott_command', 'std_msgs/String');
 
     // TODO:
     // test the gatlin hub link with unity client connected to lab computer ip
