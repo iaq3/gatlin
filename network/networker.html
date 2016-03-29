@@ -12,20 +12,43 @@
 <div class="container">
     <h1>Gatlin Networker</h1>
     <h3 id="data_rate"></h3>
+    <table id="mapping_rate_table" cellpadding="10">
+        <tr>
+            <th>Sub</th>
+            <th>Pub</th>
+            <th>In Topic</th>
+            <th>Out Topic</th>
+            <th>Bandwith (MB/sec)</th>
+            <th>Rate (msg/sec)</th>
+        </tr>
+    </table>
 </div>
 
 <script>
 
     var total_size = 0;
+    var topic_sizes = {};
+    var topic_count = {};
+    var bandwith_cells = {};
+    var rate_cells = {};
 
     var data_rate_output = document.getElementById('data_rate');
+    var mapping_rate_table = document.getElementById('mapping_rate_table');
 
     var update_rate = 2;
     var ms = 1000 / update_rate;
     function getDataRate() {
         var rate = total_size / ms;
+        for(mapping_id in topic_sizes) {
+            var topic_bandwith = topic_sizes[mapping_id] / ms;
+            var topic_rate = topic_count[mapping_id] / (ms/1000);
+            topic_sizes[mapping_id] = 0;
+            topic_count[mapping_id] = 0;
+            bandwith_cells[mapping_id].innerHTML = topic_bandwith.toFixed(2);
+            rate_cells[mapping_id].innerHTML = topic_rate.toFixed(2);
+        }
         total_size = 0;
-        data_rate_output.innerHTML = rate.toFixed(3)+" MB/sec";
+        data_rate_output.innerHTML = "Total Bandwith: "+rate.toFixed(3)+" MB/sec";
         return rate;
     }
 
@@ -38,6 +61,12 @@
         }
 
         return msg_cache[type];
+    }
+
+    function update_topic_size(mapping_id, size) {
+        topic_sizes[mapping_id] += size;
+        topic_count[mapping_id] += 1;
+        total_size += size;
     }
 
     function createROS(name, ip, port) {
@@ -58,31 +87,44 @@
             console.log('Connection to '+name+' websocket server closed.');
         });
 
+        ros.name = name;
+
         return ros;
     }
 
     function forwardTopic(sub_ros, pub_ros, topic, type) { remapTopic(sub_ros, pub_ros, topic, topic, type); }
-    function remapTopic(sub_ros, pub_ros, sub_topic, pub_topic, type) {
-        var pub_topic = new ROSLIB.Topic({
+    function remapTopic(sub_ros, pub_ros, sub_topic_name, pub_topic_name, type) {
+        var mapping_id = sub_ros.name+sub_topic_name+"->"+pub_ros.name+pub_topic_name;
+        topic_sizes[mapping_id] = 0;
+        topic_count[mapping_id] = 0;
+        var row = mapping_rate_table.insertRow();
+        row.insertCell().innerHTML = sub_ros.name;
+        row.insertCell().innerHTML = pub_ros.name;
+        row.insertCell().innerHTML = sub_topic_name;
+        row.insertCell().innerHTML = pub_topic_name;
+        bandwith_cells[mapping_id] = row.insertCell();
+        rate_cells[mapping_id] = row.insertCell();
+
+            var pub_topic = new ROSLIB.Topic({
             ros : pub_ros,
-            name : pub_topic,
+            name : pub_topic_name,
             messageType : type
         });
         
         var sub_topic = new ROSLIB.Topic({
             ros : sub_ros,
-            name : sub_topic,
+            name : sub_topic_name,
             messageType : type
         });
 
-         sub_topic.subscribe(function(message) {
+        sub_topic.subscribe(function(message) {
             // console.log('Received message on ' + sub_topic.name + ': ' + message.data);
             pub_topic.publish(message);
             // console.log('Sent message on ' + pub_topic.name + ': ' + message.data);
 
             // determine size of message
             var size = msg_size_cached(message, sub_topic.messageType);
-            total_size += size;
+            update_topic_size(mapping_id, size);
         });
     }
 
@@ -95,21 +137,18 @@
     var gatlin_ip = "192.168.4.82";
     var baxter_ip = "128.84.103.242";
 
-    hub_ros = createROS("hub", hub_ip, 9090);
-    gatlin_ros = createROS("gatlin", gatlin_ip, 9090);
-    baxter_ros = createROS("baxter", baxter_ip, 9090);
-
     // test_ros = createROS("test", "192.168.1.100", 9090);
     // test2_ros = createROS("test2", "127.0.0.1", 9090);
 
     // note: maximum topic frequency is 100 Hz ??
     // remapTopic(test_ros, test2_ros, '/test_string0', '/test_string1', 'std_msgs/String');
+    // remapTopic(test_ros, test2_ros, '/test_string2', '/test_string3', 'std_msgs/String');
     // remapTopic(test_ros, test2_ros, '/cmd_vel0', '/cmd_vel1', 'geometry_msgs/Twist');
-    // remapTopic(test_ros, test2_ros, '/test_vec0', '/test_vec1', 'geometry_msgs/Vector3');
-    // forwardService(test_ros, test2_ros, '/test', 'std_msgs/String');
 
-    // forwardTopic(gatlin_ros, baxter_ros, '/test_string', 'std_msgs/String');
-    // forwardService(gatlin_ros, baxter_ros, '/move_arm', 'gatlin/MoveRobot');
+
+    hub_ros = createROS("hub", hub_ip, 9090);
+    gatlin_ros = createROS("gatlin", gatlin_ip, 9090);
+    baxter_ros = createROS("baxter", baxter_ip, 9090);
 
     // gatlin -> unity
     forwardTopic(gatlin_ros, hub_ros, '/gatlin_mott_response', 'std_msgs/String');
