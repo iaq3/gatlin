@@ -335,7 +335,7 @@ class Nav_Manip_Controller :
 		rospy.Subscriber("/gatlin_mott", Mott, self.MottCallback, queue_size = 1)
 		rospy.Subscriber("/gatlin_mott_command", String, self.MottCommandCallback, queue_size = 1)
 
-		self.move_arm = createServiceProxy("move/arm", MoveRobot, self.robot_name)
+		self.move_arm = createServiceProxy("%s/move/arm" % self.robot_name, MoveRobot)
 
 		self.test_pose_pub = rospy.Publisher('/test_obj_pose', PoseStamped)
 

@@ -17,16 +17,17 @@ import cv2, cv_bridge, rospkg
 
 class BaxterController():
     def __init__(self):
-        rospy.init_node('position_control')
-        rospy.loginfo("Initialized Position Control")
+        rospy.init_node('baxter_controller')
+        rospy.loginfo("Initialized Baxter Control")
 
         rospy.loginfo("Beginning to enable robot")
         self.baxter = RobotEnable()
         rospy.loginfo("Enabled Robot")
         
-        self.limb_name = "left"
-
         self.hand_pose = Pose()
+
+        self.limb_name = "left"
+        self.robot_name = "baxter"
 
         self.limb = Limb(self.limb_name)
         
@@ -34,9 +35,9 @@ class BaxterController():
 
         rospy.Subscriber("/robot/limb/"+self.limb_name+"/endpoint_state", EndpointState, self.respondToEndpoint)
         
-        move_robot_service = createService('baxter/'+self.limb_name+'/move_robot', MoveRobot, self.handle_move_robot, "")
+        self.move_robot_service = createService("%s/%s/move_robot" % (self.robot_name, self.limb_name), MoveRobot, self.handle_move_robot)
 
-        # self.position_srv = createService('end_effector_position', EndEffectorPosition, self.get_position_response, self.limb)
+        self.position_srv = createService("%s/end_effector_position" % self.limb, EndEffectorPosition, self.get_position_response)
 
         try :
             ns = "ExternalTools/"+self.limb_name+"/PositionKinematicsNode/IKService"

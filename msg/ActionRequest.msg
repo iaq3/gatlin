@@ -1,0 +1,2 @@
+uint8 action
+geometry_msgs/PoseStamped ps

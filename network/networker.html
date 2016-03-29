@@ -5,66 +5,136 @@
     <title>Gatlin Networker</title>
     <script type="text/javascript" src="eventemitter2.min.js"></script>
     <script type="text/javascript" src="roslib.min.js"></script>
-    <script src="../dist/jquery.min.js"></script>
+    <script type="text/javascript" src="sizeof.js"></script>
     <style></style>
 </head>
 <body>
 <div class="container">
     <h1>Gatlin Networker</h1>
+    <h3 id="data_rate"></h3>
 </div>
 
 <script>
-    var gatlin_ip = "192.168.4.82"
-    var baxter_ip = "128.84.103.242"
-    var gatlin_ros = new ROSLIB.Ros({
-        url : "ws://"+gatlin_ip+":9090"
-    });
 
-    gatlin_ros.on('connection', function() {
-        console.log('Connected to websocket server.');
-    });
+    var total_size = 0;
 
-    gatlin_ros.on('error', function(error) {
-        console.log('Error connecting to websocket server: ', error);
-    });
+    var data_rate_output = document.getElementById('data_rate');
 
-    gatlin_ros.on('close', function() {
-        console.log('Connection to websocket server closed.');
-    });
+    var update_rate = 2;
+    var ms = 1000 / update_rate;
+    function getDataRate() {
+        var rate = total_size / ms;
+        total_size = 0;
+        data_rate_output.innerHTML = rate.toFixed(3)+" MB/sec";
+        return rate;
+    }
 
-    var baxter_ros = new ROSLIB.Ros({
-        url : "ws://"+baxter_ip+":9090"
-    });
+    var dataRatePub = setInterval(getDataRate, ms);
 
-    baxter_ros.on('connection', function() {
-        console.log('Connected to websocket server.');
-    });
+    var msg_cache = {};
+    function msg_size_cached(message, type) {
+        if( msg_cache[type] === undefined ) {
+            msg_cache[type] = sizeof(message);
+        }
 
-    baxter_ros.on('error', function(error) {
-        console.log('Error connecting to websocket server: ', error);
-    });
+        return msg_cache[type];
+    }
 
-    baxter_ros.on('close', function() {
-        console.log('Connection to websocket server closed.');
-    });
+    function createROS(name, ip, port) {
 
-    var baxter_test_string = new ROSLIB.Topic({
-        ros : baxter_ros,
-        name : '/test_string',
-        messageType : 'std_msgs/String'
-    });
-    
-    var gatlin_test_string = new ROSLIB.Topic({
-        ros : gatlin_ros,
-        name : '/test_string',
-        messageType : 'std_msgs/String'
-    });
+        var ros = new ROSLIB.Ros({
+            url : "ws://"+ip+":"+port
+        });
 
-    gatlin_test_string.subscribe(function(message) {
-        console.log('Received message on ' + gatlin_test_string.name + ': ' + message.data);
-        baxter_test_string.publish(message);
-        console.log('Sent message on ' + baxter_test_string.name + ': ' + message.data);
-    });
+        ros.on('connection', function() {
+            console.log('Connected to '+name+' websocket server.');
+        });
+
+        ros.on('error', function(error) {
+            console.log('Error connecting to '+name+' websocket server: ', error);
+        });
+
+        ros.on('close', function() {
+            console.log('Connection to '+name+' websocket server closed.');
+        });
+
+        return ros;
+    }
+
+    function forwardTopic(sub_ros, pub_ros, topic, type) { remapTopic(sub_ros, pub_ros, topic, topic, type); }
+    function remapTopic(sub_ros, pub_ros, sub_topic, pub_topic, type) {
+        var pub_topic = new ROSLIB.Topic({
+            ros : pub_ros,
+            name : pub_topic,
+            messageType : type
+        });
+        
+        var sub_topic = new ROSLIB.Topic({
+            ros : sub_ros,
+            name : sub_topic,
+            messageType : type
+        });
+
+         sub_topic.subscribe(function(message) {
+            // console.log('Received message on ' + sub_topic.name + ': ' + message.data);
+            pub_topic.publish(message);
+            // console.log('Sent message on ' + pub_topic.name + ': ' + message.data);
+
+            // determine size of message
+            var size = msg_size_cached(message, sub_topic.messageType);
+            total_size += size;
+        });
+    }
+
+    function forwardService(client_ros, server_ros, name, req_type, resp_type) {
+        forwardTopic(client_ros, server_ros, name+'/request', req_type);        
+        forwardTopic(server_ros, client_ros, name+'/response', resp_type);        
+    }
+
+    var hub_ip = "192.168.4.83";
+    var gatlin_ip = "192.168.4.82";
+    var baxter_ip = "128.84.103.242";
+
+    hub_ros = createROS("hub", hub_ip, 9090);
+    gatlin_ros = createROS("gatlin", gatlin_ip, 9090);
+    baxter_ros = createROS("baxter", baxter_ip, 9090);
+
+    // test_ros = createROS("test", "192.168.1.100", 9090);
+    // test2_ros = createROS("test2", "127.0.0.1", 9090);
+
+    // note: maximum topic frequency is 100 Hz ??
+    // remapTopic(test_ros, test2_ros, '/test_string0', '/test_string1', 'std_msgs/String');
+    // remapTopic(test_ros, test2_ros, '/cmd_vel0', '/cmd_vel1', 'geometry_msgs/Twist');
+    // remapTopic(test_ros, test2_ros, '/test_vec0', '/test_vec1', 'geometry_msgs/Vector3');
+    // forwardService(test_ros, test2_ros, '/test', 'std_msgs/String');
+
+    // forwardTopic(gatlin_ros, baxter_ros, '/test_string', 'std_msgs/String');
+    // forwardService(gatlin_ros, baxter_ros, '/move_arm', 'gatlin/MoveRobot');
+
+    // gatlin -> unity
+    forwardTopic(gatlin_ros, hub_ros, '/gatlin_mott_response', 'std_msgs/String');
+    forwardTopic(gatlin_ros, hub_ros, '/tool_tip_link_in_base_link', 'geometry_msgs/PoseStamped');
+    forwardTopic(gatlin_ros, hub_ros, '/octomap_array', 'std_msgs/UInt16MultiArray');
+    forwardTopic(gatlin_ros, hub_ros, '/map', 'nav_msgs/OccupancyGrid');
+    forwardTopic(gatlin_ros, hub_ros, '/robot_pose', 'geometry_msgs/PoseStamped');
+    forwardTopic(gatlin_ros, hub_ros, '/camera_link_in_base_link', 'geometry_msgs/PoseStamped');
+    forwardTopic(gatlin_ros, hub_ros, '/map_pose', 'geometry_msgs/PoseStamped');
+    forwardTopic(gatlin_ros, hub_ros, '/gatlin/objectlist', 'gatlin/ObjectList');
+
+    // unity -> gatlin
+    forwardTopic(hub_ros, gatlin_ros, '/gatlin_cmd', 'std_msgs/Int32');
+    forwardTopic(hub_ros, gatlin_ros, '/gatlin_res', 'std_msgs/Float32');
+    forwardTopic(hub_ros, gatlin_ros, '/cmd_vel_mux/input/teleop', 'geometry_msgs/Twist');
+    forwardTopic(hub_ros, gatlin_ros, '/target_pos', 'geometry_msgs/Vector3');
+    forwardTopic(hub_ros, gatlin_ros, '/head_pos', 'geometry_msgs/Vector3');
+    forwardTopic(hub_ros, gatlin_ros, '/move/gripper', 'std_msgs/Float32');
+    forwardTopic(hub_ros, gatlin_ros, '/move_to_goal', 'geometry_msgs/PoseStamped');
+    forwardTopic(hub_ros, gatlin_ros, '/arm_target_pose', 'geometry_msgs/PoseStamped');
+    forwardTopic(hub_ros, gatlin_ros, '/gatlin_mott', 'gatlin/Mott');
+    forwardTopic(hub_ros, gatlin_ros, '/gatlin_mott_command', 'std_msgs/String');
+
+    // TODO:
+    // test the gatlin hub link with unity client connected to lab computer ip
 
 </script>
 </body>

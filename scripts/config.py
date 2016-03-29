@@ -29,22 +29,14 @@ THROW = 14
 CHECK_BLOCKS = 15
 MOVE_BLOCKS = 16
 
-def createServiceProxy(service,srv_type,robot_name):
-	name = ""
-	if robot_name == "":
-		name = "/%s" % (service)
-	else:
-		name = "/%s/%s" % (robot_name,service)
+def createServiceProxy(service,srv_type):
+	name = "/%s" % (service)
 	rospy.wait_for_service(name)
 	rospy.loginfo("Initialized service proxy for %s" % name)
 	return rospy.ServiceProxy(name, srv_type)
 
-def createService(service,srv_type,callback,robot_name):
-	name = ""
-	if robot_name == "":
-		name = "/%s" % (service)
-	else:
-		name = "/%s/%s" % (robot_name,service)
+def createService(service,srv_type,callback):
+	name = "/%s" % (service)
 	rospy.loginfo("Initialized service for %s" % name)
 	return rospy.Service(name, srv_type, callback)
 
