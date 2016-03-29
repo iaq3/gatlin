@@ -133,47 +133,51 @@
         forwardTopic(server_ros, client_ros, name+'/response', resp_type);        
     }
 
-    // var hub_ip = "192.168.4.83";
-    var hub_ip = "192.168.1.103";
-    // var hub_ip = "10.0.2.15";
-    // var gatlin_ip = "192.168.4.82";
-    // var baxter_ip = "128.84.103.242";
-    var baxter_ip = "192.168.1.100";
-
     // test_ros = createROS("test", "192.168.1.100", 9090);
     // test2_ros = createROS("test2", "127.0.0.1", 9090);
-
-    // note: maximum topic frequency is 100 Hz ??
     // remapTopic(test_ros, test2_ros, '/test_string0', '/test_string1', 'std_msgs/String');
     // remapTopic(test_ros, test2_ros, '/test_string2', '/test_string3', 'std_msgs/String');
     // remapTopic(test_ros, test2_ros, '/cmd_vel0', '/cmd_vel1', 'geometry_msgs/Twist');
+    // note: maximum topic frequency is 100 Hz ??
 
+    // var hub_ip = "192.168.1.103";
+    // hub_ros = createROS("hub", hub_ip, 9090);
+    // var youbot_ip = "192.168.1.100";
+    // youbot_ros = createROS("youbot", youbot_ip, 9090);
+    // remapTopic(hub_ros, youbot_ros, '/cmd_vel_mux/input/teleop', '/cmd_vel', 'geometry_msgs/Twist');
+    // var turtlebot_ip = "192.168.1.100";
+    // turtlebot_ros = createROS("turtlebot", turtlebot_ip, 9090);
+    // forwardTopic(hub_ros, turtlebot_ros, '/cmd_vel_mux/input/teleop', 'geometry_msgs/Twist');
+
+    var hub_ip = "192.168.4.83";
+    var gatlin_ip = "192.168.4.82";
+    var baxter_ip = "128.84.103.242";
 
     hub_ros = createROS("hub", hub_ip, 9090);
-    // gatlin_ros = createROS("gatlin", gatlin_ip, 9090);
+    gatlin_ros = createROS("gatlin", gatlin_ip, 9090);
     baxter_ros = createROS("baxter", baxter_ip, 9090);
 
-    // // gatlin -> unity
-    // forwardTopic(gatlin_ros, hub_ros, '/gatlin_mott_response', 'std_msgs/String');
-    // forwardTopic(gatlin_ros, hub_ros, '/tool_tip_link_in_base_link', 'geometry_msgs/PoseStamped');
-    // forwardTopic(gatlin_ros, hub_ros, '/octomap_array', 'std_msgs/UInt16MultiArray');
-    // forwardTopic(gatlin_ros, hub_ros, '/map', 'nav_msgs/OccupancyGrid');
-    // forwardTopic(gatlin_ros, hub_ros, '/robot_pose', 'geometry_msgs/PoseStamped');
-    // forwardTopic(gatlin_ros, hub_ros, '/camera_link_in_base_link', 'geometry_msgs/PoseStamped');
-    // forwardTopic(gatlin_ros, hub_ros, '/map_pose', 'geometry_msgs/PoseStamped');
-    // forwardTopic(gatlin_ros, hub_ros, '/gatlin/objectlist', 'gatlin/ObjectList');
+    // gatlin -> unity
+    forwardTopic(gatlin_ros, hub_ros, '/gatlin_mott_response', 'std_msgs/String');
+    forwardTopic(gatlin_ros, hub_ros, '/tool_tip_link_in_base_link', 'geometry_msgs/PoseStamped');
+    forwardTopic(gatlin_ros, hub_ros, '/octomap_array', 'std_msgs/UInt16MultiArray');
+    forwardTopic(gatlin_ros, hub_ros, '/map', 'nav_msgs/OccupancyGrid');
+    forwardTopic(gatlin_ros, hub_ros, '/robot_pose', 'geometry_msgs/PoseStamped');
+    forwardTopic(gatlin_ros, hub_ros, '/camera_link_in_base_link', 'geometry_msgs/PoseStamped');
+    forwardTopic(gatlin_ros, hub_ros, '/map_pose', 'geometry_msgs/PoseStamped');
+    forwardTopic(gatlin_ros, hub_ros, '/gatlin/objectlist', 'gatlin/ObjectList');
 
-    // // unity -> gatlin
-    // forwardTopic(hub_ros, gatlin_ros, '/gatlin_cmd', 'std_msgs/Int32');
-    // forwardTopic(hub_ros, gatlin_ros, '/gatlin_res', 'std_msgs/Float32');
-    // forwardTopic(hub_ros, gatlin_ros, '/cmd_vel_mux/input/teleop', 'geometry_msgs/Twist');
-    // forwardTopic(hub_ros, gatlin_ros, '/target_pos', 'geometry_msgs/Vector3');
-    // forwardTopic(hub_ros, gatlin_ros, '/head_pos', 'geometry_msgs/Vector3');
-    // forwardTopic(hub_ros, gatlin_ros, '/move/gripper', 'std_msgs/Float32');
-    // forwardTopic(hub_ros, gatlin_ros, '/move_to_goal', 'geometry_msgs/PoseStamped');
-    // forwardTopic(hub_ros, gatlin_ros, '/arm_target_pose', 'geometry_msgs/PoseStamped');
-    // forwardTopic(hub_ros, gatlin_ros, '/gatlin_mott', 'gatlin/Mott');
-    // forwardTopic(hub_ros, gatlin_ros, '/gatlin_mott_command', 'std_msgs/String');
+    // unity -> gatlin
+    forwardTopic(hub_ros, gatlin_ros, '/gatlin_cmd', 'std_msgs/Int32');
+    forwardTopic(hub_ros, gatlin_ros, '/gatlin_res', 'std_msgs/Float32');
+    forwardTopic(hub_ros, gatlin_ros, '/cmd_vel_mux/input/teleop', 'geometry_msgs/Twist');
+    forwardTopic(hub_ros, gatlin_ros, '/target_pos', 'geometry_msgs/Vector3');
+    forwardTopic(hub_ros, gatlin_ros, '/head_pos', 'geometry_msgs/Vector3');
+    forwardTopic(hub_ros, gatlin_ros, '/move/gripper', 'std_msgs/Float32');
+    forwardTopic(hub_ros, gatlin_ros, '/move_to_goal', 'geometry_msgs/PoseStamped');
+    forwardTopic(hub_ros, gatlin_ros, '/arm_target_pose', 'geometry_msgs/PoseStamped');
+    forwardTopic(hub_ros, gatlin_ros, '/gatlin_mott', 'gatlin/Mott');
+    forwardTopic(hub_ros, gatlin_ros, '/gatlin_mott_command', 'std_msgs/String');
 
     // TODO:
     // test the gatlin hub link with unity client connected to lab computer ip
