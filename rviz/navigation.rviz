@@ -5,6 +5,7 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
+        - /Status1
         - /RobotModel1
         - /TF1/Frames1
         - /TF1/Tree1
@@ -32,7 +33,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: LaserScan
 Visualization Manager:
   Class: ""
   Displays:
@@ -255,8 +256,8 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
       Name: RobotModel
-      Robot Description: turtlebot1/robot_description
-      TF Prefix: turtlebot1
+      Robot Description: robot_description
+      TF Prefix: ""
       Update Interval: 0
       Value: true
       Visual Enabled: true
@@ -424,14 +425,14 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.01
       Style: Flat Squares
-      Topic: /turtlebot1/camera/depth/points
+      Topic: /camera/depth/points
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: turtlebot1/base_footprint
+    Fixed Frame: base_link
     Frame Rate: 30
   Name: root
   Tools:

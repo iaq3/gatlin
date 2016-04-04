@@ -1,0 +1,33 @@
+<!--
+  networking launch
+ -->
+<launch>
+
+
+<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch">
+	<arg name="port" value="9090"/>
+</include>
+
+<!-- <node pkg="gatlin" type="tf_to_unity.py" name="tf_to_unity"/> -->
+
+<node pkg="web_video_server" type="web_video_server" name="web_video_server"/>
+
+<!-- <node pkg="image_converter" type="image_converter" name="image_converter"/> -->
+
+<param name="camera/rgb/image_color/compressed/jpeg_quality" value="30"/>
+
+<!-- <include file="$(find turtlebot_navigation)/launch/includes/gmapping.launch.xml"/> -->
+
+<!-- <include file="$(find turtlebot_navigation)/launch/includes/move_base.launch.xml"/> -->
+
+<node pkg="gatlin" type="GmapperConverter.py" name="GmapperConverter"/>
+
+<node name="robot_pose_throttler" type="throttle" pkg="topic_tools" args="messages /robot_pose_ekf/odom_combined 20 /robot_pose_ekf/odom_combined_throttled"/>
+
+<node name="depth_image_throttler" type="throttle" pkg="topic_tools" args="messages /camera/depth_registered/hw_registered/image_rect_raw 10 /camera/depth_registered/hw_registered/image_rect_raw_throttled"/>
+
+<node name="rgb_image_throttler" type="throttle" pkg="topic_tools" args="messages /camera/rgb/image_rect_color 10 /camera/rgb/image_rect_color_throttled"/> 
+
+<node pkg="tf" type="static_transform_publisher" name="tool_tip_tf" args="0.00 0.065 0.00 0.7071 0.7071 0.0 0.0 /gripper_active_link /tool_tip_link 100"/>
+
+</launch>
