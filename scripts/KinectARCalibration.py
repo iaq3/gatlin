@@ -109,6 +109,11 @@ class KinectARCalibration:
 
             if inlier_translation and inlier_rotation:
                 inlier_tfs.append(trans)
+            else:
+                rospy.logerr("outlier")
+                rospy.logerr(translation_z_score)
+                rospy.logerr(rotation_z_score)
+                rospy.logerr(trans)
 
         # get the mean again with the inliers
         translations = np.zeros((0,3))
