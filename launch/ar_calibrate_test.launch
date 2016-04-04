@@ -15,7 +15,10 @@
 
 <node pkg="tf" type="static_transform_publisher" name="ar_marker_2_tf" args="-0.10 0.20 0.00 0.0 0.0 0.0 1.0 /camera_rgb_optical_frame /ar_marker_2 100"/>
 
-<node pkg="gatlin" type="KinectARCalibration.pyname="KinectARCalibration"></node>
+<node pkg="tf" type="static_transform_publisher" name="camera_link_tf" args="0.00 0.00 -0.05 0.0 0.0 0.0 1.0 /camera_link /camera_rgb_optical_frame 100"/>
+<!--<node pkg="tf" type="static_transform_publisher" name="ar_marker_2_tf" args="-0.10 0.20 0.00 0.7071 0.7071 0.0 0.0 /camera_rgb_optical_frame /ar_marker_2 100"/>-->
+
+<node pkg="gatlin" type="KinectARCalibration.py" name="KinectARCalibration"></node>
 
 <!-- <include file="$(find gatlin)/launch/arm_minimal.launch">
   <arg name="simulation" value="$(arg sim)"/>
