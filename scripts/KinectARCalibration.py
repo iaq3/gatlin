@@ -23,14 +23,36 @@ class KinectARCalibration:
         self.tf_sub = rospy.Subscriber("/tf", tfMessage, self.tf_callback, queue_size=1)
 
         self.transforms = []
-        self.num_transforms = 100
+        self.num_transforms = 200
+
+        self.fixed_to_camera_ts = TransformStamped()
+        self.transform_set = False
 
         # new idea:
         # transform from expected to camera with inverse of camera to estimated
         # convert to base frame and average removing outliers
         # broadcast camera tf
 
-        rospy.spin()
+        rate = rospy.Rate(30)
+        while not rospy.is_shutdown():
+            self.broadcast_transform()
+            rate.sleep()
+
+        # rospy.spin()
+
+    def broadcast_transform(self):
+        if self.transform_set:
+            self.fixed_to_camera_ts.header.stamp = rospy.Time.now()
+            self.tfb.sendTransformMessage(self.fixed_to_camera_ts)
+            # rospy.logerr(self.fixed_to_camera_ts)
+            self.printSTP(self.fixed_to_camera_ts)
+
+    def printSTP(self, ts):
+        name = ts.child_frame_id
+        T = ts.transform.translation
+        R = ts.transform.rotation
+        trans = "%f %f %f %f %f %f %f" % (T.x,T.y,T.z, R.x,R.y,R.z,R.w)
+        print "<node pkg='tf' type='static_transform_publisher' name='%s_tf' args='%s %s %s 100'/>" % (name, trans, ts.child_frame_id, ts.header.frame_id)
 
     def transform_to_matrix(self, transform):
         t = deepcopy(transform.translation)
@@ -88,8 +110,8 @@ class KinectARCalibration:
 
         # use mean and std to filter inliers
         inlier_tfs = []
-        translation_threshold = 1.5
-        rotation_threshold = 1.5
+        translation_threshold = 1.1
+        rotation_threshold = 1.1
         for trans in self.transforms:
             t = deepcopy(trans.translation)
             t = np.array([t.x,t.y,t.z])
@@ -109,11 +131,11 @@ class KinectARCalibration:
 
             if inlier_translation and inlier_rotation:
                 inlier_tfs.append(trans)
-            else:
-                rospy.logerr("outlier")
-                rospy.logerr(translation_z_score)
-                rospy.logerr(rotation_z_score)
-                rospy.logerr(trans)
+            # else:
+            #     rospy.logerr("outlier")
+            #     rospy.logerr(translation_z_score)
+            #     rospy.logerr(rotation_z_score)
+            #     rospy.logerr(trans)
 
         # get the mean again with the inliers
         translations = np.zeros((0,3))
@@ -127,6 +149,7 @@ class KinectARCalibration:
 
         mean_translation = np.mean(translations, axis=0)
         mean_rotation = np.mean(rotations, axis=0)
+        mean_rotation /= np.linalg.norm(mean_rotation)
 
         mean_transform = Transform()
         mean_transform.translation = Vector3(mean_translation[0],mean_translation[1],mean_translation[2])
@@ -137,6 +160,12 @@ class KinectARCalibration:
         for trans in tfmsg.transforms:
             if trans.child_frame_id == self.ESTIMATED_AR_FRAME:
                 rgb_to_ar_t = deepcopy(trans.transform)
+
+                # add random noise for testing
+                # rand = np.random.normal()
+                # if rand > .8 : rand = 2
+                # rgb_to_ar_t.translation.x += rand
+
                 rgb_to_ar_matrix = self.transform_to_matrix(rgb_to_ar_t)
                 ar_to_rgb_matrix = np.linalg.inv(rgb_to_ar_matrix)
 
@@ -152,10 +181,22 @@ class KinectARCalibration:
 
                 self.transforms.append(fixed_to_camera_t)
 
-                if len(self.transforms) >= self.num_transforms:
-                    mean_transform = self.getAverageTransform()
-                    rospy.logerr(mean_transform)
-                    self.transforms = []
+                # if len(self.transforms) >= self.num_transforms:
+                #     self.transforms = []
+                rospy.loginfo(len(self.transforms))
+                mean_camera_t = self.getAverageTransform()
+
+                mean_camera_ts = TransformStamped()
+                mean_camera_ts.transform = mean_camera_t
+                mean_camera_ts.child_frame_id = self.CAMERA_FRAME
+                mean_camera_ts.header.frame_id = self.FIXED_FRAME
+                mean_camera_ts.header.stamp = rospy.Time.now()
+
+                self.fixed_to_camera_ts = deepcopy(mean_camera_ts)
+                self.transform_set = True
+
+
+
 
     def get_pose(self, child, parent):
         try:
