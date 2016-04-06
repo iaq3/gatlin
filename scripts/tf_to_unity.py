@@ -63,24 +63,34 @@ class Tf_to_Unity:
 
 		self.tfl = TransformListener()
 
-		GRIPPER_FRAME = 'gripper_active_link'
-		TOOL_FRAME = 'tool_tip_link'
-		BASE_FRAME = 'base_link'
-		ARM_BASE_FRAME = 'arm_base_link'
-		HEAD_FRAME = 'head_base_link'
-		KINECT_FRAME = 'camera_link'
-		CAMERA_RGB_OPTICAL_FRAME = 'camera_rgb_optical_frame'
+		# GRIPPER_FRAME = 'gripper_active_link'
+		# TOOL_FRAME = 'tool_tip_link'
+		# BASE_FRAME = 'base_link'
+		# ARM_BASE_FRAME = 'arm_base_link'
+		# HEAD_FRAME = 'head_base_link'
+		# KINECT_FRAME = 'camera_link'
+		# CAMERA_RGB_OPTICAL_FRAME = 'camera_rgb_optical_frame'
+
+		BASE_FRAME = 'base'
+		LEFT_GRIPPER_FRAME = 'left_gripper'
+		RIGHT_GRIPPER_FRAME = 'right_gripper'
 
 		transform_pubs = []
 
-		kinect_in_base = Tf_Transformer(self.tfl, KINECT_FRAME, BASE_FRAME, rospy.Rate(10)) # use different rates for less msg collisions?
-		transform_pubs.append(kinect_in_base)
+		# kinect_in_base = Tf_Transformer(self.tfl, KINECT_FRAME, BASE_FRAME, rospy.Rate(10)) # use different rates for less msg collisions?
+		# transform_pubs.append(kinect_in_base)
 
-		gripper_in_base = Tf_Transformer(self.tfl, TOOL_FRAME, BASE_FRAME, rospy.Rate(9))
-		transform_pubs.append(gripper_in_base)
+		# gripper_in_base = Tf_Transformer(self.tfl, TOOL_FRAME, BASE_FRAME, rospy.Rate(9))
+		# transform_pubs.append(gripper_in_base)
 
 		# arm_base_in_base = Tf_Transformer(self.tfl, ARM_BASE_FRAME, BASE_FRAME, rospy.Rate(1))
 		# transform_pubs.append(arm_base_in_base)
+
+		left_gripper_in_base = Tf_Transformer(self.tfl, LEFT_GRIPPER_FRAME, BASE_FRAME, rospy.Rate(6))
+		transform_pubs.append(left_gripper_in_base)
+		
+		right_gripper_in_base = Tf_Transformer(self.tfl, RIGHT_GRIPPER_FRAME, BASE_FRAME, rospy.Rate(6))
+		transform_pubs.append(right_gripper_in_base)
 
 		for tp in transform_pubs:
 			tp.start()

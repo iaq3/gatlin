@@ -6,7 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /Axes3
+        - /Pose1
       Splitter Ratio: 0.656357
     Tree Height: 634
   - Class: rviz/Selection
@@ -374,10 +374,24 @@ Visualization Manager:
       Radius: 0.01
       Reference Frame: display
       Value: true
+    - Alpha: 1
+      Axes Length: 0.1
+      Axes Radius: 0.01
+      Class: rviz/Pose
+      Color: 255; 25; 0
+      Enabled: true
+      Head Length: 0.3
+      Head Radius: 0.1
+      Name: Pose
+      Shaft Length: 1
+      Shaft Radius: 0.05
+      Shape: Axes
+      Topic: /baxter_arm_target_pose_left
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: baxter_link
+    Fixed Frame: base
     Frame Rate: 30
   Name: root
   Tools:
@@ -398,22 +412,22 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 3.19367
+      Distance: 3.0055
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.357467
-        Y: -0.00239099
-        Z: 0.174262
+        X: 0.357653
+        Y: 0.123679
+        Z: 0.222505
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.525398
+      Pitch: 0.345398
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.170394
+      Yaw: 6.14358
     Saved: ~
 Window Geometry:
   Displays:
@@ -431,5 +445,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1546
-  X: 372
-  Y: 57
+  X: 108
+  Y: 44

@@ -35,9 +35,11 @@ class BaxterController():
 
         rospy.Subscriber("/robot/limb/"+self.limb_name+"/endpoint_state", EndpointState, self.respondToEndpoint)
         
-        self.move_robot_service = createService("%s/%s/move_robot" % (self.robot_name, self.limb_name), MoveRobot, self.handle_move_robot)
+        self.arm_target_sub = rospy.Subscriber("/baxter_arm_target_pose_%s" % self.limb_name, PoseStamped, self.arm_target_callback, queue_size=1)
+        
+        # self.move_robot_service = createService("%s/%s/move_robot" % (self.robot_name, self.limb_name), MoveRobot, self.handle_move_robot)
 
-        self.position_srv = createService("%s/end_effector_position" % self.limb, EndEffectorPosition, self.get_position_response)
+        # self.position_srv = createService("%s/end_effector_position" % self.limb, EndEffectorPosition, self.get_position_response)
 
         try :
             ns = "ExternalTools/"+self.limb_name+"/PositionKinematicsNode/IKService"
@@ -52,6 +54,15 @@ class BaxterController():
         self.show_ARmarker_face()
 
         rospy.spin()
+
+    def arm_target_callback(self, ps):
+        rospy.logerr(ps)
+        req = MoveRobotRequest()
+        # req.action = MOVE_TO_POSE_INTERMEDIATE
+        # req = {}
+        req.action = MOVE_TO_POS
+        req.ps = ps
+        self.handle_move_robot(req)
 
     def show_ARmarker_face(self):
         rospack = rospkg.RosPack()
@@ -105,11 +116,11 @@ class BaxterController():
 
         elif req.action == MOVE_TO_POSE_INTERMEDIATE :
             rospy.loginfo("Trying to Move To Pose")
-            success = self.MoveToPoseWithIntermediate(self.limb_name, req.pose)
+            success = self.MoveToPoseWithIntermediate(self.limb_name, req.ps.pose)
 
         elif req.action == MOVE_TO_POSE :
             rospy.loginfo("Trying to Move To Pose")
-            success = self.MoveToPose(self.limb_name, req.pose, "FAILED MoveToPose")
+            success = self.MoveToPose(self.limb_name, req.ps.pose, "FAILED MoveToPose")
 
         elif req.action == MOVE_TO_POS :
             rospy.loginfo("Trying to Move To Pos")
@@ -121,7 +132,7 @@ class BaxterController():
                 new_pose = deepcopy(self.hand_pose)
                 self.initial = deepcopy(self.hand_pose)
 
-            new_pose.position = deepcopy(req.pose.position)
+            new_pose.position = deepcopy(req.ps.pose.position)
             # success = self.MoveToPose(req.limb, new_pose, "FAILED MoveToPose")
             success = self.MoveToPoseWithIntermediate(self.limb_name, new_pose)
             rospy.loginfo("Moved to pos: %r" % success)
