@@ -19,13 +19,29 @@ class MRC:
         # publishers for all service requests
         # subscribers for all service responses
 
+        # init wcg
+        self.wcg = WorkspaceConnectivityGraph()
+
         rospy.spin()
 
     def mr_command_req_callback(self, cmd_req):
         rospy.logerr(cmd_req)
+        
+
         # recieve commands
         for cmd in cmd_req.commands:
+            # cmd["id"]
+            # cmd["action"]
+            # cmd["target_pose"]
+            # cmd["obj_pose"]
+            # cmd["obj_topic"]
+
+            object_pose = cmd["obj_pose"]
+            target_pose = cmd["target_pose"]
+
             # generate connectivity graph
+            self.wcg.add_target(target)
+
                 # given a pose determine if it is in the robots wksp
                 # if yes then add an edge
 
@@ -33,10 +49,50 @@ class MRC:
             # generate actions based on optimal path
             # use dependencies to build action graph
             # put actions in queue
-            pass
+
+class DynamicPose:
+    def __init__(self):
+        self.FIXED_FRAME = "global_map"
+        self.tfl = tf.TransformListener()
+        self.pose_sub = None
+        self.reset()
+
+    def subscribe(self, topic):
+        self.reset()
+        self.pose_sub = rospy.Subscriber(topic, PoseStamped, self.set_pose, queue_size = 1)
+        self.topic = topic
+
+    def reset(self):
+        if self.pose_sub:
+            self.pose_sub.unregister()
+        self.ps = PoseStamped()
+        self.last_update = 0
+        self.pose_sub = None
+        self.topic = ""
+
+    def set_pose(self, ps):
+        self.ps = self.transform_pose(self.FIXED_FRAME, ps)
+        self.last_update = time.time()
+
+    # transform the pose stamped to the new frame
+    def transform_pose(self, new_frame, pose):
+        if pose.header.frame_id == new_frame:
+            return pose
+        try:
+            ps = deepcopy(pose)
+            ps.header.stamp = rospy.Time(0)
+            self.tfl.waitForTransform(ps.header.frame_id, new_frame, rospy.Time(0), rospy.Duration(4.0))
+            new_pose = self.tfl.transformPose(new_frame, ps)
+            new_pose.header.stamp = deepcopy(pose.header.stamp)
+            return new_pose
+        except Exception as e:
+            rospy.logerr(e)
+            rospy.logerr("no transform")
+            return None
 
 class Workspace:
-        def __init__(self, p1, p2):
+        def __init__(self, rf, p1, p2):
+            self.reference_frame = rf
             self.p1 = p1
             self.p2 = p2
 
@@ -70,14 +126,14 @@ class WorkspaceConnectivityGraph:
         rospy.init_node('WorkspaceConnectivityGraph')
         self.tfl = tf.TransformListener()
 
-        self.color_map = {
-            'baxter': 1.0,
-            'gatlin': 0.6,
-            'youbot': 0.6,
-            'modbot': 0.6,
-        }
-        # for r in self.robots:
-        #     self.color_map[r.name] = r.color
+        # self.color_map = {
+        #     'baxter': 1.0,
+        #     'gatlin': 0.6,
+        #     'youbot': 0.6,
+        #     'modbot': 0.6,
+        # }
+        for r in self.robots:
+            self.color_map[r.name] = r.color
 
         self.G = nx.DiGraph()
 
@@ -115,54 +171,42 @@ class WorkspaceConnectivityGraph:
     def init_robots(self):
         self.robots = []
         # define name, color, and workspace
-        baxter = Robot("baxter", 1.0, {
-            "reference_frame" : "base",
-            "x1" : -0.5,
-            "y1" : -0.5,
-            "z1" : -0.5,
-
-            "x2" : 0.5,
-            "y2" : 0.5,
-            "z2" : 0.5
-        })
+        baxter = Robot("baxter",  1.0,
+            Workspace(
+                Point(-0.5,-0.5,-0.5),
+                Point(0.5,0.5,0.5),
+                "base"
+            )
+        )
         self.robots.append(baxter)
 
         height = 0.3
-        gatlin = Robot("gatlin", 0.6, {
-            "reference_frame" : "base_link",
-            "x1" : -5.0,
-            "y1" : -5.0,
-            "z1" : 0.0,
-
-            "x2" : 5.0,
-            "y2" : 5.0,
-            "z2" : height
-        })
+        gatlin = Robot("gatlin", 0.6,
+            Workspace(
+                Point(-5.0,-5.0,0.0),
+                Point(5.0,5.0,height),
+                "base_link"
+            )
+        )
         self.robots.append(gatlin)
 
-        youbot = Robot("youbot", 0.6, {
-            "reference_frame" : "base_link",
-            "x1" : -5.0,
-            "y1" : -5.0,
-            "z1" : 0.0,
-
-            "x2" : 5.0,
-            "y2" : 5.0,
-            "z2" : height
-        })
+        youbot = Robot("youbot", 0.6, 
+            Workspace(
+                Point(-5.0,-5.0,0.0),
+                Point(5.0,5.0,height),
+                "base_link"
+            )
+        )
         self.robots.append(youbot)
 
         height = 0.2
-        modbot = Robot("modbot", 0.6, {
-            "reference_frame" : "base_link",
-            "x1" : -5.0,
-            "y1" : -5.0,
-            "z1" : 0.0,
-
-            "x2" : 5.0,
-            "y2" : 5.0,
-            "z2" : height
-        })
+        modbot = Robot("modbot", 0.6,
+            Workspace(
+                Point(-5.0,-5.0,0.0),
+                Point(5.0,5.0,height),
+                "base_link"
+            )
+        )
         self.robots.append(modbot)
 
     def generate_workspace_connectivity_graph(self):
