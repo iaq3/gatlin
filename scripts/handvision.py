@@ -385,7 +385,8 @@ class Vision:
 				obj_pose = self.project((bi[0], bi[1]), distance, self.rgb_image.shape[1], self.rgb_image.shape[0])
 				# use the point cloud data to get correct x,y,z from pixel coords
 			else :
-				distance = self.pixel_radius / radius * 150
+				wonky = 150
+				distance = self.pixel_radius / radius * wonky
 				rospy.logerr(radius)
 				rospy.logerr(distance)
 				obj_pose = self.project((bi[0], bi[1]), distance, self.rgb_image.shape[1], self.rgb_image.shape[0])
