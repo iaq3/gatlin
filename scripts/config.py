@@ -127,6 +127,14 @@ def transform_from_pose(pose):
     trans.translation = Vector3(t.x,t.y,t.z)
     return trans
 
+def transform_to_pose(trans):
+    p = Pose()
+    q = trans.rotation
+    p.orientation = Quaternion(q.x,q.y,q.z,q.w)
+    t = trans.translation
+    p.position = Point(t.x,t.y,t.z)
+    return p
+
 def createServiceProxy(service,srv_type):
 	name = "/%s" % (service)
 	rospy.wait_for_service(name)

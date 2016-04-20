@@ -4,8 +4,8 @@
 		<arg name="limb" value="left"/>
 	</include>
 
-	<include file="$(find gatlin)/launch/ar_baxter_indiv.launch">
+	<!-- <include file="$(find gatlin)/launch/ar_baxter_indiv.launch">
 		<arg name="limb" value="right"/>
-	</include>
+	</include> -->
 
 </launch>

@@ -27,13 +27,15 @@ class AR_Vision :
 		# ar_marker_topic = "/ARmarker_points"
 		self.tf_sub = rospy.Subscriber("/tf", tfMessage, self.tf_callback, queue_size=1)
 
-		self.TYPE = rospy.get_param("type")
+		# self.TYPE = rospy.get_param("type")
+		self.TYPE = "baxter_left"
 		self.objectlistpub = rospy.Publisher("/%s/ar_marker_list" % self.TYPE, ObjectList, queue_size=3)
 
 		self.tfl = tf.TransformListener()
 		
 		# self.RGB_FRAME = rospy.get_param("rgb_frame")
-		self.FIXED_FRAME = rospy.get_param("fixed_frame")
+		# self.FIXED_FRAME = rospy.get_param("fixed_frame")
+		self.FIXED_FRAME = "base"
 		# self.BASE_FAME = rospy.get_param("base_frame")
 
 		self.br = tf.TransformBroadcaster()
@@ -124,14 +126,14 @@ class AR_Vision :
 				ps = PoseStamped()
 				ps.header.frame_id = self.FIXED_FRAME
 				ps.header.stamp = rospy.Time.now()
-				ps.pose = self.transform_to_pose(trans.transform)
+				ps.pose = transform_to_pose(trans.transform)
 				# ps.pose = self.transform_to_pose(fixed_to_ar_t)
 				
 				o = Object()
 				o.id = "%s" % i
 				o.color = "ar"
 				o.pose = deepcopy(ps)
-				# rospy.logerr(o)
+				rospy.logerr(o)
 				self.objectlist.objects.append(o)
 
 		self.objectlistpub.publish(self.objectlist)
