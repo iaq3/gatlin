@@ -48,3 +48,6 @@ rosbag record /camera/depth_registered/hw_registered/image_rect_raw_throttled ca
 rosbag info small.bag
 rosparam set use_sim_time true
 rosbag play --clock small.bag
+rosbag play --clock -l left_hand_ar.bag
+
+rosrun ar_track_alvar createMarker

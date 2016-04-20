@@ -26,6 +26,8 @@ class MRC:
 
     def mr_command_req_callback(self, cmd_req):
         rospy.logerr(cmd_req)
+
+        
         
 
         # recieve commands
