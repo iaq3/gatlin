@@ -265,11 +265,12 @@ class Nav_Manip_Controller :
 		#self.FIXED_FRAME = "odom"
 		self.BASE_FAME = "base_link"#TODO look into
 
-		self.response_pub = rospy.Publisher("/baxter_mott_"+limb+"_response", String)
-		self.baxter_cmd_pub = rospy.Publisher("/baxter_cmd_"+limb, Int32)
+		robot = "baxter_" + limb
+		self.response_pub = rospy.Publisher("/"+robot+"_mott_response", String)
+		self.baxter_cmd_pub = rospy.Publisher("/"+robot+"_cmd", Int32)
 
-		rospy.Subscriber("/baxter_mott_"+limb, Mott, self.MottCallback, queue_size = 1)
-		rospy.Subscriber("/baxter_mott_command"+limb, String, self.MottCommandCallback, queue_size = 1)
+		rospy.Subscriber("/"+robot+"_mott", Mott, self.MottCallback, queue_size = 1)
+		rospy.Subscriber("/"+robot+"_mott_command", String, self.MottCommandCallback, queue_size = 1)
 
 		#self.move_arm = createServiceProxy("move/arm", MoveRobot, self.robot_name) TODO 
 		self.move_arm = createServiceProxy("baxter/move/arm", MoveRobot, self.robot_name)

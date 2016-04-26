@@ -10,6 +10,11 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import tf
 
+class Robot:
+    def __init__(self, name):
+        self.name = name
+        self.mott_command_pub = 
+
 class MRC:
     def __init__(self):
         rospy.init_node('multi_robot_controller')
@@ -17,12 +22,28 @@ class MRC:
         rospy.Subscriber("/mr_command_req", CommandListRequest, self.mr_command_req_callback)
 
         # publishers for all service requests
+        self.mott_pubs = {}
+        self.mott_pubs["baxter_left"] = rospy.Publisher("/baxter_left_mott", Mott, queue_size = 1)
+        self.mott_pubs["baxter_right"] = rospy.Publisher("/baxter_right_mott", Mott, queue_size = 1)
+        self.mott_pubs["gatlin"] = rospy.Publisher("/gatlin_mott", Mott, queue_size = 1)
+
+        self.mott_command_pubs = {}
+        self.mott_command_pubs["baxter_left"] = rospy.Publisher("/baxter_mott_command_left", String, queue_size = 1)
+        self.mott_command_pubs["baxter_right"] = rospy.Publisher("/baxter_mott_command_right", String, queue_size = 1)
+        self.mott_command_pubs["gatlin"] = rospy.Publisher("/gatlin_mott_command", String, queue_size = 1)
+
         # subscribers for all service responses
 
         # init wcg
         self.wcg = WorkspaceConnectivityGraph()
 
         rospy.spin()
+
+    def publish_mott(self, robot, mott):
+        self.mott_pubs[robot].publish(mott)
+        rospy.loginfo("PUBLISHED MOTT")
+        rospy.loginfo(robot)
+        rospy.loginfo(mott)
 
     def mr_command_req_callback(self, cmd_req):
         rospy.logerr(cmd_req)
