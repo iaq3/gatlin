@@ -185,10 +185,13 @@
     // unity -> baxter
     forwardTopic(hub_ros, baxter_ros, '/baxter_arm_target_pose_left', 'geometry_msgs/PoseStamped');
     forwardTopic(hub_ros, baxter_ros, '/baxter_cmd_vel_left', 'geometry_msgs/Twist');
+    forwardTopic(hub_ros, baxter_ros, '/baxter_left_mott', 'gatlin/Mott');
 
     // baxter -> unity
     forwardTopic(baxter_ros, hub_ros, '/left_gripper_in_base', 'geometry_msgs/PoseStamped');
     forwardTopic(baxter_ros, hub_ros, '/right_gripper_in_base', 'geometry_msgs/PoseStamped');
+    forwardTopic(baxter_ros, hub_ros, '/baxter_left/ar_marker_list', 'gatlin/ObjectList');
+    forwardTopic(baxter_ros, hub_ros, '/baxter_left_mott_response', 'std_msgs/String');
 
 </script>
 </body>

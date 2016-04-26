@@ -30,6 +30,8 @@ class AR_Vision :
 		# self.TYPE = rospy.get_param("type")
 		self.TYPE = "baxter_left"
 		self.objectlistpub = rospy.Publisher("/%s/ar_marker_list" % self.TYPE, ObjectList, queue_size=3)
+		
+		self.test_pose_pub = rospy.Publisher("test_pose", PoseStamped, queue_size=1)
 
 		self.tfl = tf.TransformListener()
 		
@@ -123,21 +125,29 @@ class AR_Vision :
 				# fixed_to_ar_matrix = np.dot(fixed_to_rgb_matrix, rgb_to_ar_matrix)
 				# fixed_to_ar_t = self.transform_from_matrix(fixed_to_ar_matrix)
 
+				p = Pose()
+				p.position = Point()
+
+
+				fixed_to_ar_t = self.get_transform(self.FIXED_FRAME, trans.child_frame_id)
+				# rospy.logerr(fixed_to_ar_t)
+
 				ps = PoseStamped()
 				ps.header.frame_id = self.FIXED_FRAME
 				ps.header.stamp = rospy.Time.now()
-				ps.pose = transform_to_pose(trans.transform)
-				# ps.pose = self.transform_to_pose(fixed_to_ar_t)
+				# ps.pose = transform_to_pose(trans.transform)
+				ps.pose = transform_to_pose(fixed_to_ar_t)
+				self.test_pose_pub.publish(ps)
 				
 				o = Object()
 				o.id = "%s" % i
 				o.color = "ar"
 				o.pose = deepcopy(ps)
-				rospy.logerr(o)
+				# rospy.logerr(o)
 				self.objectlist.objects.append(o)
-
-		self.objectlistpub.publish(self.objectlist)
-		# rospy.logerr(self.objectlist)
+		if len(self.objectlist.objects) > 0:
+			self.objectlistpub.publish(self.objectlist)
+			# rospy.logerr(self.objectlist)
 
 if __name__ == "__main__":
 	AR_Vision()
