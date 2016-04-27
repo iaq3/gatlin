@@ -12,7 +12,7 @@ import networkx as nx
 # sudo apt-get install python-networkx
 import matplotlib.pyplot as plt
 import tf
-from rospy_message_converter import *
+from rospy_message_converter import json_message_converter
 # sudo apt-get install ros-indigo-rospy-message-converter
 
 class MRC:
@@ -30,14 +30,26 @@ class MRC:
         m = Mott()
         m.command = "mott"
         m.object_pose_topic = "ar_7"
-        m.target_pose_topic = ""
-        m.object_pose = PoseStamped()
+        m.target_pose_topic = "target_1"
+
+        # m.object_pose = PoseStamped()
+
         m.target_pose = PoseStamped()
+        m.target_pose.header.frame_id = "base"
+        m.target_pose.header.stamp = rospy.Time.now()
+        m.target_pose.pose.position = Point(.5,.5,.5)
+        m.target_pose.pose.orientation = Quaternion(0,0,0,1)
+        mott_json = json_message_converter.convert_ros_message_to_json(m)
 
         # test CommandRequestList
         crl = CommandRequestList()
         cr = CommandRequest()
-        crl.commands
+        cr.id = 1
+        cr.action = "mott"
+        cr.args = mott_json
+        crl.commands.append(cr)
+
+        self.mr_command_req_callback(crl)
 
         rospy.spin()
 
@@ -172,49 +184,6 @@ class MRC:
             # use dependencies to build action graph
             # put actions in queue
 
-class DynamicPose:
-    def __init__(self):
-        # self.FIXED_FRAME = "global_map"
-        self.FIXED_FRAME = "base"
-        self.tfl = tf.TransformListener()
-        self.ps = PoseStamped()
-        self.last_update = 0
-        self.topic = ""
-
-    def subscribe(self, topic, dps):
-        self.reset()
-        dps.append((topic, self))
-        self.topic = topic
-
-    def reset(self, dps):
-        self.ps = PoseStamped()
-        self.last_update = 0
-        try:
-            dps.remove((self.topic, self))
-            rospy.logerr("dp found")
-        except:
-            rospy.logerr("dp not found")
-        self.topic = ""
-
-    def set_pose(self, ps):
-        self.ps = self.transform_pose(self.FIXED_FRAME, ps)
-        self.last_update = time.time()
-
-    # transform the pose stamped to the new frame
-    def transform_pose(self, new_frame, pose):
-        if pose.header.frame_id == new_frame:
-            return pose
-        try:
-            ps = deepcopy(pose)
-            ps.header.stamp = rospy.Time(0)
-            self.tfl.waitForTransform(ps.header.frame_id, new_frame, rospy.Time(0), rospy.Duration(4.0))
-            new_pose = self.tfl.transformPose(new_frame, ps)
-            new_pose.header.stamp = deepcopy(pose.header.stamp)
-            return new_pose
-        except Exception as e:
-            rospy.logerr(e)
-            rospy.logerr("no transform %s -> %s" % (ps.header.frame_id, new_frame))
-            return None
 
 class Workspace:
         def __init__(self, p1, p2, rf):
@@ -273,6 +242,11 @@ class WorkspaceConnectivityGraph:
             self.color_map[r.name] = r.color
 
         self.G = nx.DiGraph()
+
+        # self.fixed_frame = "global_map"
+        self.fixed_frame = "base"
+        self.dm = DynamicManager()
+        self.dm.add_ol_sub("/server/ar_marker_list")
 
         # self.add_hp('gatlin', 'hp1', .7)
         # self.add_hp('gatlin', 'hp2', .2)
@@ -345,9 +319,22 @@ class WorkspaceConnectivityGraph:
         self.G.add_edge(robot, hp, distance=robot_to_hp)
         self.G.add_edge(hp, robot, distance=robot_to_hp)
 
-    def add_obj(self, robot, obj, robot_to_obj):
+    def add_obj(self, obj):
+        # create_dp
+        object_pose = self.dm.create_dp(self.fixed_frame)
+        object_pose.subscribe_name(obj)
+
+        self.objects.append(object_pose)
+
+        for robot in self.robots:
+            # in workspace?
+            inside = robot.workspace.inside_workspace(object_pose.ps.pose.position)
+            if inside:
+                robot_to_obj = self.getDist(robot, obj)
+                self.add_obj_edge(robot.name, obj, robot_to_obj)
+
+    def add_obj_edge(self, robot, obj, robot_to_obj):
         self.color_map[obj] = 0.5
-        # robot_to_obj = self.getDist(robot, obj)
         self.G.add_edge(obj, robot, distance=robot_to_obj)
 
     def add_target(self, robot, target, robot_to_target):

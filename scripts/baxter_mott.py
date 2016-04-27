@@ -12,6 +12,7 @@ from copy import deepcopy
 from gatlin.msg import *
 from gatlin.srv import *
 from config import *
+from Dynamic import *
 from random import randint
 
 
@@ -23,50 +24,6 @@ def length(v):
 
 def angle(v1, v2):
 	return math.acos(np.dot(v1, v2) / (length(v1) * length(v2)))
-
-class DynamicPose:
-	def __init__(self):
-		# self.FIXED_FRAME = "global_map"
-		self.FIXED_FRAME = "base"
-		self.tfl = tf.TransformListener()
-		self.ps = PoseStamped()
-		self.last_update = 0
-		self.topic = ""
-
-	def subscribe(self, topic, dps):
-		self.reset()
-		dps.append((topic, self))
-		self.topic = topic
-
-	def reset(self, dps):
-		self.ps = PoseStamped()
-		self.last_update = 0
-		try:
-			dps.remove((self.topic, self))
-			rospy.logerr("dp found")
-		except:
-			rospy.logerr("dp not found")
-		self.topic = ""
-
-	def set_pose(self, ps):
-		self.ps = self.transform_pose(self.FIXED_FRAME, ps)
-		self.last_update = time.time()
-
-	# transform the pose stamped to the new frame
-	def transform_pose(self, new_frame, pose):
-		if pose.header.frame_id == new_frame:
-			return pose
-		try:
-			ps = deepcopy(pose)
-			ps.header.stamp = rospy.Time(0)
-			self.tfl.waitForTransform(ps.header.frame_id, new_frame, rospy.Time(0), rospy.Duration(4.0))
-			new_pose = self.tfl.transformPose(new_frame, ps)
-			new_pose.header.stamp = deepcopy(pose.header.stamp)
-			return new_pose
-		except Exception as e:
-			rospy.logerr(e)
-			rospy.logerr("no transform %s -> %s" % (ps.header.frame_id, new_frame))
-			return None
 
 class Nav_Manip_Controller :
 
@@ -191,28 +148,28 @@ class Nav_Manip_Controller :
 	def MottCallback(self, data) :
 		# rospy.logerr(data)
 
+		self.dm.dynamic_poses = []
+		self.object_pose = self.dm.create_dp("base")
+		self.target_pose = self.dm.create_dp("base")
+
 		self.command_state = self.RUNNING
 
 		if data.object_pose_topic != "" :
-			self.object_pose.subscribe(data.object_pose_topic, self.dynamic_poses)
+			self.object_pose.subscribe_name(data.object_pose_topic)
 
 		if data.target_pose_topic != "" :
-			self.target_pose.subscribe(data.target_pose_topic, self.dynamic_poses)
+			self.target_pose.subscribe_name(data.target_pose_topic)
 		
-		if (data.object_pose != Pose()) :
+		if (data.object_pose) :
 			self.object_pose.set_pose(data.object_pose)
 
-		if (data.target_pose != Pose()) :
+		if (data.target_pose) :
 			self.target_pose.set_pose(data.target_pose)
 		
 		rospy.sleep(2)
 
 		if data.command == "mott" :
 			self.run_mott_sequence()
-
-		self.object_pose = DynamicPose()
-		self.target_pose = DynamicPose()
-		self.dynamic_poses = []
 
 	def MottCommandCallback(self, data) :
 		print "received "+data.data
@@ -253,15 +210,7 @@ class Nav_Manip_Controller :
 			rospy.logerr("no transform")
 			return None
 
-	def objectListCallback(self, ol):
-		# rospy.logerr(ol)
-		for obj in ol.objects:
-			for (topic, dp) in self.dynamic_poses:
-				if "%s_%s" % (obj.color, obj.id) == topic:
-					dp.set_pose(obj.pose)
-					# rospy.logerr(dp.ps)
-					# rospy.logerr(obj.pose)
-
+	
 
 	def __init__(self):
 		rospy.init_node('nav_manip_controller')
@@ -272,11 +221,9 @@ class Nav_Manip_Controller :
 		#self.robot_pose = DynamicPose()
 		#self.robot_pose.subscribe("/robot_pose") #TODO change to end effector position??
 
-		self.object_pose = DynamicPose()
-		self.target_pose = DynamicPose()
-		self.dynamic_poses = []
-		# rospy.Subscriber("/%s/ar_marker_list" % self.robot_name, ObjectList, self.objectListCallback, queue_size=3)
-		rospy.Subscriber("/server/ar_marker_list", ObjectList, self.objectListCallback, queue_size=3)
+		# DynamicManager init
+		self.dm = DynamicManager()
+		self.dm.add_ol_sub("/server/ar_marker_list")
 
 		self.RUNNING = 0
 		self.PAUSING = 1
