@@ -10,32 +10,14 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import tf
 
-class Robot:
-    def __init__(self, name):
-        self.name = name
-        self.mott_command_pub = 
-
 class MRC:
     def __init__(self):
         rospy.init_node('multi_robot_controller')
 
         rospy.Subscriber("/mr_command_req", CommandListRequest, self.mr_command_req_callback)
 
-        # publishers for all service requests
-        self.mott_pubs = {}
-        self.mott_pubs["baxter_left"] = rospy.Publisher("/baxter_left_mott", Mott, queue_size = 1)
-        self.mott_pubs["baxter_right"] = rospy.Publisher("/baxter_right_mott", Mott, queue_size = 1)
-        self.mott_pubs["gatlin"] = rospy.Publisher("/gatlin_mott", Mott, queue_size = 1)
-
-        self.mott_command_pubs = {}
-        self.mott_command_pubs["baxter_left"] = rospy.Publisher("/baxter_mott_command_left", String, queue_size = 1)
-        self.mott_command_pubs["baxter_right"] = rospy.Publisher("/baxter_mott_command_right", String, queue_size = 1)
-        self.mott_command_pubs["gatlin"] = rospy.Publisher("/gatlin_mott_command", String, queue_size = 1)
-
-        # subscribers for all service responses
-
-        # init wcg
-        self.wcg = WorkspaceConnectivityGraph()
+        self.init_robots()
+        self.wcg = WorkspaceConnectivityGraph(self.robots)
 
         rospy.spin()
 
@@ -45,8 +27,60 @@ class MRC:
         rospy.loginfo(robot)
         rospy.loginfo(mott)
 
+    def init_robots(self):
+        self.robots = []
+        # define name, color, and workspace
+        baxter_left = Robot("baxter_left",  1.0,
+            Workspace(
+                Point(-0.5,-0.5,-0.5),
+                Point(0.5,0.0,0.5),
+                "base"
+            )
+        )
+        self.robots.append(baxter)
+
+        baxter_right = Robot("baxter_right",  1.0,
+            Workspace(
+                Point(-0.5,0.0,-0.5),
+                Point(0.5,0.5,0.5),
+                "base"
+            )
+        )
+        self.robots.append(baxter)
+
+        height = 0.3
+        gatlin = Robot("gatlin", 0.6,
+            Workspace(
+                Point(-5.0,-5.0,0.0),
+                Point(5.0,5.0,height),
+                "base_link"
+            )
+        )
+        self.robots.append(gatlin)
+
+        youbot = Robot("youbot", 0.6, 
+            Workspace(
+                Point(-5.0,-5.0,0.0),
+                Point(5.0,5.0,height),
+                "base_link"
+            )
+        )
+        self.robots.append(youbot)
+
+        height = 0.2
+        modbot = Robot("modbot", 0.6,
+            Workspace(
+                Point(-5.0,-5.0,0.0),
+                Point(5.0,5.0,height),
+                "base_link"
+            )
+        )
+        self.robots.append(modbot)
+
     def mr_command_req_callback(self, cmd_req):
         rospy.logerr(cmd_req)
+
+        # json.loads('["foo", {"bar":["baz", null, 1.0, 2]}]')
 
         
         
@@ -75,22 +109,26 @@ class MRC:
 
 class DynamicPose:
     def __init__(self):
-        self.FIXED_FRAME = "global_map"
+        # self.FIXED_FRAME = "global_map"
+        self.FIXED_FRAME = "base"
         self.tfl = tf.TransformListener()
-        self.pose_sub = None
-        self.reset()
-
-    def subscribe(self, topic):
-        self.reset()
-        self.pose_sub = rospy.Subscriber(topic, PoseStamped, self.set_pose, queue_size = 1)
-        self.topic = topic
-
-    def reset(self):
-        if self.pose_sub:
-            self.pose_sub.unregister()
         self.ps = PoseStamped()
         self.last_update = 0
-        self.pose_sub = None
+        self.topic = ""
+
+    def subscribe(self, topic, dps):
+        self.reset()
+        dps.append((topic, self))
+        self.topic = topic
+
+    def reset(self, dps):
+        self.ps = PoseStamped()
+        self.last_update = 0
+        try:
+            dps.remove((self.topic, self))
+            rospy.logerr("dp found")
+        except:
+            rospy.logerr("dp not found")
         self.topic = ""
 
     def set_pose(self, ps):
@@ -130,24 +168,33 @@ class Workspace:
             inz = between(point.z, self.p1.z, self.p2.z)
             return inx and iny and inz
 
+
 class Robot:
     def __init__(self, name, color, workspace):
         self.name = name
         self.color = color
         self.workspace = workspace
+        # publishers for all service requests
+        self.mott_pub = rospy.Publisher("/%s_mott" % name, Mott, queue_size = 1)
+        self.mott_command_pub = rospy.Publisher("/%s_mott_command" % name, String, queue_size = 1)
 
-    
+        # subscribers for all service responses
+        self.response_sub = rospy.Subscriber("/%s_mott_response" % name, String, queue_size = 1)
 
-    
+    def mott_response_callback(self, resp):
+        rospy.logerr(resp)
+
 
 # class HP:
 #     def __init__(self, name, color, workspace):
 #         self.transform = TransformStamped()
 
 class WorkspaceConnectivityGraph:
-    def __init__(self):
+    def __init__(self, robots):
         rospy.init_node('WorkspaceConnectivityGraph')
         self.tfl = tf.TransformListener()
+
+        self.robots = robots
 
         # self.color_map = {
         #     'baxter': 1.0,
@@ -191,52 +238,13 @@ class WorkspaceConnectivityGraph:
 
 
 
-    def init_robots(self):
-        self.robots = []
-        # define name, color, and workspace
-        baxter = Robot("baxter",  1.0,
-            Workspace(
-                Point(-0.5,-0.5,-0.5),
-                Point(0.5,0.5,0.5),
-                "base"
-            )
-        )
-        self.robots.append(baxter)
-
-        height = 0.3
-        gatlin = Robot("gatlin", 0.6,
-            Workspace(
-                Point(-5.0,-5.0,0.0),
-                Point(5.0,5.0,height),
-                "base_link"
-            )
-        )
-        self.robots.append(gatlin)
-
-        youbot = Robot("youbot", 0.6, 
-            Workspace(
-                Point(-5.0,-5.0,0.0),
-                Point(5.0,5.0,height),
-                "base_link"
-            )
-        )
-        self.robots.append(youbot)
-
-        height = 0.2
-        modbot = Robot("modbot", 0.6,
-            Workspace(
-                Point(-5.0,-5.0,0.0),
-                Point(5.0,5.0,height),
-                "base_link"
-            )
-        )
-        self.robots.append(modbot)
+    
 
     def generate_workspace_connectivity_graph(self):
         # given a pose determine if it is in the robots workspace
         # ex. self.inside_workspace("baxter", xyz_point)
         # if yes then add an edge
-        self.wcg = WorkspaceConnectivityGraph()
+        # self.wcg = WorkspaceConnectivityGraph()
 
 
     # transform the pose stamped to the new frame
@@ -314,5 +322,5 @@ class WorkspaceConnectivityGraph:
 
 
 if __name__ == '__main__':
-    wcg = WorkspaceConnectivityGraph()
-    # mrc = MRC()
+    # wcg = WorkspaceConnectivityGraph()
+    mrc = MRC()
