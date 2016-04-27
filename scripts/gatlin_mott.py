@@ -22,69 +22,73 @@ def length(v):
 def angle(v1, v2):
 	return math.acos(np.dot(v1, v2) / (length(v1) * length(v2)))
 
-class DynamicObject:
-	def __init__(self):
-		self.FIXED_FRAME = "odom"
-		self.tfl = tf.TransformListener()
-		self.reset()
+# class DynamicObject:
+# 	def __init__(self):
+# 		self.FIXED_FRAME = "odom"
+# 		self.tfl = tf.TransformListener()
+# 		self.reset()
 
-	def subscribe(self, topic):
-		self.reset()
-		params = topic.split("_")
-		self.color = params[0]
-		self.id = params[1]
+# 	def subscribe(self, topic):
+# 		self.reset()
+# 		params = topic.split("_")
+# 		self.color = params[0]
+# 		self.id = params[1]
 
-	def reset(self):
-		self.ps = PoseStamped()
-		self.last_update = 0
-		self.id = ""
-		self.color = ""
+# 	def reset(self):
+# 		self.ps = PoseStamped()
+# 		self.last_update = 0
+# 		self.id = ""
+# 		self.color = ""
 
-	def set_pose(self, ps):
-		self.ps = self.transform_pose(self.FIXED_FRAME, ps)
-		self.last_update = time.time()
+# 	def set_pose(self, ps):
+# 		self.ps = self.transform_pose(self.FIXED_FRAME, ps)
+# 		self.last_update = time.time()
 
-	def update_pose(self, objectlist):
-		for obj in objectlist.objects:
-			if obj.color == self.color and obj.id == self.id:
-				self.ps = self.transform_pose(self.FIXED_FRAME, obj.pose)
-				self.last_update = time.time()
+# 	def update_pose(self, objectlist):
+# 		for obj in objectlist.objects:
+# 			if obj.color == self.color and obj.id == self.id:
+# 				self.ps = self.transform_pose(self.FIXED_FRAME, obj.pose)
+# 				self.last_update = time.time()
 
-	# transform the pose stamped to the new frame
-	def transform_pose(self, new_frame, pose):
-		if pose.header.frame_id == new_frame:
-			return pose
-		try:
-			ps = deepcopy(pose)
-			ps.header.stamp = rospy.Time(0)
-			self.tfl.waitForTransform(ps.header.frame_id, new_frame, rospy.Time(0), rospy.Duration(4.0))
-			new_pose = self.tfl.transformPose(new_frame, ps)
-			new_pose.header.stamp = deepcopy(pose.header.stamp)
-			return new_pose
-		except Exception as e:
-			rospy.logerr(e)
-			rospy.logerr("no transform")
-			return None
+# 	# transform the pose stamped to the new frame
+# 	def transform_pose(self, new_frame, pose):
+# 		if pose.header.frame_id == new_frame:
+# 			return pose
+# 		try:
+# 			ps = deepcopy(pose)
+# 			ps.header.stamp = rospy.Time(0)
+# 			self.tfl.waitForTransform(ps.header.frame_id, new_frame, rospy.Time(0), rospy.Duration(4.0))
+# 			new_pose = self.tfl.transformPose(new_frame, ps)
+# 			new_pose.header.stamp = deepcopy(pose.header.stamp)
+# 			return new_pose
+# 		except Exception as e:
+# 			rospy.logerr(e)
+# 			rospy.logerr("no transform")
+# 			return None
 
 class DynamicPose:
 	def __init__(self):
-		self.FIXED_FRAME = "odom"
+		# self.FIXED_FRAME = "global_map"
+		self.FIXED_FRAME = "base_link"
 		self.tfl = tf.TransformListener()
-		self.pose_sub = None
-		self.reset()
-
-	def subscribe(self, topic):
-		self.reset()
-		self.pose_sub = rospy.Subscriber(topic, PoseStamped, self.set_pose, queue_size = 1)
-		self.topic = topic
-
-	def reset(self):
-		if self.pose_sub:
-			self.pose_sub.unregister()
 		self.ps = PoseStamped()
 		self.last_update = 0
-		self.pose_sub = None
 		self.topic = ""
+
+	def subscribe(self, topic, dps):
+		# self.reset()
+		dps.append((topic, self))
+		self.topic = topic
+
+	# def reset(self, dps):
+	# 	self.ps = PoseStamped()
+	# 	self.last_update = 0
+	# 	try:
+	# 		dps.remove((self.topic, self))
+	# 		rospy.logerr("dp found")
+	# 	except:
+	# 		rospy.logerr("dp not found")
+	# 	self.topic = ""
 
 	def set_pose(self, ps):
 		self.ps = self.transform_pose(self.FIXED_FRAME, ps)
@@ -103,7 +107,7 @@ class DynamicPose:
 			return new_pose
 		except Exception as e:
 			rospy.logerr(e)
-			rospy.logerr("no transform")
+			rospy.logerr("no transform %s -> %s" % (ps.header.frame_id, new_frame))
 			return None
 
 class Nav_Manip_Controller :
@@ -253,6 +257,9 @@ class Nav_Manip_Controller :
 			rospy.sleep(delay)
 
 	def run_mott_sequence(self) :
+		while self.object.ps == None:
+			rospy.logerr("no object pose")
+			rospy.sleep(1)
 
 
 		self.moveBaseToDynamicPos(self.object)
@@ -290,17 +297,23 @@ class Nav_Manip_Controller :
 				
 
 	def MottCallback(self, data) :
+		self.object = DynamicPose()
+		self.target = DynamicPose()
+		self.dynamic_poses = []
+		
 		if data.object_pose_topic != "" :
-			self.object.subscribe(data.object_pose_topic)
+			self.object.subscribe(data.object_pose_topic, self.dynamic_poses)
 
 		if data.target_pose_topic != "" :
-			self.target.subscribe(data.target_pose_topic)
+			self.target.subscribe(data.target_pose_topic, self.dynamic_poses)
 		
 		if (data.object_pose) :
 			self.object.set_pose(data.object_pose)
 
 		if (data.target_pose) :
 			self.target.set_pose(data.target_pose)
+
+		rospy.sleep(2)
 
 		if data.command == "mott" :
 			self.run_mott_sequence()
@@ -344,14 +357,14 @@ class Nav_Manip_Controller :
 		return distance(origin, pose.pose.position)
 
 	# transform the pose stamped to the new frame
-	def transform_pose(self, new_frame, pose):
-		if pose.header.frame_id == new_frame:
-			return pose
+	def transform_pose(self, new_frame, ps):
+		if ps.header.frame_id == new_frame:
+			return ps
 		try:
-			ps = deepcopy(pose)
-			ps.header.stamp = rospy.Time(0)
-			self.tfl.waitForTransform(ps.header.frame_id, new_frame, rospy.Time(0), rospy.Duration(4.0))
-			new_pose = self.tfl.transformPose(new_frame, ps)
+			temp_ps = deepcopy(ps)
+			temp_ps.header.stamp = rospy.Time(0)
+			self.tfl.waitForTransform(temp_ps.header.frame_id, new_frame, rospy.Time(0), rospy.Duration(4.0))
+			new_pose = self.tfl.transformPose(new_frame, temp_ps)
 			new_pose.header.stamp = deepcopy(pose.header.stamp)
 			return new_pose
 		except Exception as e:
@@ -359,9 +372,18 @@ class Nav_Manip_Controller :
 			rospy.logerr("no transform")
 			return None
 
-	def set_object_poses(self, objectlist):
-		self.object.update_pose(objectlist)
-		self.target.update_pose(objectlist)
+	# def set_object_poses(self, objectlist):
+	# 	self.object.update_pose(objectlist)
+	# 	self.target.update_pose(objectlist)
+
+	def objectListCallback(self, ol):
+		# rospy.logerr(ol)
+		for obj in ol.objects:
+			for (topic, dp) in self.dynamic_poses:
+				if "%s_%s" % (obj.color, obj.id) == topic:
+					dp.set_pose(obj.pose)
+					# rospy.logerr(dp.ps)
+					# rospy.logerr(obj.pose)
 
 	def __init__(self):
 		self.robot_name = "gatlin"
@@ -370,13 +392,14 @@ class Nav_Manip_Controller :
 
 		rospy.init_node('%s_nav_manip_controller'%self.robot_name)
 
-		self.robot_pose = DynamicPose()
-		self.robot_pose.subscribe("/robot_pose")
+		# self.robot_pose = DynamicPose()
+		# self.robot_pose.subscribe("/robot_pose")
 
-		self.object = DynamicObject()
-		self.target = DynamicObject()
-
-		self.objectlist_sub = rospy.Subscriber("/gatlin/objectlist", ObjectList, self.set_object_poses, queue_size = 3)
+		
+		self.dynamic_poses = []
+		# self.objectlist_sub = rospy.Subscriber("/gatlin/objectlist", ObjectList, self.set_object_poses, queue_size = 3)
+		# rospy.Subscriber("/server/ar_marker_list", ObjectList, self.objectListCallback, queue_size=3)
+		rospy.Subscriber("/gatlin/ar_marker_list", ObjectList, self.objectListCallback, queue_size=3)
 
 		self.RUNNING = 0
 		self.PAUSING = 1
@@ -404,7 +427,7 @@ class Nav_Manip_Controller :
 		rospy.Subscriber("/gatlin_mott", Mott, self.MottCallback, queue_size = 1)
 		rospy.Subscriber("/gatlin_mott_command", String, self.MottCommandCallback, queue_size = 1)
 
-		self.move_arm = createServiceProxy("move/arm", MoveRobot, self.robot_name)
+		self.move_arm = createServiceProxy("gatlin/move/arm", MoveRobot)
 
 		self.test_pose_pub = rospy.Publisher('/test_obj_pose', PoseStamped)
 

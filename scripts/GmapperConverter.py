@@ -40,7 +40,7 @@ class GmapperConverter:
 		
 		self.goal_pose_stamped_pub = rospy.Publisher("/goal_pose_stamped", PoseStamped)		
 		self.move_to_goal_sub = rospy.Subscriber("/move_to_goal", PoseStamped, self.goalcallback, queue_size = 1)
-		self.get_path_to_goal_srv = createServiceProxy("/make_plan", GetPlan, "")
+		self.get_path_to_goal_srv = createServiceProxy("/make_plan", GetPlan)
 		self.next_path_pub = rospy.Publisher("/gatlin_path", Path)
 		self.move_to_goal_pub = rospy.Publisher("/move_base/goal", MoveBaseActionGoal)
 		self.move_to_goal_count = 0

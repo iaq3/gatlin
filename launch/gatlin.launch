@@ -23,8 +23,7 @@
 
 <!-- <node pkg="gatlin" type="gatlin_mott.py" name="gatlin_mott" output="screen"/>  -->
 
-<!-- <node pkg="gatlin" type="ar_vision.py" name="vision" output="screen"/> -->
-<include file="$(find gatlin)/launch/ar_gatlin_indiv.launch" />
+<include file="$(find gatlin)/launch/ar_gatlin.launch" />
 
 <!-- <node pkg="gatlin" type="vision.py" name="vision" output="screen"/> -->
 

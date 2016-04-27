@@ -3,11 +3,14 @@
  -->
 <launch>
 
-<include file="$(find gatlin)/launch/gatlin.launch">
-	<arg name="sim" default="false"/>
-	<arg name="rviz" default="true"/>
-	<arg name="calibrate" default="false"/>
-</include>
+<group ns="gatlin">
+	<param name="tf_prefix" value="gatlin_tf" />
+	<include file="$(find gatlin)/launch/gatlin.launch">
+		<arg name="sim" default="false"/>
+		<arg name="rviz" default="true"/>
+		<arg name="calibrate" default="false"/>
+	</include>
+</group>
 
 <include file="$(find gatlin)/launch/baxter.launch">
 	<arg name="sim" default="false"/>

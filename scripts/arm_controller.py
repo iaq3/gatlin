@@ -81,7 +81,7 @@ class Arm_Controller:
 
 		rospy.Subscriber("/arm_target_pose", PoseStamped, self.move_arm_to_pose, queue_size=1)
 		self.robot_name = "gatlin"
-		move_arm_service = createService('move/arm', MoveRobot, self.handle_move_arm, self.robot_name)
+		move_arm_service = createService('gatlin/move/arm', MoveRobot, self.handle_move_arm)
 
 		# We need a tf listener to convert poses into arm reference base
 		self.tfl = tf.TransformListener()

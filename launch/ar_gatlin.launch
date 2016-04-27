@@ -1,0 +1,9 @@
+<launch>
+
+	<include file="$(find gatlin)/launch/ar_gatlin_indiv.launch">
+	</include>
+
+	<node pkg="gatlin" type="ar_vision.py" name="vision" output="screen"/>
+
+
+</launch>
