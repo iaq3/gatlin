@@ -98,9 +98,6 @@ class Nav_Manip_Controller :
 
 				q = base_pose_offset.pose.orientation
 				rpy = euler_from_quaternion([q.x,q.y,q.z,q.w])
-				print rpy
-				# .x = 3.14
-				# .y = 0
 				q = quaternion_from_euler(3.1415, 0.0, rpy[2])
 				base_pose_offset.pose.orientation = Quaternion(q[0],q[1],q[2],q[3])
 				return base_pose_offset
@@ -213,10 +210,9 @@ class Nav_Manip_Controller :
 		if data.command == "mott" :
 			self.run_mott_sequence()
 
-		self.object_pose.reset(self.dynamic_poses)
-		self.target_pose.reset(self.dynamic_poses)
-
-
+		self.object_pose = DynamicPose()
+		self.target_pose = DynamicPose()
+		self.dynamic_poses = []
 
 	def MottCommandCallback(self, data) :
 		print "received "+data.data
@@ -269,9 +265,7 @@ class Nav_Manip_Controller :
 
 	def __init__(self):
 		rospy.init_node('nav_manip_controller')
-		# print rospy.search_param('limb')
 		limb = rospy.get_param('~limb')
-		print limb
 		self.limb = limb
 		self.robot_name = "baxter_"+limb
 
@@ -280,7 +274,6 @@ class Nav_Manip_Controller :
 
 		self.object_pose = DynamicPose()
 		self.target_pose = DynamicPose()
-
 		self.dynamic_poses = []
 		# rospy.Subscriber("/%s/ar_marker_list" % self.robot_name, ObjectList, self.objectListCallback, queue_size=3)
 		rospy.Subscriber("/server/ar_marker_list", ObjectList, self.objectListCallback, queue_size=3)

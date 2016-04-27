@@ -55,6 +55,8 @@ add_message_files(
   Mott.msg
   Object.msg
   ObjectList.msg
+  CommandRequest.msg
+  CommandRequestList.msg
 )
 
 ## Generate services in the 'srv' folder

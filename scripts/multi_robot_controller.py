@@ -3,21 +3,41 @@
 from config import *
 import numpy as np
 import rospy
+from std_msgs.msg import *
 from geometry_msgs.msg import *
+from visualization_msgs.msg import *
 from gatlin.msg import *
 from gatlin.srv import *
 import networkx as nx
+# sudo apt-get install python-networkx
 import matplotlib.pyplot as plt
 import tf
+from rospy_message_converter import *
+# sudo apt-get install ros-indigo-rospy-message-converter
 
 class MRC:
     def __init__(self):
         rospy.init_node('multi_robot_controller')
 
-        rospy.Subscriber("/mr_command_req", CommandListRequest, self.mr_command_req_callback)
+        rospy.Subscriber("/mr_command_req", CommandRequestList, self.mr_command_req_callback, queue_size = 1)
 
         self.init_robots()
+
+        self.display_workspaces()
+        
         self.wcg = WorkspaceConnectivityGraph(self.robots)
+
+        m = Mott()
+        m.command = "mott"
+        m.object_pose_topic = "ar_7"
+        m.target_pose_topic = ""
+        m.object_pose = PoseStamped()
+        m.target_pose = PoseStamped()
+
+        # test CommandRequestList
+        crl = CommandRequestList()
+        cr = CommandRequest()
+        crl.commands
 
         rospy.spin()
 
@@ -32,21 +52,22 @@ class MRC:
         # define name, color, and workspace
         baxter_left = Robot("baxter_left",  1.0,
             Workspace(
-                Point(-0.5,-0.5,-0.5),
-                Point(0.5,0.0,0.5),
+                Point( 0.80,-0.10,-0.60),
+                Point(-0.30, 0.80, 0.70),
                 "base"
+                # "global_map"
             )
         )
-        self.robots.append(baxter)
+        self.robots.append(baxter_left)
 
         baxter_right = Robot("baxter_right",  1.0,
             Workspace(
-                Point(-0.5,0.0,-0.5),
-                Point(0.5,0.5,0.5),
+                Point( 0.80,-0.80,-0.60),
+                Point(-0.30, 0.10, 0.70),
                 "base"
             )
         )
-        self.robots.append(baxter)
+        self.robots.append(baxter_right)
 
         height = 0.3
         gatlin = Robot("gatlin", 0.6,
@@ -77,27 +98,71 @@ class MRC:
         )
         self.robots.append(modbot)
 
+    def display_workspaces(self):
+        self.workspace_pub = rospy.Publisher("/workspace_markers", Marker, queue_size = 1)
+        
+        rate = rospy.Rate(10)
+        # while not rospy.is_shutdown():
+        for x in range(0,20):
+            for i in range(0,len(self.robots)):
+                self.display_workspace(self.robots[i].workspace, i)
+            rate.sleep()
+
+    def display_workspace(self, workspace, i):
+        center, dimensions = workspace.getCenterDimensions()
+
+        marker = Marker()
+        marker.header.frame_id = workspace.reference_frame
+        marker.header.stamp = rospy.Time.now()
+        marker.id = i
+        marker.type = marker.CUBE
+        marker.action = marker.ADD
+        marker.scale.x = dimensions[0]
+        marker.scale.y = dimensions[1]
+        marker.scale.z = dimensions[2]
+        marker.color.a = 0.5
+        marker.pose.orientation.w = 1.0
+        marker.pose.position.x = center[0]
+        marker.pose.position.y = center[1]
+        marker.pose.position.z = center[2]
+
+        self.workspace_pub.publish(marker)
+        # rospy.logerr(marker)
+
     def mr_command_req_callback(self, cmd_req):
         rospy.logerr(cmd_req)
 
-        # json.loads('["foo", {"bar":["baz", null, 1.0, 2]}]')
+        # def test_ros_message_with_string(self):
+        # from std_msgs.msg import String
+        # expected_json = '{"data": "Hello"}'
+        # message = String(data = 'Hello')
+        # returned_json = json_message_converter.convert_ros_message_to_json(message)
+        # self.assertEqual(returned_json, expected_json)
 
-        
-        
+        # def test_json_with_string(self):
+        # from std_msgs.msg import String
+        # expected_message = String(data = 'Hello')
+        # json_str = '{"data": "Hello"}'
+        # message = json_message_converter.convert_json_to_ros_message('std_msgs/String', json_str)
+        # self.assertEqual(message, expected_message)
 
         # recieve commands
         for cmd in cmd_req.commands:
-            # cmd["id"]
-            # cmd["action"]
-            # cmd["target_pose"]
-            # cmd["obj_pose"]
-            # cmd["obj_topic"]
+            mott = json_message_converter.convert_json_to_ros_message('gatlin/Mott', cmd.args)
+            rospy.logerr(mott)
+            
+            # cmd.id
+            # cmd.action
 
-            object_pose = cmd["obj_pose"]
-            target_pose = cmd["target_pose"]
+            # mott.command
+            # mott.object_pose_topic
+            # mott.target_pose_topic
+            # mott.object_pose
+            # mott.target_pose
 
             # generate connectivity graph
-            self.wcg.add_target(target)
+            self.wcg.add_obj(mott.object_pose_topic)
+            self.wcg.add_target(mott.target_pose_topic)
 
                 # given a pose determine if it is in the robots wksp
                 # if yes then add an edge
@@ -148,11 +213,11 @@ class DynamicPose:
             return new_pose
         except Exception as e:
             rospy.logerr(e)
-            rospy.logerr("no transform")
+            rospy.logerr("no transform %s -> %s" % (ps.header.frame_id, new_frame))
             return None
 
 class Workspace:
-        def __init__(self, rf, p1, p2):
+        def __init__(self, p1, p2, rf):
             self.reference_frame = rf
             self.p1 = p1
             self.p2 = p2
@@ -167,6 +232,13 @@ class Workspace:
             iny = between(point.y, self.p1.y, self.p2.y)
             inz = between(point.z, self.p1.z, self.p2.z)
             return inx and iny and inz
+
+        def getCenterDimensions(self):
+            p1 = vector3_to_numpy(self.p1)
+            p2 = vector3_to_numpy(self.p2)
+            center = (p1+p2)/2
+            dimensions = abs(p1-center)*2
+            return center, dimensions
 
 
 class Robot:
@@ -191,60 +263,64 @@ class Robot:
 
 class WorkspaceConnectivityGraph:
     def __init__(self, robots):
-        rospy.init_node('WorkspaceConnectivityGraph')
+        # rospy.init_node('WorkspaceConnectivityGraph')
         self.tfl = tf.TransformListener()
 
         self.robots = robots
 
-        # self.color_map = {
-        #     'baxter': 1.0,
-        #     'gatlin': 0.6,
-        #     'youbot': 0.6,
-        #     'modbot': 0.6,
-        # }
+        self.color_map = {}
         for r in self.robots:
             self.color_map[r.name] = r.color
 
         self.G = nx.DiGraph()
 
-        self.add_hp('gatlin', 'hp1', .7)
-        self.add_hp('gatlin', 'hp2', .2)
-        self.add_obj('gatlin', 'obj1', .6)
+        # self.add_hp('gatlin', 'hp1', .7)
+        # self.add_hp('gatlin', 'hp2', .2)
+        # self.add_obj('gatlin', 'obj1', .6)
 
-        self.add_hp('baxter', 'hp1', .3)
-        self.add_target('baxter', 'target1', .2)
-        self.add_target('baxter', 'target2', .25)
-        self.add_target('baxter', 'target3', .3)
+        # self.add_hp('baxter', 'hp1', .3)
+        # self.add_target('baxter', 'target1', .2)
+        # self.add_target('baxter', 'target2', .25)
+        # self.add_target('baxter', 'target3', .3)
 
-        self.add_hp('youbot', 'hp1', .25)
-        self.add_hp('youbot', 'hp2', .3)
-        self.add_obj('youbot', 'obj2', .5)
-        self.add_obj('youbot', 'obj3', .3)
+        # self.add_hp('youbot', 'hp1', .25)
+        # self.add_hp('youbot', 'hp2', .3)
+        # self.add_obj('youbot', 'obj2', .5)
+        # self.add_obj('youbot', 'obj3', .3)
+
+        self.add_obj('baxter_right', 'ar_7', .6)
+        self.add_hp('baxter_right', 'hp1', .3)
+        self.add_hp('baxter_left', 'hp1', .3)
+        self.add_target('baxter_left', 'target1', .2)
+        print self.find_shortest_path('ar_7', 'target1')
 
         self.draw()
         self.show()
 
-        print self.find_shortest_path('obj1', 'target1')
-        print self.find_shortest_path('obj2', 'target2')
-        print self.find_shortest_path('obj3', 'target3')
+        # print self.find_shortest_path('obj1', 'target1')
+        # print self.find_shortest_path('obj2', 'target2')
+        # print self.find_shortest_path('obj3', 'target3')
 
         # self.update_distances()
         # self.draw()
         # self.show()
 
     def init_handoff_zones(self):
-        # xyz point and width, height
-        pass
+        # xyz point and width, length
+        table_z = -.230
 
-
-
-    
+        hp1 = Workspace(
+            Point(0.70,-0.10, table_z),
+            Point(0.50, 0.10, table_z+.01),
+            "base"
+        )
 
     def generate_workspace_connectivity_graph(self):
         # given a pose determine if it is in the robots workspace
         # ex. self.inside_workspace("baxter", xyz_point)
         # if yes then add an edge
         # self.wcg = WorkspaceConnectivityGraph()
+        pass
 
 
     # transform the pose stamped to the new frame
