@@ -29,20 +29,23 @@ class DynamicPose:
 		# self.FIXED_FRAME = "global_map"
 		self.FIXED_FRAME = "base"
 		self.tfl = tf.TransformListener()
-		self.pose_sub = None
-		self.reset()
+		self.ps = PoseStamped()
+		self.last_update = 0
+		self.topic = ""
 
 	def subscribe(self, topic, dps):
 		self.reset()
 		dps.append((topic, self))
 		self.topic = topic
 
-	def reset(self):
-		if self.pose_sub:
-			self.pose_sub.unregister()
+	def reset(self, dps):
 		self.ps = PoseStamped()
 		self.last_update = 0
-		self.pose_sub = None
+		try:
+			dps.remove((self.topic, self))
+			rospy.logerr("dp found")
+		except:
+			rospy.logerr("dp not found")
 		self.topic = ""
 
 	def set_pose(self, ps):
@@ -209,6 +212,9 @@ class Nav_Manip_Controller :
 
 		if data.command == "mott" :
 			self.run_mott_sequence()
+
+		self.object_pose.reset(self.dynamic_poses)
+		self.target_pose.reset(self.dynamic_poses)
 
 
 
