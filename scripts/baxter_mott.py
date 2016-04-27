@@ -7,10 +7,12 @@ from std_msgs.msg import *
 from geometry_msgs.msg import *
 from tf.transformations import *
 from tf import *
+from tf.msg import *
 from copy import deepcopy
 from gatlin.msg import *
 from gatlin.srv import *
 from config import *
+from random import randint
 
 
 def distance(v1,v2):
@@ -60,7 +62,7 @@ class DynamicPose:
 			return new_pose
 		except Exception as e:
 			rospy.logerr(e)
-			rospy.logerr("no transform")
+			rospy.logerr("no transform %s -> %s" % (ps.header.frame_id, new_frame))
 			return None
 
 class Nav_Manip_Controller :
@@ -68,26 +70,59 @@ class Nav_Manip_Controller :
 	def grabObject(self, dynamic_pose) :
 		#holding_object = False
 		#while not holding_object :
+		while True:
+			if self.command_state == self.CANCELLED :
+				return
+			self.pauseCommand()
 
-		if self.command_state == self.CANCELLED :
-			return
-		self.pauseCommand()
+			self.publishResponse("Attempting to grab "+dynamic_pose.topic)
 
-		self.publishResponse("Attempting to grab "+dynamic_pose.topic)
+			resp = self.move_arm(OPEN_GRIPPER, PoseStamped())
 
-		resp = self.move_arm(OPEN_GRIPPER, PoseStamped())
+			def getOffsetPose():
+				# rospy.logerr(dynamic_pose.ps)
+				base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
+				base_to_ar_t = transform_from_pose(base_pose.pose)
 
-		# rospy.logerr(dynamic_pose.ps)
-		base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
-		#base_pose.pose.position.z -= .025 #??? maybe not best practice
-		resp = self.move_arm(MOVE_TO_POS, base_pose)
+				offset_t = Transform()
+				offset_t.translation = Vector3(-0.015, -0.000, -0.084)
+				offset_t.rotation = Quaternion(-7.07106781e-01, -7.07106781e-01, 0.0, 0.0)
+				# offset_inv_t = inverse_transform(offset_t)
 
-		if not resp.success:
-			rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
-			# try moving to it again
-			#self.servoBaseToDynamicPos(self.object_pose)
-			#TODO check this
-			rospy.sleep(1)
+				base_to_offset_t = multiply_transforms(base_to_ar_t, offset_t)
+				base_pose_offset = deepcopy(base_pose)
+				base_pose_offset.pose = transform_to_pose(base_to_offset_t)
+
+				q = base_pose_offset.pose.orientation
+				rpy = euler_from_quaternion([q.x,q.y,q.z,q.w])
+				print rpy
+				# .x = 3.14
+				# .y = 0
+				q = quaternion_from_euler(3.1415, 0.0, rpy[2])
+				base_pose_offset.pose.orientation = Quaternion(q[0],q[1],q[2],q[3])
+				return base_pose_offset
+
+			# base_pose_offset = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
+			base_pose_offset = getOffsetPose()
+
+
+			base_pose_offset.pose.position.z += .10
+			resp = self.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_pose_offset)
+
+			# base_pose_offset = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
+			base_pose_offset = getOffsetPose()
+			resp = self.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_pose_offset)
+
+			repeat = False
+			if not resp.success:
+				rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
+				repeat = True
+				# try moving to it again
+				#self.servoBaseToDynamicPos(self.object_pose)
+				#TODO check this
+				rospy.sleep(.5)
+
+			if not repeat: break
 
 		self.pauseCommand()
 
@@ -136,6 +171,10 @@ class Nav_Manip_Controller :
 			rospy.sleep(delay)
 
 	def run_mott_sequence(self) :
+		if self.object_pose.ps == None:
+			rospy.logerr("object_pose not set")
+			return
+
 		self.grabObject(self.object_pose)
 		
 		self.interActionDelay(1)
@@ -150,7 +189,7 @@ class Nav_Manip_Controller :
 			self.publishResponse("quitting on user command") 
 
 	def MottCallback(self, data) :
-		rospy.logerr(data)
+		# rospy.logerr(data)
 
 		self.command_state = self.RUNNING
 
@@ -160,14 +199,17 @@ class Nav_Manip_Controller :
 		if data.target_pose_topic != "" :
 			self.target_pose.subscribe(data.target_pose_topic, self.dynamic_poses)
 		
-		if (data.object_pose) :
+		if (data.object_pose != Pose()) :
 			self.object_pose.set_pose(data.object_pose)
 
-		if (data.target_pose) :
+		if (data.target_pose != Pose()) :
 			self.target_pose.set_pose(data.target_pose)
+		
+		rospy.sleep(2)
 
 		if data.command == "mott" :
 			self.run_mott_sequence()
+
 
 
 	def MottCommandCallback(self, data) :
@@ -220,11 +262,12 @@ class Nav_Manip_Controller :
 
 
 	def __init__(self):
-		limb = "left"#TODO change to param or sumthing
+		rospy.init_node('nav_manip_controller')
+		# print rospy.search_param('limb')
+		limb = rospy.get_param('~limb')
+		print limb
 		self.limb = limb
-
 		self.robot_name = "baxter_"+limb
-		rospy.init_node('%s_nav_manip_controller'%self.robot_name)
 
 		#self.robot_pose = DynamicPose()
 		#self.robot_pose.subscribe("/robot_pose") #TODO change to end effector position??
@@ -233,8 +276,8 @@ class Nav_Manip_Controller :
 		self.target_pose = DynamicPose()
 
 		self.dynamic_poses = []
-		rospy.Subscriber("/%s/ar_marker_list" % self.robot_name, ObjectList, self.objectListCallback, queue_size=3)
-		self.object_pose.subscribe("ar_8", self.dynamic_poses)
+		# rospy.Subscriber("/%s/ar_marker_list" % self.robot_name, ObjectList, self.objectListCallback, queue_size=3)
+		rospy.Subscriber("/server/ar_marker_list", ObjectList, self.objectListCallback, queue_size=3)
 
 		self.RUNNING = 0
 		self.PAUSING = 1
@@ -253,8 +296,6 @@ class Nav_Manip_Controller :
 
 		# self.move_arm = createServiceProxy("baxter/move/arm", MoveRobot, self.robot_name)
 		self.move_arm = createServiceProxy(robot+"/move_robot", MoveRobot)
-
-		self.test_pose_pub = rospy.Publisher('/test_obj_pose', PoseStamped, queue_size = 1)
 
 		self.tfl = tf.TransformListener()
 

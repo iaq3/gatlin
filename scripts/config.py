@@ -31,109 +31,130 @@ CHECK_BLOCKS = 15
 MOVE_BLOCKS = 16
 
 def getAverageTransform(transforms):
-        # get mean translation and rotation
-        translations = np.zeros((0,3))
-        rotations = np.zeros((0,4))
-        for trans in transforms:
-            t = deepcopy(trans.translation)
-            translations = np.append(translations, [[t.x,t.y,t.z]], axis=0)
+		# get mean translation and rotation
+		# rospy.logerr(transforms)
+		# return Transform()
 
-            q = deepcopy(trans.rotation)
-            rotations = np.append(rotations, [[q.x,q.y,q.z,q.w]], axis=0)
+		translations = np.zeros((0,3))
+		rotations = np.zeros((0,4))
+		for trans in transforms:
+			t = deepcopy(trans.translation)
+			translations = np.append(translations, [[t.x,t.y,t.z]], axis=0)
 
-        mean_translation = np.mean(translations, axis=0)
-        mean_rotation = np.mean(rotations, axis=0)
+			q = deepcopy(trans.rotation)
+			rotations = np.append(rotations, [[q.x,q.y,q.z,q.w]], axis=0)
 
-        error_translations = translations - mean_translation
-        norm_error_translations = np.linalg.norm(error_translations, axis=1)
-        mean_norm_error_translation = np.mean(norm_error_translations)
-        std_dev_norm_error_translation = np.std(norm_error_translations)
+		mean_translation = np.mean(translations, axis=0)
+		mean_rotation = np.mean(rotations, axis=0)
 
-        error_rotations = rotations - mean_rotation
-        norm_error_rotations = np.linalg.norm(error_rotations, axis=1)
-        mean_norm_error_rotation = np.mean(norm_error_rotations)
-        std_dev_norm_error_rotation = np.std(norm_error_rotations)
+		error_translations = translations - mean_translation
+		norm_error_translations = np.linalg.norm(error_translations, axis=1)
+		mean_norm_error_translation = np.mean(norm_error_translations)
+		std_dev_norm_error_translation = np.std(norm_error_translations)
 
-        # use mean and std to filter inliers
-        inlier_tfs = []
-        translation_threshold = 1.1
-        rotation_threshold = 1.1
-        for trans in transforms:
-            t = deepcopy(trans.translation)
-            t = np.array([t.x,t.y,t.z])
+		error_rotations = rotations - mean_rotation
+		norm_error_rotations = np.linalg.norm(error_rotations, axis=1)
+		mean_norm_error_rotation = np.mean(norm_error_rotations)
+		std_dev_norm_error_rotation = np.std(norm_error_rotations)
 
-            q = deepcopy(trans.rotation)
-            q = np.array([q.x,q.y,q.z,q.w])
-            
-            norm_error_translation = np.linalg.norm(t - mean_translation)
-            translation_z_score = (norm_error_translation - mean_norm_error_translation) / std_dev_norm_error_translation
-            if math.isnan(translation_z_score): translation_z_score = 0
-            inlier_translation = abs(translation_z_score) < translation_threshold
+		# use mean and std to filter inliers
+		inlier_tfs = []
+		translation_threshold = 1.1
+		rotation_threshold = 1.1
+		for trans in transforms:
+			t = deepcopy(trans.translation)
+			t = np.array([t.x,t.y,t.z])
 
-            norm_error_rotation = np.linalg.norm(q - mean_rotation)
-            rotation_z_score = (norm_error_rotation - mean_norm_error_rotation) / std_dev_norm_error_rotation
-            if math.isnan(rotation_z_score): rotation_z_score = 0
-            inlier_rotation = abs(rotation_z_score) < rotation_threshold
+			q = deepcopy(trans.rotation)
+			q = np.array([q.x,q.y,q.z,q.w])
+			
+			norm_error_translation = np.linalg.norm(t - mean_translation)
+			translation_z_score = (norm_error_translation - mean_norm_error_translation) / std_dev_norm_error_translation
+			if math.isnan(translation_z_score): translation_z_score = 0
+			inlier_translation = abs(translation_z_score) < translation_threshold
 
-            if inlier_translation and inlier_rotation:
-                inlier_tfs.append(trans)
-            # else:
-            #     rospy.logerr("outlier")
-            #     rospy.logerr(translation_z_score)
-            #     rospy.logerr(rotation_z_score)
-            #     rospy.logerr(trans)
+			norm_error_rotation = np.linalg.norm(q - mean_rotation)
+			rotation_z_score = (norm_error_rotation - mean_norm_error_rotation) / std_dev_norm_error_rotation
+			if math.isnan(rotation_z_score): rotation_z_score = 0
+			inlier_rotation = abs(rotation_z_score) < rotation_threshold
 
-        # get the mean again with the inliers
-        translations = np.zeros((0,3))
-        rotations = np.zeros((0,4))
-        for trans in inlier_tfs:
-            t = deepcopy(trans.translation)
-            translations = np.append(translations, [[t.x,t.y,t.z]], axis=0)
+			if inlier_translation and inlier_rotation:
+				inlier_tfs.append(trans)
+			# else:
+			#	 rospy.logerr("outlier")
+			#	 rospy.logerr(translation_z_score)
+			#	 rospy.logerr(rotation_z_score)
+			#	 rospy.logerr(trans)
 
-            q = deepcopy(trans.rotation)
-            rotations = np.append(rotations, [[q.x,q.y,q.z,q.w]], axis=0)
+		# get the mean again with the inliers
+		translations = np.zeros((0,3))
+		rotations = np.zeros((0,4))
+		for trans in inlier_tfs:
+			t = deepcopy(trans.translation)
+			translations = np.append(translations, [[t.x,t.y,t.z]], axis=0)
 
-        mean_translation = np.mean(translations, axis=0)
-        mean_rotation = np.mean(rotations, axis=0)
-        mean_rotation /= np.linalg.norm(mean_rotation)
+			q = deepcopy(trans.rotation)
+			rotations = np.append(rotations, [[q.x,q.y,q.z,q.w]], axis=0)
 
-        mean_transform = Transform()
-        mean_transform.translation = Vector3(mean_translation[0],mean_translation[1],mean_translation[2])
-        mean_transform.rotation = Quaternion(mean_rotation[0],mean_rotation[1],mean_rotation[2],mean_rotation[3])
-        return mean_transform
+		mean_translation = np.mean(translations, axis=0)
+		mean_rotation = np.mean(rotations, axis=0)
+		mean_rotation /= np.linalg.norm(mean_rotation)
+
+		mean_transform = Transform()
+		mean_transform.translation = Vector3(mean_translation[0],mean_translation[1],mean_translation[2])
+		mean_transform.rotation = Quaternion(mean_rotation[0],mean_rotation[1],mean_rotation[2],mean_rotation[3])
+		# rospy.logerr(mean_transform)
+		return mean_transform
+
+def multiply_transforms(t1, t2):
+	t1_matrix = transform_to_matrix(t1)
+	t2_matrix = transform_to_matrix(t2)
+	t12_matrix = np.dot(t1_matrix, t2_matrix)
+	return transform_from_matrix(t12_matrix)
+
+def inverse_transform(transform):
+	matrix = transform_to_matrix(transform)
+	inv_matrix = np.linalg.inv(matrix)
+	return transform_from_matrix(inv_matrix)
 
 def transform_to_matrix(transform):
-    t = deepcopy(transform.translation)
-    t = [t.x,t.y,t.z]
-    T = translation_matrix(t)
-    q = deepcopy(transform.rotation)
-    q = [q.x,q.y,q.z,q.w]
-    R = quaternion_matrix(q)
-    return np.dot(T,R)
+	t = deepcopy(transform.translation)
+	t = [t.x,t.y,t.z]
+	T = translation_matrix(t)
+	q = deepcopy(transform.rotation)
+	q = [q.x,q.y,q.z,q.w]
+	R = quaternion_matrix(q)
+	return np.dot(T,R)
 
 def transform_from_matrix(matrix):
-    trans = Transform()
-    q = quaternion_from_matrix(matrix)
-    trans.rotation = Quaternion(q[0],q[1],q[2],q[3])
-    t = translation_from_matrix(matrix)
-    trans.translation = Vector3(t[0],t[1],t[2])
-    return trans
+	trans = Transform()
+	q = quaternion_from_matrix(matrix)
+	trans.rotation = Quaternion(q[0],q[1],q[2],q[3])
+	t = translation_from_matrix(matrix)
+	trans.translation = Vector3(t[0],t[1],t[2])
+	return trans
 
 def transform_from_pose(pose):
-    trans = Transform()
-    q = pose.orientation
-    trans.rotation = Quaternion(q.x,q.y,q.z,q.w)
-    t = pose.position
-    trans.translation = Vector3(t.x,t.y,t.z)
-    return trans
+	trans = Transform()
+	q = pose.orientation
+	trans.rotation = Quaternion(q.x,q.y,q.z,q.w)
+	t = pose.position
+	trans.translation = Vector3(t.x,t.y,t.z)
+	return trans
 
 def transform_to_pose(trans):
-    p = Pose()
-    q = trans.rotation
-    p.orientation = Quaternion(q.x,q.y,q.z,q.w)
-    t = trans.translation
-    p.position = Point(t.x,t.y,t.z)
-    return p
+	p = Pose()
+	q = trans.rotation
+	p.orientation = Quaternion(q.x,q.y,q.z,q.w)
+	t = trans.translation
+	p.position = Point(t.x,t.y,t.z)
+	return p
+
+def ts_to_ps(ts):
+	ps = PoseStamped()
+	ps.header = ts.header
+	ps.pose = transform_to_pose(ts.transform)
+	return ps
 
 def createServiceProxy(service,srv_type):
 	name = "/%s" % (service)
@@ -286,28 +307,28 @@ def direction_of_manipulability(J, dJs, eps):
 	return direction_of_manipulability
 
 def get_current_pose(arm):
-    p = Pose()
-    pos = np.array(arm.endpoint_pose()['position'])
-    ori = np.array(arm.endpoint_pose()['orientation'])
-    p.position = Point(pos[0],pos[1],pos[2])
-    p.orientation = Quaternion(ori[0],ori[1],ori[2],ori[3])
-    return p
+	p = Pose()
+	pos = np.array(arm.endpoint_pose()['position'])
+	ori = np.array(arm.endpoint_pose()['orientation'])
+	p.position = Point(pos[0],pos[1],pos[2])
+	p.orientation = Quaternion(ori[0],ori[1],ori[2],ori[3])
+	return p
 
 def getOffsetPose(ps, offset) :
-    offsetpose = deepcopy(ps)
-    offsetpose.pose.position.x += offset.x
-    offsetpose.pose.position.y += offset.y
-    offsetpose.pose.position.z += offset.z
-    return offsetpose
+	offsetpose = deepcopy(ps)
+	offsetpose.pose.position.x += offset.x
+	offsetpose.pose.position.y += offset.y
+	offsetpose.pose.position.z += offset.z
+	return offsetpose
 
 def getLocalOffsetPose(pose, offset) :
-    offsetpose = deepcopy(pose)
-    q = pose.orientation
-    off = np.dot(
-        quaternion_matrix([q.x,q.y,q.z,q.w]),
-        np.array([offset.x,offset.y,offset.z,1]).T)
-    off = off[:3]/off[3]
-    offsetpose.position.x += off[0]
-    offsetpose.position.y += off[1]
-    offsetpose.position.z += off[2]
-    return offsetpose
+	offsetpose = deepcopy(pose)
+	q = pose.orientation
+	off = np.dot(
+		quaternion_matrix([q.x,q.y,q.z,q.w]),
+		np.array([offset.x,offset.y,offset.z,1]).T)
+	off = off[:3]/off[3]
+	offsetpose.position.x += off[0]
+	offsetpose.position.y += off[1]
+	offsetpose.position.z += off[2]
+	return offsetpose

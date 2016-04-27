@@ -1,0 +1,9 @@
+<launch>
+  <node pkg="gatlin" type="baxter_mott.py" name="baxter_mott_left" output="screen">
+    <param name="limb" value="left"/>
+  </node>
+
+  <node pkg="gatlin" type="baxter_mott.py" name="baxter_mott_right" output="screen">
+    <param name="limb" value="right"/>
+  </node>
+</launch>

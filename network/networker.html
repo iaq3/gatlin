@@ -186,12 +186,18 @@
     forwardTopic(hub_ros, baxter_ros, '/baxter_arm_target_pose_left', 'geometry_msgs/PoseStamped');
     forwardTopic(hub_ros, baxter_ros, '/baxter_cmd_vel_left', 'geometry_msgs/Twist');
     forwardTopic(hub_ros, baxter_ros, '/baxter_left_mott', 'gatlin/Mott');
+    forwardTopic(hub_ros, baxter_ros, '/baxter_arm_target_pose_right', 'geometry_msgs/PoseStamped');
+    forwardTopic(hub_ros, baxter_ros, '/baxter_cmd_vel_right', 'geometry_msgs/Twist');
+    forwardTopic(hub_ros, baxter_ros, '/baxter_right_mott', 'gatlin/Mott');
+    forwardTopic(hub_ros, baxter_ros, '/server/ar_marker_list', 'gatlin/ObjectList');
 
     // baxter -> unity
     forwardTopic(baxter_ros, hub_ros, '/left_gripper_in_base', 'geometry_msgs/PoseStamped');
     forwardTopic(baxter_ros, hub_ros, '/right_gripper_in_base', 'geometry_msgs/PoseStamped');
     forwardTopic(baxter_ros, hub_ros, '/baxter_left/ar_marker_list', 'gatlin/ObjectList');
+    forwardTopic(baxter_ros, hub_ros, '/baxter_right/ar_marker_list', 'gatlin/ObjectList');
     forwardTopic(baxter_ros, hub_ros, '/baxter_left_mott_response', 'std_msgs/String');
+    forwardTopic(baxter_ros, hub_ros, '/baxter_right_mott_response', 'std_msgs/String');
 
 </script>
 </body>

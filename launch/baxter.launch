@@ -1,17 +1,31 @@
 <launch>
 
-  <!-- <node pkg="tf" type="static_transform_publisher" name="baxter_link_tf" args="0 0 0 0 0 0 1 /ar_marker_3 /baxter_link 100"/> -->
+  <!-- <node pkg="tf" type="static_transform_publisher" name="baxter_tf" args="0 0 0 0 0 0 1 /global_map /base 100"/> -->
+  <!-- <node pkg="tf" type="static_transform_publisher" name="baxter_tf" args="0 0 0 0 0 0 1 /baxter_link /base 100"/> -->
 
 	<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch">
 		<arg name="port" value="8080"/>
 	</include>
 
-  <node pkg="tf" type="static_transform_publisher" name="base_link_tf" args="-0.000, -0.692, -0.057 0 0 0 1 /baxter_link /base 100"/>
+  <!-- <node pkg="tf" type="static_transform_publisher" name="base_link_tf" args="-0.000, -0.692, -0.057 0 0 0 1 /baxter_link /base 100"/> -->
 
-  <include file="$(find gatlin)/launch/ar_baxter.launch" />
-  <node pkg="gatlin" type="baxter_controller.py" name="baxter_controller" output="screen"/>
+  <!-- <include file="$(find gatlin)/launch/ar_baxter.launch" /> -->
+  <node pkg="gatlin" type="baxter_controller.py" name="baxter_controller_right" output="screen">
+    <param name="limb" value="right"/>
+  </node>
+
+  <node pkg="gatlin" type="baxter_controller.py" name="baxter_controller_left" output="screen">
+    <param name="limb" value="left"/>
+  </node>
+
   <!-- <node pkg="gatlin" type="baxter_mott.py" name="baxter_mott" output="screen"/> -->
-  <node pkg="gatlin" type="execute_velocity.py" name="execute_velocity" output="screen"/>
+  <node pkg="gatlin" type="execute_velocity.py" name="execute_velocity_left" output="screen">
+    <param name="limb" value="left"/>
+  </node>
+
+  <node pkg="gatlin" type="execute_velocity.py" name="execute_velocity_right" output="screen">
+    <param name="limb" value="right"/>
+  </node>
 
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find gatlin)/rviz/baxter.rviz"/>
 

@@ -28,14 +28,16 @@ class hand_camera_calibration:
 		self.bridge = CvBridge()
 
 		self.limb_name = 'left'
-		topic = "/cameras/"+self.limb_name+"_hand_camera/image"
+		self.topic = "/cameras/"+self.limb_name+"_hand_camera/image"
 		# topic = "/camera/rgb/image_rect_color"
-		self.image_sub = rospy.Subscriber(topic,Image,self.imagecallback, queue_size=1)
+		self.image_sub = rospy.Subscriber(self.topic,Image,self.imagecallback, queue_size=1)
 
 		self.images = []
 
 		cv2.startWindowThread()
 		cv2.namedWindow('hand_camera_calibration')
+
+		self.mtx = []
 
 	def imagecallback(self,data):
 
@@ -50,7 +52,16 @@ class hand_camera_calibration:
 
 		if(len(self.images) == 10):
 			self.image_sub.unregister()
-			self.calibrate()
+			mtx = self.calibrate()
+			self.mtx.append(mtx)
+			self.images = []
+			if len(self.mtx) < 5:
+				self.image_sub = rospy.Subscriber(self.topic,Image,self.imagecallback, queue_size=1)
+			else:
+				answer = np.mean(self.mtx, axis=0)
+				rospy.logerr(answer)
+				# rospy.logerr(self.mtx)
+				cv2.destroyAllWindows()
 
 	def calibrate(self):
 		print "proccessing images"
@@ -95,7 +106,6 @@ class hand_camera_calibration:
 
 		print "done"
 
-		cv2.destroyAllWindows()
 
 		# objpoints = np.array(objpoints).astype('float32')
 		# imgpoints = np.array(imgpoints).astype('float32')
@@ -107,22 +117,24 @@ class hand_camera_calibration:
 
 		fovx, fovy, focalLength, principalPoint, aspectRatio = cv2.calibrationMatrixValues(mtx, gray.shape[::-1], 1.0, 1.0)
 
-		print "mtx"
-		print ""
-		print mtx
-		print ""
-		print ""
-		print "fovx"
-		print fovx
-		print "fovy"
-		print fovy
-		print "focalLength"
-		print focalLength
+		# print "mtx"
+		# print ""
+		# print mtx
+		# print ""
+		# print ""
+		# print "fovx"
+		# print fovx
+		# print "fovy"
+		# print fovy
+		# print "focalLength"
+		# print focalLength
 
 		# fovx
 		# 179.641902544
 		# fovy
 		# 179.427046979
+
+		return mtx
 
 
 

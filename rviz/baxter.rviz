@@ -8,6 +8,8 @@ Panels:
         - /Status1
         - /Axes4
         - /Image1
+        - /Axes5
+        - /Axes6
       Splitter Ratio: 0.656357
     Tree Height: 284
   - Class: rviz/Selection
@@ -423,7 +425,7 @@ Visualization Manager:
       Axes Radius: 0.01
       Class: rviz/Pose
       Color: 255; 25; 0
-      Enabled: true
+      Enabled: false
       Head Length: 0.3
       Head Radius: 0.1
       Name: Pose
@@ -431,20 +433,20 @@ Visualization Manager:
       Shaft Radius: 0.05
       Shape: Axes
       Topic: /test_pose
+      Value: false
+    - Class: rviz/Axes
+      Enabled: true
+      Length: 0.1
+      Name: Axes
+      Radius: 0.01
+      Reference Frame: ar_marker_7
       Value: true
     - Class: rviz/Axes
       Enabled: true
       Length: 0.1
       Name: Axes
       Radius: 0.01
-      Reference Frame: ar_marker_8
-      Value: true
-    - Class: rviz/Axes
-      Enabled: true
-      Length: 0.1
-      Name: Axes
-      Radius: 0.01
-      Reference Frame: ar_marker_6
+      Reference Frame: ar_marker_2
       Value: true
   Enabled: true
   Global Options:
@@ -482,10 +484,10 @@ Visualization Manager:
         Z: 0.222505
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.005398
+      Pitch: 0.325398
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.90222
+      Yaw: 6.17541
     Saved: ~
 Window Geometry:
   Displays:

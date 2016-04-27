@@ -9,8 +9,7 @@ from gatlin.srv import *
 import tf
 from tf.msg import *
 
-FIXED_FRAME = "global_map"
-transformer = Transformer()        
+FIXED_FRAME = "base"
 
 class DynamicTransform:
     def __init__(self, parent, child):
@@ -33,7 +32,7 @@ class Transformer:
         self.tfl = tf.TransformListener()
         self.dts = {} # dynamic transforms
 
-    def get_transform(parent, child):
+    def get_transform(self, parent, child):
         if not (parent,child) in self.dts:
             self.dts[(parent,child)] = DynamicTransform(parent,child)
 
@@ -42,22 +41,26 @@ class Transformer:
 
         return tf
 
+
 class Frame:
-    def __init__(self, ID):
+    def __init__(self, transformer, ID, num):
+        self.transformer = transformer
         self.id = ID # the target frame to position
+        self.num = num
+
 
         self.ts = None # filtered position output from all inputs
         self.set = False
 
         self.twist = Twist() # use for velocity maybe
         self.ar_links = {}
-        self.max_estimates = 20
+        self.estimates = []
+        self.max_estimates = 15
 
     def add_ar_link(self, ar_id, ts):
         self.ar_links[ar_id] = ts
 
-    def get_fixed_to_target(self, ar):
-        global transformer
+    def get_fixed_to_target(self, ar, transformer):
         ts = self.ar_links[ar.id]
 
         target_frame = self.id
@@ -87,19 +90,20 @@ class Frame:
     def update_transform(self, ar):
         if ar.id in self.ar_links:
 
-            t = self.get_fixed_to_target(ar)
+            t = self.get_fixed_to_target(ar, self.transformer)
 
             self.estimates.append(t)
             while len(self.estimates) > self.max_estimates:
                 self.estimates.pop(0)
 
-            mean_transform = getAverageTransform(self.estimates)
+            if len(self.estimates) > 1:
+                mean_transform = getAverageTransform(self.estimates)
 
-            self.ts = TransformStamped()
-            self.ts.header.frame_id = FIXED_FRAME
-            self.ts.child_frame_id = ID
-            self.ts.transform = mean_transform
-            self.set = True
+                self.ts = TransformStamped()
+                self.ts.header.frame_id = FIXED_FRAME
+                self.ts.child_frame_id = self.id
+                self.ts.transform = mean_transform
+                self.set = True
 
 class FM:
     def __init__(self):
@@ -109,6 +113,8 @@ class FM:
         # rospy.Subscriber("/gatlin/ar_marker_list", ObjectList, self.ar_marker_list_cb, queue_size=3)
         rospy.Subscriber("/baxter_left/ar_marker_list", ObjectList, self.ar_marker_list_cb, queue_size=3)
         rospy.Subscriber("/baxter_right/ar_marker_list", ObjectList, self.ar_marker_list_cb, queue_size=3)
+        
+        self.ol_pub = rospy.Publisher("/server/ar_marker_list", ObjectList, queue_size=1)
 
         self.tfb = tf.TransformBroadcaster()
 
@@ -116,43 +122,63 @@ class FM:
 
         self.frames = []
 
-        baxter = Frame("baxter_link")
-        baxter.add_ar_link("1",create_ts(
-            "left_hand", "ar_marker_1_expected",
-            0,0,0, 0,0,0,1
-        ))
-        baxter.add_ar_link("2",create_ts(
-            "base", "ar_marker_2_expected",
-            0,0,0, 0,0,0,1
-        ))
-        self.frames.append(baxter)
+        self.transformer = Transformer()
+
+        # baxter = Frame(self.transformer, "baxter_link")
+        # baxter.add_ar_link("1",self.create_ts(
+        #     "left_hand", "ar_marker_1_expected",
+        #     0,0,0, 0,0,0,1
+        # ))
+        # baxter.add_ar_link("2",self.create_ts(
+        #     "base", "ar_marker_2_expected",
+        #     0,0,0, 0,0,0,1
+        # ))
+        # self.frames.append(baxter)
 
         obj_width = .04
         # get max block size that will fit in gatlin's gripper
-        self.create_obj_frame("3", obj_width)
+        self.create_obj_frame("7", obj_width)
 
+        rospy.sleep(1)
         rate = rospy.Rate(10)
         while not rospy.is_shutdown():
             self.broadcast_transforms()
+            rate.sleep()
 
         rospy.spin()
 
     def create_obj_frame(self, i, width):
-        obj = Frame("obj"+i)
-        obj.add_ar_link(i,create_ts(
-            "obj"+i,
-            0,0,-width/2, 0,0,0,1
+        obj = Frame(self.transformer, "ar_"+i, i)
+        obj.add_ar_link(i,self.create_ts(
+            "ar_"+i, "ar_marker_%s_expected"%i,
+            0,0,0, 0,0,0,1
+            # -0.007, -0.037, -0.083,
+            # -7.07106781e-01, -7.07106781e-01, 0.0, 0.0
         ))
         self.frames.append(obj)
 
     def broadcast_transforms(self):
+        ol = ObjectList()
         for f in self.frames:
             if f.set:
                 f.ts.header.stamp = rospy.Time.now()
-                self.tfb.sendTransformMessage(self.ts)
-                rospy.logerr(self.ts)
+                f.ts.child_frame_id = f.id
+                # rospy.logerr(f.ts)
+                self.tfb.sendTransformMessage(f.ts)
 
-    def create_ts(parent, child, tx,ty,tz, rx,ry,rz,rw):
+                o = Object()
+                o.id = f.num
+                o.color = "ar"
+                o.pose = ts_to_ps(f.ts)
+                # rospy.logerr(o)
+                ol.objects.append(o)
+
+        if len(ol.objects) > 0:
+            # rospy.logerr(len(ol.objects))
+            rospy.logerr(ol)
+            self.ol_pub.publish(ol)
+
+    def create_ts(self, parent, child, tx,ty,tz, rx,ry,rz,rw):
         ts = TransformStamped()
         ts.transform.translation = Vector3(tx,ty,tz)
         ts.transform.rotation = Quaternion(rx,ry,rz,rw)
@@ -161,16 +187,14 @@ class FM:
         ts.header.frame_id = parent
 
         ts.header.stamp = rospy.Time.now()       
-
+        return ts
 
     def ar_marker_list_cb(self, ol):
+        # rospy.logerr(ol)
         for obj in ol.objects:
             if obj.color == "ar":
                 for f in self.frames:
                     f.update_transform(obj)
-
-
-
 
 if __name__ == '__main__':
     fm = FM()

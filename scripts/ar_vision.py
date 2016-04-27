@@ -13,6 +13,7 @@ from copy import deepcopy
 from gatlin.msg import *
 from gatlin.srv import *
 from config import *
+from ar_track_alvar_msgs.msg import *
 
 class AR_Vision :
 
@@ -25,13 +26,14 @@ class AR_Vision :
 		print "initializing %s vision" % self.vision_type
 
 		# ar_marker_topic = "/ARmarker_points"
-		self.tf_sub = rospy.Subscriber("/tf", tfMessage, self.tf_callback, queue_size=1)
+		# self.tf_sub = rospy.Subscriber("/tf", tfMessage, self.tf_callback, queue_size=1)
+		self.tf_sub = rospy.Subscriber("/ar_pose_marker", AlvarMarkers, self.ar_pose_marker_cb, queue_size=5)
 
-		# self.TYPE = rospy.get_param("type")
-		self.TYPE = "baxter_left"
+		self.TYPE = rospy.get_param("~type")
+		# self.TYPE = "baxter_left"
 		self.objectlistpub = rospy.Publisher("/%s/ar_marker_list" % self.TYPE, ObjectList, queue_size=3)
 		
-		self.test_pose_pub = rospy.Publisher("test_pose", PoseStamped, queue_size=1)
+		self.test_pose_pub = rospy.Publisher("/test_pose", PoseStamped, queue_size=1)
 
 		self.tfl = tf.TransformListener()
 		
@@ -76,6 +78,39 @@ class AR_Vision :
 	# 	pose.position = Point(T.x, T.y, T.z)
 	# 	pose.orientation = Quaternion(R.x, R.y, R.z, R.w)
 	# 	return pose
+
+	def ar_pose_marker_cb(self, ARms):
+		self.objectlist = ObjectList()
+		for marker in ARms.markers:
+			# rospy.logerr(marker.id)
+			# rospy.logerr(marker.pose)
+
+			p = Pose()
+			p.position = Point()
+
+
+			# fixed_to_ar_t = self.get_transform(self.FIXED_FRAME, trans.child_frame_id)
+			# rospy.logerr(fixed_to_ar_t)
+
+			ps = PoseStamped()
+			ps.header.frame_id = self.FIXED_FRAME
+			ps.header.stamp = rospy.Time.now()
+			# ps.pose = transform_to_pose(trans.transform)
+			# ps.pose = transform_to_pose(fixed_to_ar_t)
+			ps.pose = deepcopy(marker.pose.pose)
+			self.test_pose_pub.publish(ps)
+			
+			o = Object()
+			o.id = "%s" % marker.id
+			o.color = "ar"
+			o.pose = deepcopy(ps)
+			# rospy.logerr(o)
+			self.objectlist.objects.append(o)
+
+		if len(self.objectlist.objects) > 0:
+			self.objectlistpub.publish(self.objectlist)
+			# rospy.loginfo(len(self.objectlist.objects))
+			# rospy.logerr(self.objectlist)
 
 	def tf_callback(self, tfmsg):
 		self.objectlist = ObjectList()
@@ -147,6 +182,7 @@ class AR_Vision :
 				self.objectlist.objects.append(o)
 		if len(self.objectlist.objects) > 0:
 			self.objectlistpub.publish(self.objectlist)
+			rospy.logerr(len(self.objectlist.objects))
 			# rospy.logerr(self.objectlist)
 
 if __name__ == "__main__":

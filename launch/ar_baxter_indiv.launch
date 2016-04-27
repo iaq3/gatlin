@@ -1,7 +1,7 @@
 <launch>
 	<arg name="marker_size" default="5.7" />
-	<arg name="max_new_marker_error" default="0.08" />
-	<arg name="max_track_error" default="0.2" />
+	<arg name="max_new_marker_error" default="0.09" />
+	<arg name="max_track_error" default="0.4" />
 
 	<arg name="limb" default="left" />
 	<arg name="fixed_frame" default="base" />
@@ -15,8 +15,6 @@
 	<arg name="output_frame" default="$(arg fixed_frame)" />
 
 	<node name="ar_track_alvar_$(arg type)" pkg="ar_track_alvar" type="individualMarkersNoKinect" respawn="false" output="screen" args="$(arg marker_size) $(arg max_new_marker_error) $(arg max_track_error) $(arg cam_image_topic) $(arg cam_info_topic) $(arg output_frame)" />
-
-	<node pkg="gatlin" type="publisher.py" name="info_publisher" output="screen"/>
 
 	<node pkg="gatlin" type="ar_vision.py" name="ar_vision_$(arg type)" output="screen">
     	<!-- <param name="rgb_frame" value="$(arg limb)_hand_camera"/> -->

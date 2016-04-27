@@ -26,7 +26,8 @@ class BaxterController():
         
         self.hand_pose = Pose()
 
-        self.limb_name = "left"
+        self.limb_name = rospy.get_param('~limb')
+        # self.limb_name = "left"
         self.robot_name = "baxter"
 
         self.limb = Limb(self.limb_name)
@@ -52,6 +53,8 @@ class BaxterController():
         print "Ready to move baxter " +self.limb_name
 
         self.show_ARmarker_face()
+
+        self.test_pose_pub = rospy.Publisher('/test_arm_target', PoseStamped, queue_size = 1)
 
         rospy.spin()
 
@@ -99,6 +102,9 @@ class BaxterController():
         
         gripper = self.gripper
 
+        if req.action == MOVE_TO_POSE_INTERMEDIATE or req.action == MOVE_TO_POSE or req.action == MOVE_TO_POS:
+            rospy.logerr(req.ps)
+            self.test_pose_pub.publish(req.ps)
 
         if req.action == OPEN_GRIPPER:
             rospy.loginfo("Beginning to open gripper")
@@ -164,6 +170,8 @@ class BaxterController():
             b3 = self.MoveToPose(limb, interpose2, "MoveToRightAbovePose")
         
         b4 = self.MoveToPose(limb, pose, "MoveToPose")
+        if not b4:
+            self.MoveToPose(limb, hand_pose, "MoveToPose")
         return b4
 
     def MoveToPose(self, limb, pose, name) :
