@@ -14,6 +14,9 @@ class CommandReqQueue:
 		self.cmd_reqs = {} #current action nodes in the system
 		self.robot_cmds = {} #action nodes for each robot
 
+	def add_robot(self, robot) :
+		self.robot_cmds[robot] = []
+
 	def add_command_req(self, cmd_req, robot):
 		new_cmd_node = cmd_reqNode(cmd_req)
 		self.cmd_reqs[cmd_req.id] = new_cmd_node
@@ -26,7 +29,7 @@ class CommandReqQueue:
 
 
 	#finds the most important action for a robot, sets it to running, and returns it
-	def request_command(robot) :
+	def request_command(self, robot) :
 		max_postreqs = -1
 		best_cmd_reqNode = None
 		global MATCHED_RUNNING, AVAILABLE_WAITING
@@ -36,7 +39,7 @@ class CommandReqQueue:
 				best_cmd_reqNode = v
 			if v.state == MATCHED_RUNNING :
 				print "ACTION RUNNING WHILE REQUESTING COMMAND IN CmdReqQueue" 
-		if best_cmd_reqNode != None
+		if best_cmd_reqNode != None :
 			best_cmd_reqNode.state = MATCHED_RUNNING
 			return best_cmd_reqNode.cmd_req
 
@@ -75,7 +78,7 @@ FINISHED = 4
 
 class cmd_reqNode :
 	
-	def __init__(cmd_r) :
+	def __init__(self, cmd_r) :
 
 		self.cmd_req = cmd_r
 
@@ -169,6 +172,11 @@ class Robot:
 
 
 if __name__ == '__main__':
+
+	aq = CommandReqQueue()
+	aq.add_robot("baxter_left")
+	aq.add_robot("baxter_right")
+
 	m1 = Mott()
 	m1.command = "mott"
 	m1.object_pose_topic = "ar_7"
@@ -190,32 +198,42 @@ if __name__ == '__main__':
 	m1_json = json_message_converter.convert_ros_message_to_json(m1)
 	m2_json = json_message_converter.convert_ros_message_to_json(m2)
 
-    # test CommandRequestList
-    crl = CommandRequestList()
+	# test CommandRequestList
+	crl = CommandRequestList()
 
-    cr1 = CommandRequest()
-    cr1.id = 1
-    cr1.cmd_req = "mott"
-    cr1.args = m1_json
-    crl.commands.append(cr1)
+	cr1 = CommandRequest()
+	cr1.id = 1
+	cr1.action = "mott"
+	cr1.args = m1_json
+	crl.commands.append(cr1)
 
-    cr2 = CommandRequest()
-    cr2.id = 2
-    cr2.cmd_req = "mott"
-    cr2.args = m2_json
-    crl.commands.append(cr2)
+	cr2 = CommandRequest()
+	cr2.id = 2
+	cr2.action = "mott"
+	cr2.args = m2_json
+	crl.commands.append(cr2)
 
-	cmd_req = self.request_command("baxter_left")
+
+
+	cmd_req = aq.request_command("baxter_left")
+	if cmd_req == None :
+		print "passed test 0"
+	else :
+		print "failed test 0"
+
+	aq.add_command_req(cr1, "baxter_right")
+	aq.add_command_req(cr2, "baxter_left")
+
+	aq.add_dependency(cr1, cr2)
+
+	cmd_req = aq.request_command("baxter_left")
+	if cmd_req == None :
+		print "passed test 1"
+	else :
+		print "failed test 1"
 	# returns None
 
-	self.add_command_req(cr1, "baxter_right")
-	self.add_command_req(cr2, "baxter_left")
-
-	self.add_dependency(cr1, cr2)
-
-	cmd_req = self.request_command("baxter_left")
-	# returns None
-
-	cmd_req = self.request_command("baxter_right")
+	cmd_req = aq.request_command("baxter_right")
+	print cmd_req
 	# returns cr1
 
