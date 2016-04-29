@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # Names: Zach Vinegar, Isaac Qureshi
-import rospy
+import rospy, tf, time
 import numpy as np
 from geometry_msgs.msg import *
-from tf.msg import *
+# from tf import *
+# from tf.msg import *
 from tf.transformations import *
 from copy import deepcopy
 from gatlin.msg import *
@@ -11,6 +12,7 @@ from gatlin.msg import *
 class DynamicManager:
 	def __init__(self):
 		self.dynamic_poses = []
+		self.ol_subs = []
 
 	def create_dp(self, output_frame):
 		dp = DynamicPose(output_frame)
@@ -33,6 +35,7 @@ class DynamicManager:
 	def unregister_all(self):
 		for ol_sub in self.ol_subs:
 			ol_sub.unregister()
+		self.ol_subs = []
 
 class DynamicPose:
 	def __init__(self, output_frame):
@@ -43,6 +46,9 @@ class DynamicPose:
 		self.last_update = 0
 		self.color = ""
 		self.id = ""
+
+	def get_name(self):
+		return "%s_%s" % (self.color, self.id)
 
 	def subscribe_name(self, name):
 		color, ID = name.split("_")
