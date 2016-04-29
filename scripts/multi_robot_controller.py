@@ -26,7 +26,9 @@ class MRC:
 
         self.display_workspaces()
         
-        self.wcg = WorkspaceConnectivityGraph(self.robots)
+        self.tfl = tf.TransformListener()
+
+        self.wcg = WorkspaceConnectivityGraph(self.robots, self.tfl)
 
         m = Mott()
         m.command = "mott"
@@ -235,9 +237,9 @@ class Robot:
 #         self.transform = TransformStamped()
 
 class WorkspaceConnectivityGraph:
-    def __init__(self, robots):
+    def __init__(self, robots, tfl):
         # rospy.init_node('WorkspaceConnectivityGraph')
-        self.tfl = tf.TransformListener()
+        self.tfl = tfl
 
         self.robots = robots
 
@@ -247,9 +249,11 @@ class WorkspaceConnectivityGraph:
 
         self.G = nx.DiGraph()
 
+        self.tfl = tfl
+
         # self.fixed_frame = "global_map"
         self.fixed_frame = "base"
-        self.dm = DynamicManager()
+        self.dm = DynamicManager(self.tfl)
         self.dm.add_ol_sub("/server/ar_marker_list")
 
         self.objects = []

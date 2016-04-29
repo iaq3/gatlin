@@ -3,19 +3,18 @@
 import rospy, tf, time
 import numpy as np
 from geometry_msgs.msg import *
-# from tf import *
-# from tf.msg import *
 from tf.transformations import *
 from copy import deepcopy
 from gatlin.msg import *
 
 class DynamicManager:
-	def __init__(self):
+	def __init__(self, tfl):
+		self.tfl = tfl
 		self.dynamic_poses = []
 		self.ol_subs = []
 
 	def create_dp(self, output_frame):
-		dp = DynamicPose(output_frame)
+		dp = DynamicPose(output_frame, self.tfl)
 		self.dynamic_poses.append(dp)
 		return dp
 
@@ -38,10 +37,10 @@ class DynamicManager:
 		self.ol_subs = []
 
 class DynamicPose:
-	def __init__(self, output_frame):
+	def __init__(self, output_frame, tfl):
 		# self.output_frame = "global_map"
 		self.output_frame = output_frame
-		self.tfl = tf.TransformListener()
+		self.tfl = tfl
 		self.ps = PoseStamped()
 		self.last_update = 0
 		self.color = ""
