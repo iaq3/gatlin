@@ -24,7 +24,7 @@ class DynamicManager:
 			for dp in self.dynamic_poses:
 				if dp.is_obj(obj):
 					dp.set_pose(obj.pose)
-					rospy.logerr(dp.ps)
+					# rospy.logerr(dp.ps)
 					# rospy.logerr(obj.pose)
 
 	def add_ol_sub(self, ol_topic):

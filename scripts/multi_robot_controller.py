@@ -2,6 +2,7 @@
 
 from config import *
 from Dynamic import *
+from CmdReqQueue import *
 import numpy as np
 import rospy
 from std_msgs.msg import *
@@ -28,7 +29,11 @@ class MRC:
         
         self.tfl = tf.TransformListener()
 
-        self.wcg = WorkspaceConnectivityGraph(self.robots, self.tfl)
+        self.crq = CommandReqQueue()
+        self.crq.add_robot("baxter_left")
+        self.crq.add_robot("baxter_right")
+
+        self.wcg = WorkspaceConnectivityGraph(self.robots, self.crq, self.tfl)
 
         m = Mott()
         m.command = "mott"
@@ -59,6 +64,13 @@ class MRC:
 
         self.mr_command_req_callback(crl)
 
+        rate = rospy.Rate(1)
+        while not rospy.is_shutdown():
+            cmd = self.crq.request_command("baxter_left")
+            # if cmd != None:
+            rospy.logerr(cmd)
+            rate.sleep()
+
         rospy.spin()
 
     def publish_mott(self, robot, mott):
@@ -71,6 +83,7 @@ class MRC:
         for r in self.robots:
             if r.name == name:
                 return r
+
 
     def init_robots(self):
         self.robots = []
@@ -155,7 +168,7 @@ class MRC:
         # rospy.logerr(marker)
 
     def mr_command_req_callback(self, cmd_req):
-        rospy.logerr(cmd_req)
+        # rospy.logerr(cmd_req)
 
         # recieve commands
         for cmd in cmd_req.commands:
@@ -231,17 +244,23 @@ class Robot:
     def mott_response_callback(self, resp):
         rospy.logerr(resp)
 
+    def publish_mott(self, m):
+        self.mott_pub.publish(m)
+        rospy.logerr("PUBLISHED MOTT to %s" % self.name)
+
+
 
 # class HP:
 #     def __init__(self, name, color, workspace):
 #         self.transform = TransformStamped()
 
 class WorkspaceConnectivityGraph:
-    def __init__(self, robots, tfl):
+    def __init__(self, robots, crq, tfl):
         # rospy.init_node('WorkspaceConnectivityGraph')
         self.tfl = tfl
 
         self.robots = robots
+        self.crq = crq
 
         self.color_map = {}
         for r in self.robots:
@@ -297,7 +316,18 @@ class WorkspaceConnectivityGraph:
             m.object_pose = object_dp.ps
             m.target_pose_topic = target_name
             m.target_pose = target_dp.ps
-            rospy.logerr(m)
+            # rospy.logerr(m)
+
+            m_json = json_message_converter.convert_ros_message_to_json(m)
+
+            cr = CommandRequest()
+            cr.id = 1
+            cr.action = "mott"
+            cr.args = m_json
+
+            r = self.find_robot(robot_name)
+            r.publish_mott(m)
+            self.crq.add_command_req(cr, "baxter_left")
 
     def find_target(self, target_name):
         for target_dp in self.targets:
@@ -314,6 +344,12 @@ class WorkspaceConnectivityGraph:
         for object_dp in self.objects:
             if object_dp.get_name() == object_name:
                 return object_dp
+        return None
+
+    def find_robot(self, robot_name):
+        for r in self.robots:
+            if r.name == robot_name:
+                return r
         return None
 
     def init_handoff_zones(self):

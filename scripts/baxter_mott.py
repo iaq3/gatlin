@@ -220,9 +220,11 @@ class Nav_Manip_Controller :
 
 		#self.robot_pose = DynamicPose()
 		#self.robot_pose.subscribe("/robot_pose") #TODO change to end effector position??
+		
+		self.tfl = tf.TransformListener()
 
 		# DynamicManager init
-		self.dm = DynamicManager()
+		self.dm = DynamicManager(self.tfl)
 		self.dm.add_ol_sub("/server/ar_marker_list")
 
 		self.RUNNING = 0
@@ -243,7 +245,6 @@ class Nav_Manip_Controller :
 		# self.move_arm = createServiceProxy("baxter/move/arm", MoveRobot, self.robot_name)
 		self.move_arm = createServiceProxy(robot+"/move_robot", MoveRobot)
 
-		self.tfl = tf.TransformListener()
 
 		rospy.spin()
 
