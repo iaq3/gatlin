@@ -68,10 +68,10 @@ class CommandReqQueue:
 		global AVAILABLE_WAITING
 		return self.cmd_reqs[cmd_req.id].state == AVAILABLE_WAITING
 
-#prereq_running 	-> available_waiting (for robot) 	-> matched_running 	-> finished (post_reqs -1 )
+#PREREQ_WAITING 	-> available_waiting (for robot) 	-> matched_running 	-> finished (post_reqs -1 )
 #
 
-PREREQ_RUNNING = 1
+PREREQ_WAITING = 1
 AVAILABLE_WAITING = 2
 MATCHED_RUNNING = 3
 FINISHED = 4
@@ -98,17 +98,17 @@ class cmd_reqNode :
 		self.prereqs.append(pre_req)
 		self.pre_req_count += 1
 
-		global PREREQ_RUNNING
-		self.state = PREREQ_RUNNING
+		global PREREQ_WAITING
+		self.state = PREREQ_WAITING
 
 	def add_postreq(self, post_req) :
 		self.postreqs.append(post_req)
 		self.post_req_count += 1
 
 	def prereq_complete(self) :
-		pre_req_count -= 1
+		self.pre_req_count -= 1
 		global AVAILABLE_WAITING
-		if pre_req_count == 0 :
+		if self.pre_req_count == 0 :
 			self.state = AVAILABLE_WAITING
 
 	def robot_starting_action(self) :

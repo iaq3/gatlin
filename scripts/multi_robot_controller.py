@@ -189,19 +189,68 @@ class MRC:
                 self.wcg.add_obj(mott.object_pose_topic, mott.object_pose)
                 self.wcg.add_target(mott.target_pose_topic, mott.target_pose)
 
+                # find path from object to target in connectivity graph
                 path = self.wcg.find_shortest_path(mott.object_pose_topic, mott.target_pose_topic)
                 rospy.logerr(path)
 
                 self.wcg.draw()
                 self.wcg.show()
 
+                # generate actions based on optimal path
                 if path != None:
                     self.wcg.generate_actions(path)
 
-                # find path from object to target in connectivity graph
-                # generate actions based on optimal path
                 # use dependencies to build action graph
+                # figure out how to keep track of all dependencies
+                for i in range(0, len(cmd_req.parents)):
+                    parent = cmd_req.parents[i]
+                    child = cmd_req.children[i]
+                    rospy.logerr(parent)
+                    rospy.logerr(child)
+
                 # put actions in queue
+                aq = CommandReqQueue()
+                aq.add_robot("baxter_left")
+                aq.add_robot("baxter_right")
+
+                m1 = Mott()
+                m1.command = "mott"
+                m1.object_pose_topic = "ar_7"
+                m1.object_pose = PoseStamped()
+                m1.target_pose_topic = "hp_1"
+                m1.target_pose = PoseStamped()
+                rospy.logerr(m1)
+
+
+                m2 = Mott()
+                m2.command = "mott"
+                m2.object_pose_topic = "ar_7"
+                m2.object_pose = PoseStamped()
+                m2.target_pose_topic = "target_1"
+                m2.target_pose = PoseStamped()
+                rospy.logerr(m2)
+
+
+                m1_json = json_message_converter.convert_ros_message_to_json(m1)
+                m2_json = json_message_converter.convert_ros_message_to_json(m2)
+
+                # test CommandRequestList
+                crl = CommandRequestList()
+
+                cr1 = CommandRequest()
+                cr1.id = 1
+                cr1.action = "mott"
+                cr1.args = m1_json
+                crl.commands.append(cr1)
+
+                cr2 = CommandRequest()
+                cr2.id = 2
+                cr2.action = "mott"
+                cr2.args = m2_json
+                crl.commands.append(cr2)
+
+            elif cmd.action == "move_base":
+                pass
 
 
 class Workspace:
