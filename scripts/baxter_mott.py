@@ -35,7 +35,7 @@ class Nav_Manip_Controller :
 				return
 			self.pauseCommand()
 
-			self.publishResponse("Attempting to grab "+dynamic_pose.topic)
+			self.publishResponse("Attempting to grab %s_%s" % (dynamic_pose.color, dynamic_pose.id))
 
 			resp = self.move_arm(OPEN_GRIPPER, PoseStamped())
 
@@ -45,7 +45,7 @@ class Nav_Manip_Controller :
 				base_to_ar_t = transform_from_pose(base_pose.pose)
 
 				offset_t = Transform()
-				offset_t.translation = Vector3(-0.015, -0.000, -0.084)
+				offset_t.translation = Vector3(-0.010, -0.000, -0.084)
 				offset_t.rotation = Quaternion(-7.07106781e-01, -7.07106781e-01, 0.0, 0.0)
 				# offset_inv_t = inverse_transform(offset_t)
 
@@ -97,7 +97,7 @@ class Nav_Manip_Controller :
 		#if time.time() - dynamic_pose.last_update > 1 :
 		#holding_object = True
 
-		self.publishResponse("Grabbed "+dynamic_pose.topic)
+		self.publishResponse("Grabbed %s_%s" % (dynamic_pose.color, dynamic_pose.id))
 
 	def pauseCommand(self) :
 		while self.command_state == self.PAUSING :
@@ -109,9 +109,9 @@ class Nav_Manip_Controller :
 
 		self.pauseCommand()
 
-		self.publishResponse("Releasing object to "+dynamic_pose.topic)
+		self.publishResponse("Releasing object to %s_%s" % (dynamic_pose.color, dynamic_pose.id))
 		base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
-		resp = self.move_arm(MOVE_TO_POS, base_pose)
+		resp = self.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_pose)
 
 		self.pauseCommand()
 
@@ -137,6 +137,10 @@ class Nav_Manip_Controller :
 		self.interActionDelay(1)
 
 		self.releaseObject(self.target_pose)
+
+		self.interActionDelay(1)
+
+		resp = self.move_arm(RESET_ARM, PoseStamped())
 
 		if self.command_state == self.RUNNING :
 			self.publishResponse("finished mott") #string must contain finished
@@ -166,7 +170,7 @@ class Nav_Manip_Controller :
 		if (data.target_pose) :
 			self.target_pose.set_pose(data.target_pose)
 		
-		rospy.sleep(2)
+		rospy.sleep(.1)
 
 		if data.command == "mott" :
 			self.run_mott_sequence()

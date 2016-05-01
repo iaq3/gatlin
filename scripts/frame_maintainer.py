@@ -37,7 +37,7 @@ class Transformer:
             self.dts[(parent,child)] = DynamicTransform(parent,child)
 
         tf = self.dts[(parent,child)].get_transform()
-        rospy.logerr(tf)
+        # rospy.logerr(tf)
 
         return tf
 
@@ -175,7 +175,8 @@ class FM:
 
         if len(ol.objects) > 0:
             # rospy.logerr(len(ol.objects))
-            rospy.logerr(ol)
+            # rospy.logerr(ol)
+            rospy.loginfo("Published Global ObjectList")
             self.ol_pub.publish(ol)
 
     def create_ts(self, parent, child, tx,ty,tz, rx,ry,rz,rw):

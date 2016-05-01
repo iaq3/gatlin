@@ -143,6 +143,16 @@ class BaxterController():
             success = self.MoveToPoseWithIntermediate(self.limb_name, new_pose)
             rospy.loginfo("Moved to pos: %r" % success)
 
+        elif req.action == RESET_ARM :
+            rospy.loginfo("Trying to Reset Arm")
+            rest_pose = Pose()
+            rest_pose.position = Point(0.5, 0.5, 0.1)
+            rest_pose.orientation = Quaternion(0.0,1.0,0.0,0.0)
+
+            if self.limb_name == "right": rest_pose.position.y *= -1
+
+            success = self.MoveToPose(self.limb_name, rest_pose, "FAILED MoveToPose")
+
         else :
             print "invalid action"
 

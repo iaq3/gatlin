@@ -23,9 +23,9 @@ class CommandReqQueue:
 		self.robot_cmds[robot].append(new_cmd_node)
 
 	#do cmd_req1 first, then after do cmd_req2
-	def add_dependency(self, cmd_req1, cmd_req2):
-		self.cmd_reqs[cmd_req1.id].add_postreq(self.cmd_reqs[cmd_req2.id]) #could be just id of it too
-		self.cmd_reqs[cmd_req2.id].add_prereq(self.cmd_reqs[cmd_req1.id])
+	def add_dependency(self, cmd_id1, cmd_id2):
+		self.cmd_reqs[cmd_id1].add_postreq(self.cmd_reqs[cmd_id2]) #could be just id of it too
+		self.cmd_reqs[cmd_id2].add_prereq(self.cmd_reqs[cmd_id1])
 
 
 	#finds the most important action for a robot, sets it to running, and returns it
@@ -38,11 +38,13 @@ class CommandReqQueue:
 				max_postreqs = v.post_req_count
 				best_cmd_reqNode = v
 			if v.state == MATCHED_RUNNING :
-				print "ACTION RUNNING WHILE REQUESTING COMMAND IN CmdReqQueue" 
+				rospy.logerr("Command is already running on %s." % robot)
 		if best_cmd_reqNode != None :
+			rospy.loginfo("%s given command %s." % (robot, best_cmd_reqNode.cmd_req.id))
 			best_cmd_reqNode.state = MATCHED_RUNNING
 			return best_cmd_reqNode.cmd_req
 
+		rospy.logerr("No commands availible for %s." % robot)
 		return None
 
 	#alerts all postreq actions that prereq is finished
@@ -51,11 +53,11 @@ class CommandReqQueue:
 	def robot_finished(self, robot, cmd_req) :
 		self.cmd_reqs[cmd_req.id].action_finished()		
 
-		robot_cmds[robot].remove(self.cmd_reqs[cmd_req.id])
+		self.robot_cmds[robot].remove(self.cmd_reqs[cmd_req.id])
 		
 		del self.cmd_reqs[cmd_req.id]
 
-		return self.request_command(robot)
+		# return self.request_command(robot)
 
 
 
@@ -87,8 +89,6 @@ class cmd_reqNode :
 
 		self.pre_req_count = 0
 		self.post_req_count = 0
-
-
 
 		#state of action node
 		global AVAILABLE_WAITING
@@ -129,46 +129,6 @@ class cmd_reqNode :
 		self.state = FINISHED
 		for e in self.postreqs :
 			e.prereq_complete()
-
-
-class Robot:
-    def __init__(self, name, color, workspace, cr_queue):
-        self.name = name
-        self.color = color
-        self.workspace = workspace
-        self.cmd_req_queue = cr_queue
-        # publishers for all service requests
-        self.mott_pub = rospy.Publisher("/%s_mott" % name, Mott, queue_size = 1)
-        self.mott_command_pub = rospy.Publisher("/%s_mott_command" % name, String, queue_size = 1)
-
-        # subscribers for all service responses
-        self.response_sub = rospy.Subscriber("/%s_response" % name, String, self.response_callback, queue_size = 1)
-
-        self.current_cmd = cmd_reqNode()
-
-        while not rospy.is_shutdown() :
-        	if self.current_cmd == None :
-        		new_cmd = self.cmd_req_queue.request_command(self.name)
-        		self.executue_command(new_cmd)
-        	rospy.sleep(.05)
-
-    def response_callback(self, resp):
-
-    	rospy.logerr("mott_response_cb : "+resp)
-
-    	if "finish" in resp :
-    		self.cmd_req_queue.robot_finished(self.name, self.current_cmd)
-    	elif "quit" in resp :
-    		self.cmd_req_queue.robot_quit(self.name, self.current_cmd)
-
-        self.current_cmd = None
-   
-
-    def execute_command(self, cmd_req) :
-    	if cmd_req != None :
-    		self.current_cmd = cmd_req
-    		
-
 
 
 if __name__ == '__main__':
@@ -224,7 +184,7 @@ if __name__ == '__main__':
 	aq.add_command_req(cr1, "baxter_right")
 	aq.add_command_req(cr2, "baxter_left")
 
-	aq.add_dependency(cr1, cr2)
+	aq.add_dependency(cr1.id, cr2.id)
 
 	cmd_req = aq.request_command("baxter_left")
 	if cmd_req == None :
@@ -236,4 +196,6 @@ if __name__ == '__main__':
 	cmd_req = aq.request_command("baxter_right")
 	print cmd_req
 	# returns cr1
+
+
 
