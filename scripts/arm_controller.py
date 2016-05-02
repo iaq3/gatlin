@@ -27,7 +27,7 @@ class Gripper:
 		self.set(1.0)
 
 	def close(self, block=False):
-		self.set(0.3)
+		self.set(0.275)
 
 class ArbotixROS(ArbotiX):
     
@@ -123,8 +123,14 @@ class Arm_Controller:
 		# init rest pose
 		self.rest_pose = PoseStamped()
 		self.rest_pose.header.frame_id = self.REFERENCE_FRAME
-		self.rest_pose.pose.position = Point(-0.0762700684061, 0.0105568131039, 0.290791199591)
+		self.rest_pose.pose.position = Point(-0.06, 0.00, 0.35)
 		self.rest_pose.pose.orientation = Quaternion(0.0251355325061, 0.982948881414, -0.0046583987932, 0.182093384981)
+
+		# init place_upper pose
+		self.place_upper_pose = PoseStamped()
+		self.place_upper_pose.header.frame_id = self.REFERENCE_FRAME
+		self.place_upper_pose.pose.position = Point(0.24713, -0.0051618, 0.37998)
+		self.place_upper_pose.pose.orientation = Quaternion(0.0030109, 0.1472, -0.020231, 0.9889)
 
 		# init current pose
 		self.current_pose = PoseStamped()
@@ -169,7 +175,6 @@ class Arm_Controller:
 		newpose = self.transform_pose(self.REFERENCE_FRAME, ps)
 		down = Quaternion(-0.00035087, 0.73273, 0.00030411, 0.68052)
 		newpose.pose.orientation = down
-		# newpose.pose.position.z -= .015
 
 		if self.move_arm_to_pose(newpose) :
 			rospy.loginfo("SUCCEEDED: %s" % name)
@@ -215,6 +220,10 @@ class Arm_Controller:
 		elif req.action == RESET_ARM :
 			rospy.loginfo("Trying to Move To Rest Pose")
 			success = self.move_arm_to_pose(self.rest_pose)
+
+		elif req.action == PLACE_UPPER :
+			rospy.loginfo("Trying to Move To Place Upper Pose")
+			success = self.move_arm_to_pose(self.place_upper_pose)
 			# success = self.MoveToPose(self.rest_pose, "FAILED MoveToRestPose")
 
 		# elif req.action == MOVE_TO_POS :

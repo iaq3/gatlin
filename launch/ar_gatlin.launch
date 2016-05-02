@@ -5,5 +5,4 @@
 
 	<node pkg="gatlin" type="ar_vision.py" name="vision" output="screen"/>
 
-
 </launch>

@@ -14,7 +14,7 @@
    <property name="arm_offset_y" value="0.00" />
    <property name="arm_offset_z" value="0.141" />
 
-   <property name="stacks_offset" value="-.03" />   
+   <property name="stacks_offset" value="-.039" />   
    <property name="top_plate" value=".33" />   
 
    <!-- The following xacro:include files set up definitions of parts of the robot body -->

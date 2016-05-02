@@ -11,6 +11,7 @@ from copy import deepcopy
 from gatlin.msg import *
 from gatlin.srv import *
 from config import *
+from Dynamic import *
 
 def distance(v1,v2):
 	return np.linalg.norm(vector3_to_numpy(v1) - vector3_to_numpy(v2))
@@ -92,7 +93,7 @@ class Nav_Manip_Controller :
 		self.publishResponse("Servo base to %s_%s" % (dynamic_pose.color, dynamic_pose.id))
 
 		rate = rospy.Rate(30)
-		desired_pos = Point(.25,0,0)
+		desired_pos = Point(.30,0,0)
 		goal_tolerence = .025
 
 		base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
@@ -123,18 +124,20 @@ class Nav_Manip_Controller :
 				base_to_ar_t = transform_from_pose(base_pose.pose)
 
 				offset_t = Transform()
-				offset_t.translation = Vector3(-0.010, -0.000, -0.084)
-				offset_t.rotation = Quaternion(-7.07106781e-01, -7.07106781e-01, 0.0, 0.0)
+				# offset_t.translation = Vector3(-0.093, -0.019, 0.005)
+				offset_t.translation = Vector3(-0.042, 0.00, -0.025)
+				offset_t.rotation = Quaternion(0.0, 0.0, 0.0, 1.0)
+				# offset_t.rotation = Quaternion(0.620, 0.658, -0.305, -0.298)
 				# offset_inv_t = inverse_transform(offset_t)
 
 				base_to_offset_t = multiply_transforms(base_to_ar_t, offset_t)
 				base_pose_offset = deepcopy(base_pose)
 				base_pose_offset.pose = transform_to_pose(base_to_offset_t)
 
-				q = base_pose_offset.pose.orientation
-				rpy = euler_from_quaternion([q.x,q.y,q.z,q.w])
-				q = quaternion_from_euler(3.1415, 0.0, rpy[2])
-				base_pose_offset.pose.orientation = Quaternion(q[0],q[1],q[2],q[3])
+				# q = base_pose_offset.pose.orientation
+				# rpy = euler_from_quaternion([q.x,q.y,q.z,q.w])
+				# q = quaternion_from_euler(3.1415, 0.0, rpy[2])
+				# base_pose_offset.pose.orientation = Quaternion(q[0],q[1],q[2],q[3])
 				return base_pose_offset
 
 			# base_pose_offset = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
@@ -142,8 +145,12 @@ class Nav_Manip_Controller :
 			resp = self.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_pose_offset)
 			if not resp.success:
 				rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
+
+				resp = self.move_arm(RESET_ARM, PoseStamped())
+				if not resp.success:
+					rospy.logerr("RESET_ARM FAILED")
 				# try moving to it again
-				self.servoBaseToDynamicPos(self.object)
+				self.servoBaseToDynamicPos(self.object_dp)
 				#TODO check this
 				rospy.sleep(1)
 				continue
@@ -191,6 +198,10 @@ class Nav_Manip_Controller :
 		while self.object_dp.ps == None:
 			rospy.logerr("no object pose")
 			rospy.sleep(1)
+
+		resp = self.move_arm(RESET_ARM, PoseStamped())
+		if not resp.success:
+			rospy.logerr("RESET_ARM FAILED")
 
 		self.moveBaseToDynamicPos(self.object_dp)
 
@@ -300,7 +311,7 @@ class Nav_Manip_Controller :
 			temp_ps.header.stamp = rospy.Time(0)
 			self.tfl.waitForTransform(temp_ps.header.frame_id, new_frame, rospy.Time(0), rospy.Duration(4.0))
 			new_pose = self.tfl.transformPose(new_frame, temp_ps)
-			new_pose.header.stamp = deepcopy(pose.header.stamp)
+			new_pose.header.stamp = deepcopy(ps.header.stamp)
 			return new_pose
 		except Exception as e:
 			rospy.logerr(e)
@@ -317,7 +328,8 @@ class Nav_Manip_Controller :
 
 		# DynamicManager init
 		self.dm = DynamicManager(self.tfl)
-		self.dm.add_ol_sub("/server/ar_marker_list")
+		# self.dm.add_ol_sub("/server/ar_marker_list")
+		self.dm.add_ol_sub("/gatlin/ar_marker_list")
 
 		self.RUNNING = 0
 		self.PAUSING = 1
