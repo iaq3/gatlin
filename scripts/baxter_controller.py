@@ -38,7 +38,7 @@ class BaxterController():
         
         # self.arm_target_sub = rospy.Subscriber("/baxter_arm_target_pose_%s" % self.limb_name, PoseStamped, self.arm_target_callback, queue_size=1)
         
-        self.move_robot_service = createService("%s_%s/move_robot" % (self.robot_name, self.limb_name), MoveRobot, self.handle_move_robot)
+        self.move_robot_service = createService("%s_%s/move/arm" % (self.robot_name, self.limb_name), MoveRobot, self.handle_move_robot)
 
         # self.position_srv = createService("%s/end_effector_position" % self.limb, EndEffectorPosition, self.get_position_response)
 

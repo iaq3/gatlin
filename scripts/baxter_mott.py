@@ -15,7 +15,6 @@ from config import *
 from Dynamic import *
 from random import randint
 
-
 def distance(v1,v2):
 	return np.linalg.norm(vector3_to_numpy(v1) - vector3_to_numpy(v2))
 
@@ -46,7 +45,7 @@ class Nav_Manip_Controller :
 
 				offset_t = Transform()
 				offset_t.translation = Vector3(-0.010, -0.000, -0.084)
-				offset_t.rotation = Quaternion(-7.07106781e-01, -7.07106781e-01, 0.0, 0.0)
+				offset_t.rotation = Quaternion(-0.7071, -0.7071, 0.0000, 0.0000)
 				# offset_inv_t = inverse_transform(offset_t)
 
 				base_to_offset_t = multiply_transforms(base_to_ar_t, offset_t)
@@ -75,7 +74,7 @@ class Nav_Manip_Controller :
 				rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
 				repeat = True
 				# try moving to it again
-				#self.servoBaseToDynamicPos(self.object_pose)
+				#self.servoBaseToDynamicPos(self.object_dp)
 				#TODO check this
 				rospy.sleep(.5)
 
@@ -128,15 +127,15 @@ class Nav_Manip_Controller :
 			rospy.sleep(delay)
 
 	def run_mott_sequence(self) :
-		if self.object_pose.ps == None:
+		if self.object_dp.ps == None:
 			rospy.logerr("object_pose not set")
 			return
 
-		self.grabObject(self.object_pose)
+		self.grabObject(self.object_dp)
 		
 		self.interActionDelay(1)
 
-		self.releaseObject(self.target_pose)
+		self.releaseObject(self.target_dp)
 
 		self.interActionDelay(1)
 
@@ -153,39 +152,41 @@ class Nav_Manip_Controller :
 		# rospy.logerr(data)
 
 		self.dm.dynamic_poses = []
-		self.object_pose = self.dm.create_dp("base")
-		self.target_pose = self.dm.create_dp("base")
+		self.object_dp = self.dm.create_dp(self.FIXED_FRAME)
+		self.target_dp = self.dm.create_dp(self.FIXED_FRAME)
 
 		self.command_state = self.RUNNING
 
 		if data.object_pose_topic != "" :
-			self.object_pose.subscribe_name(data.object_pose_topic)
+			self.object_dp.subscribe_name(data.object_pose_topic)
 
 		if data.target_pose_topic != "" :
-			self.target_pose.subscribe_name(data.target_pose_topic)
+			self.target_dp.subscribe_name(data.target_pose_topic)
 		
 		if (data.object_pose) :
-			self.object_pose.set_pose(data.object_pose)
+			self.object_dp.set_pose(data.object_pose)
 
 		if (data.target_pose) :
-			self.target_pose.set_pose(data.target_pose)
+			self.target_dp.set_pose(data.target_pose)
 		
-		rospy.sleep(.1)
+		rospy.sleep(.2)
 
 		if data.command == "mott" :
 			self.run_mott_sequence()
+		else:
+			rospy.logerr("Invalid Command: %s" % data.command)
 
 	def MottCommandCallback(self, data) :
-		print "received "+data.data
+		rospy.loginfo("received "+data.data)
 		data.data = data.data.lower()
 		if "cancel" in data.data :
-			print "State = cancelling action"
+			rospy.loginfo("State = cancelling action")
 			self.command_state = self.CANCELLED
 		elif "paus" in data.data :
-			print "state = pausing"
+			rospy.loginfo("state = pausing")
 			self.command_state = self.PAUSING
 		elif "run" in data.data :
-			print "state = running"
+			rospy.loginfo("state = running")
 			self.command_state = self.RUNNING
 
 	def publishResponse(self, statement) :
@@ -217,7 +218,7 @@ class Nav_Manip_Controller :
 	
 
 	def __init__(self):
-		rospy.init_node('nav_manip_controller')
+		rospy.init_node('baxter_nav_manip_controller')
 		limb = rospy.get_param('~limb')
 		self.limb = limb
 		self.robot_name = "baxter_"+limb
@@ -237,18 +238,18 @@ class Nav_Manip_Controller :
 		self.command_state = 0 #keeps track of running, pausing, cancelled
 
 		#self.FIXED_FRAME = "global_map"
+		self.FIXED_FRAME = "base"
 		self.BASE_FAME = "base"#TODO look into
 
 		robot = "baxter_" + limb
-		self.response_pub = rospy.Publisher("/"+robot+"_mott_response", String, queue_size = 1)
-		self.baxter_cmd_pub = rospy.Publisher("/"+robot+"_cmd", Int32, queue_size = 1)
+		self.response_pub = rospy.Publisher("/%s_mott_response" % robot, String, queue_size = 1)
+		self.baxter_cmd_pub = rospy.Publisher("/%s_cmd" % robot, Int32, queue_size = 1)
 
-		rospy.Subscriber("/"+robot+"_mott", Mott, self.MottCallback, queue_size = 1)
-		rospy.Subscriber("/"+robot+"_mott_command", String, self.MottCommandCallback, queue_size = 1)
+		rospy.Subscriber("/%s_mott" % robot, Mott, self.MottCallback, queue_size = 1)
+		rospy.Subscriber("/%s_mott_command" % robot, String, self.MottCommandCallback, queue_size = 1)
 
 		# self.move_arm = createServiceProxy("baxter/move/arm", MoveRobot, self.robot_name)
-		self.move_arm = createServiceProxy(robot+"/move_robot", MoveRobot)
-
+		self.move_arm = createServiceProxy("/%s/move/arm" % robot, MoveRobot)
 
 		rospy.spin()
 
