@@ -35,34 +35,36 @@ class MRC:
         
         self.wcg = WorkspaceConnectivityGraph(self.robots, self.crq, self.tfl)
 
-        # m = Mott()
-        # m.command = "mott"
-        # m.object_pose_topic = "ar_7"
-        # m.target_pose_topic = "target_1"
+        m = Mott()
+        m.command = "mott"
+        m.object_pose_topic = "ar_8"
+        m.target_pose_topic = "hp_2"
 
-        # # m.object_pose = PoseStamped()
+        # m.object_pose = PoseStamped()
 
-        # table_z = -.230
-        # m.object_pose.header.frame_id = "base"
-        # m.object_pose.header.stamp = rospy.Time.now()
-        # m.object_pose.pose.position = Point(.6,.5, table_z)
-        # m.object_pose.pose.orientation = Quaternion(0,1,0,0)
+        table_z = -.230
+        m.object_pose.header.frame_id = "base"
+        m.object_pose.header.stamp = rospy.Time.now()
+        m.object_pose.pose.position = Point(.6,-.5, table_z)
+        m.object_pose.pose.orientation = Quaternion(0,1,0,0)
         
-        # m.target_pose.header.frame_id = "base"
-        # m.target_pose.header.stamp = rospy.Time.now()
+        hp2_z = -0.548
+        m.target_pose.header.frame_id = "base"
+        m.target_pose.header.stamp = rospy.Time.now()
         # m.target_pose.pose.position = Point(.6,-.5, table_z)
-        # m.target_pose.pose.orientation = Quaternion(0,1,0,0)
-        # mott_json = json_message_converter.convert_ros_message_to_json(m)
+        m.target_pose.pose.position = Point(-0.1,0.725, hp2_z)
+        m.target_pose.pose.orientation = Quaternion(0,1,0,0)
+        mott_json = json_message_converter.convert_ros_message_to_json(m)
 
-        # # test CommandRequestList
-        # crl = CommandRequestList()
-        # cr = CommandRequest()
-        # cr.id = 1
-        # cr.action = "mott"
-        # cr.args = mott_json
-        # crl.commands.append(cr)
+        # test CommandRequestList
+        crl = CommandRequestList()
+        cr = CommandRequest()
+        cr.id = 1
+        cr.action = "mott"
+        cr.args = mott_json
+        crl.commands.append(cr)
 
-        # self.mr_command_req_callback(crl)
+        self.mr_command_req_callback(crl)
 
         rate = rospy.Rate(1)
         while not rospy.is_shutdown():
@@ -94,6 +96,7 @@ class MRC:
             self.crq
         )
         self.robots.append(baxter_left)
+        self.baxter_left = baxter_left
 
         baxter_right = Robot("baxter_right",  1.0,
             Workspace(
@@ -195,8 +198,8 @@ class MRC:
                 path = self.wcg.find_shortest_path(mott.object_pose_topic, mott.target_pose_topic)
                 rospy.logerr(path)
 
-                # self.wcg.draw()
-                # self.wcg.show()
+                self.wcg.draw()
+                self.wcg.show()
 
                 # generate actions based on optimal path
                 if path != None:
@@ -399,13 +402,20 @@ class WorkspaceConnectivityGraph:
     def init_handoff_zones(self):
         # xyz point and width, length
         table_z = -.240
-
         hp_1 = Workspace(
             Point(0.70,-0.10, table_z-.01),
             Point(0.50, 0.10, table_z+.01),
             "base"
         )
         self.add_hp("hp_1", hp_1)
+
+        hp2_z = -.548
+        hp_2 = Workspace(
+            Point(-0.45, 0.60, hp2_z-.01),
+            Point(0.25, 0.85, hp2_z+.01),
+            "base"
+        )
+        self.add_hp("hp_2", hp_2)
 
     def add_hp(self, hp_name, hp_workspace):
         center, dimensions = hp_workspace.getCenterDimensions()

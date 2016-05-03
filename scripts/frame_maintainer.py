@@ -10,6 +10,7 @@ import tf
 from tf.msg import *
 
 FIXED_FRAME = "base"
+# FIXED_FRAME = "global_map"
 
 class DynamicTransform:
     def __init__(self, parent, child):
@@ -135,9 +136,9 @@ class FM:
         # ))
         # self.frames.append(baxter)
 
-        obj_width = .04
+        obj_width = .057
         # get max block size that will fit in gatlin's gripper
-        self.create_obj_frame("7", obj_width)
+        self.create_obj_frame("8", obj_width)
 
         rospy.sleep(1)
         rate = rospy.Rate(10)
