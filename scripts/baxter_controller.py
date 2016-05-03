@@ -61,9 +61,9 @@ class BaxterController():
     def arm_target_callback(self, ps):
         rospy.logerr(ps)
         req = MoveRobotRequest()
-        # req.action = MOVE_TO_POSE_INTERMEDIATE
+        # req.action = "MOVE_TO_POSE_INTERMEDIATE"
         # req = {}
-        req.action = MOVE_TO_POS
+        req.action = "MOVE_TO_POS"
         req.ps = ps
         self.handle_move_robot(req)
 
@@ -97,38 +97,38 @@ class BaxterController():
 
 
     def handle_move_robot(self, req):
-        rospy.sleep(1)
+        rospy.sleep(.2)
         success = True
         
         gripper = self.gripper
 
-        if req.action == MOVE_TO_POSE_INTERMEDIATE or req.action == MOVE_TO_POSE or req.action == MOVE_TO_POS:
+        if req.action == "MOVE_TO_POSE_INTERMEDIATE" or req.action == "MOVE_TO_POSE" or req.action == "MOVE_TO_POS":
             rospy.logerr(req.ps)
             self.test_pose_pub.publish(req.ps)
 
-        if req.action == OPEN_GRIPPER:
+        if req.action == "OPEN_GRIPPER":
             rospy.loginfo("Beginning to open gripper")
             # rospy.sleep(GRIPPER_WAIT)
             gripper.open(block=True)
             # rospy.sleep(GRIPPER_WAIT)
             rospy.loginfo("Opened Gripper")
 
-        elif req.action == CLOSE_GRIPPER :
+        elif req.action == "CLOSE_GRIPPER" :
             rospy.loginfo("Beginning to close Gripper")
             # rospy.sleep(GRIPPER_WAIT)
             gripper.close(block=True)
             # rospy.sleep(GRIPPER_WAIT)
             rospy.loginfo("Closed Gripper")
 
-        elif req.action == MOVE_TO_POSE_INTERMEDIATE :
+        elif req.action == "MOVE_TO_POSE_INTERMEDIATE" :
             rospy.loginfo("Trying to Move To Pose")
             success = self.MoveToPoseWithIntermediate(self.limb_name, req.ps.pose)
 
-        elif req.action == MOVE_TO_POSE :
+        elif req.action == "MOVE_TO_POSE" :
             rospy.loginfo("Trying to Move To Pose")
             success = self.MoveToPose(self.limb_name, req.ps.pose, "FAILED MoveToPose")
 
-        elif req.action == MOVE_TO_POS :
+        elif req.action == "MOVE_TO_POS" :
             rospy.loginfo("Trying to Move To Pos")
 
             new_pose = Pose()
@@ -143,7 +143,7 @@ class BaxterController():
             success = self.MoveToPoseWithIntermediate(self.limb_name, new_pose)
             rospy.loginfo("Moved to pos: %r" % success)
 
-        elif req.action == RESET_ARM :
+        elif req.action == "RESET_ARM" :
             rospy.loginfo("Trying to Reset Arm")
             rest_pose = Pose()
             rest_pose.position = Point(0.5, 0.5, 0.1)

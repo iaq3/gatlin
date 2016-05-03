@@ -36,7 +36,7 @@ class Nav_Manip_Controller :
 
 			self.publishResponse("Attempting to grab %s_%s" % (dynamic_pose.color, dynamic_pose.id))
 
-			resp = self.move_arm(OPEN_GRIPPER, PoseStamped())
+			resp = self.move_arm("OPEN_GRIPPER", PoseStamped())
 
 			def getOffsetPose():
 				# rospy.logerr(dynamic_pose.ps)
@@ -63,11 +63,11 @@ class Nav_Manip_Controller :
 
 
 			base_pose_offset.pose.position.z += .10
-			resp = self.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_pose_offset)
+			resp = self.move_arm("MOVE_TO_POSE_INTERMEDIATE", base_pose_offset)
 
 			# base_pose_offset = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
 			base_pose_offset = getOffsetPose()
-			resp = self.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_pose_offset)
+			resp = self.move_arm("MOVE_TO_POSE_INTERMEDIATE", base_pose_offset)
 
 			repeat = False
 			if not resp.success:
@@ -82,13 +82,13 @@ class Nav_Manip_Controller :
 
 		self.pauseCommand()
 
-		resp = self.move_arm(CLOSE_GRIPPER, PoseStamped())
+		resp = self.move_arm("CLOSE_GRIPPER", PoseStamped())
 
 		self.pauseCommand()
 
-		#resp = self.move_arm(RESET_ARM, PoseStamped())
+		#resp = self.move_arm("RESET_ARM", PoseStamped())
 		# base_pose.pose.position.z += .1
-		# resp = self.move_arm(MOVE_TO_POS, base_pose)
+		# resp = self.move_arm("MOVE_TO_POS", base_pose)
 		# if not resp.success:
 		# 	rospy.logerr("RESET_ARM FAILED")
 
@@ -110,17 +110,17 @@ class Nav_Manip_Controller :
 
 		self.publishResponse("Releasing object to %s_%s" % (dynamic_pose.color, dynamic_pose.id))
 		base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
-		resp = self.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_pose)
+		resp = self.move_arm("MOVE_TO_POSE_INTERMEDIATE", base_pose)
 
 		self.pauseCommand()
 
 		if not resp.success:
 				rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
-		resp = self.move_arm(OPEN_GRIPPER, PoseStamped())
+		resp = self.move_arm("OPEN_GRIPPER", PoseStamped())
 
 		self.pauseCommand()
 		base_pose.pose.position.z += .1
-		resp = self.move_arm(MOVE_TO_POSE, base_pose)
+		resp = self.move_arm("MOVE_TO_POSE", base_pose)
 
 	def interActionDelay(self, delay) : #if user tells command to quit, then you don't want delays to stack
 	 	if self.command_state == self.RUNNING :
@@ -139,7 +139,7 @@ class Nav_Manip_Controller :
 
 		self.interActionDelay(1)
 
-		resp = self.move_arm(RESET_ARM, PoseStamped())
+		resp = self.move_arm("RESET_ARM", PoseStamped())
 
 		if self.command_state == self.RUNNING :
 			self.publishResponse("finished mott") #string must contain finished

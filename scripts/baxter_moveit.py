@@ -127,31 +127,31 @@ class BaxterMoveIt:
         success = True
         gripper = self.left_gripper if limb == "left" else self.right_gripper
 
-        if req.action == OPEN_GRIPPER:
+        if req.action == "OPEN_GRIPPER":
             rospy.loginfo("Beginning to open gripper")
             gripper.open(block=True)
             rospy.loginfo("Opened Gripper")
 
-        elif req.action == CLOSE_GRIPPER :
+        elif req.action == "CLOSE_GRIPPER" :
             rospy.loginfo("Beginning to close Gripper")
             gripper.close(block=True)
             rospy.loginfo("Closed Gripper")
 
-        elif req.action == MOVE_TO_POSE_INTERMEDIATE :
+        elif req.action == "MOVE_TO_POSE_INTERMEDIATE" :
             rospy.loginfo("Trying to Move To Pose With Intermediate")
             offsets = [Vector3(0,0,.07)]
             success = self.MoveToPoseWithIntermediate(limb, req.ps, offsets)
 
-        elif req.action == MOVE_TO_POSE :
+        elif req.action == "MOVE_TO_POSE" :
             rospy.loginfo("Trying to Move To Pose")
             success = self.MoveToPose(limb, req.ps, "FAILED MoveToPose")
 
-        elif req.action == RESET_ARM :
+        elif req.action == "RESET_ARM" :
             rospy.loginfo("Trying to Move To Rest Pose")
             success = self.move_arm_to_pose(limb, self.rest_pose)
             # success = self.MoveToPose(self.rest_pose, "FAILED MoveToRestPose")
 
-        # elif req.action == MOVE_TO_POS :
+        # elif req.action == "MOVE_TO_POS" :
         #   rospy.loginfo("Trying to Move To Pos")
 
         #   new_pose = Pose()
