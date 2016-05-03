@@ -72,10 +72,11 @@
 <node pkg="tf" type="static_transform_publisher" name="tool_tip_tf" args="0.00 0.065 0.00 0.7071 0.7071 0.0 0.0 /gripper_active_link /tool_tip_link 100"/>
 
 <node pkg="tf" type="static_transform_publisher" name="map_tf" args="0 0 0 0 0 0 1 /gatlin /map 100"/>
+<!-- what is the root transform of gatlin? -->
 
-<node pkg="tf" type="static_transform_publisher" name="gatlin_tf" args="0 0 0 0 0 0 1 /global_map /gatlin 100"/>
+<!-- <node pkg="tf" type="static_transform_publisher" name="gatlin_tf" args="0 0 0 0 0 0 1 /global_map /map 100"/> -->
 
-<node pkg="tf" type="static_transform_publisher" name="expected_ar_marker_0_tf" args="0 0 -0.04 1.5707 -3.1415 0.0 /gripper_servo_link /expected_ar_marker_0 100"/>
+<!-- <node pkg="tf" type="static_transform_publisher" name="expected_ar_marker_0_tf" args="0 0 -0.04 1.5707 -3.1415 0.0 /gripper_servo_link /expected_ar_marker_0 100"/> -->
 
 
 </launch>

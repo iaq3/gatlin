@@ -36,8 +36,8 @@ class AR_Vision :
 		self.tfl = tf.TransformListener()
 		
 		self.CAMERA_FRAME = "camera_rgb_optical_frame"
-		# self.FIXED_FRAME = "global_map"
-		self.FIXED_FRAME = "base_link"
+		self.FIXED_FRAME = "global_map"
+		# self.FIXED_FRAME = "base_link"
 		self.BASE_FAME = "base_link"
 
 		self.br = tf.TransformBroadcaster()
