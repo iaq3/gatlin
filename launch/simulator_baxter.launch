@@ -73,9 +73,9 @@
         <arg name="left_electric_gripper" value="$(arg left_electric_gripper)"/>
     </include>
 
-  <node pkg="tf" type="static_transform_publisher" name="baxter_link_tf" args="0 0 0 0 0 0 1 /ar_marker_3 /baxter_link 100"/>
+  <!-- <node pkg="tf" type="static_transform_publisher" name="baxter_link_tf" args="0 0 0 0 0 0 1 /ar_marker_3 /baxter_link 100"/> -->
 
-  <node pkg="tf" type="static_transform_publisher" name="base_link_tf" args="0 0 0 0 0 0 1 /baxter_link /base 100"/>
+  <!-- <node pkg="tf" type="static_transform_publisher" name="base_link_tf" args="0 0 0 0 0 0 1 /baxter_link /base 100"/> -->
 
   <!-- <node pkg="gatlin" type="baxter_arm_controller.py" name="baxter_arm_controller" output="screen"/> -->
 

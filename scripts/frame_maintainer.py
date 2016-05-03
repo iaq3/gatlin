@@ -9,8 +9,8 @@ from gatlin.srv import *
 import tf
 from tf.msg import *
 
-FIXED_FRAME = "base"
-# FIXED_FRAME = "global_map"
+# FIXED_FRAME = "base"
+FIXED_FRAME = "global_map"
 
 class DynamicTransform:
     def __init__(self, parent, child):
@@ -44,54 +44,59 @@ class Transformer:
 
 
 class Frame:
-    def __init__(self, transformer, ID, num):
+    def __init__(self, transformer, max_estimates, target_frame, type, color="", id=""):
         self.transformer = transformer
-        self.id = ID # the target frame to position
-        self.num = num
-
+        self.target_frame = target_frame # the target frame to position
+        self.type = type
+        self.id = id
+        self.color = color
 
         self.ts = None # filtered position output from all inputs
         self.set = False
 
         self.twist = Twist() # use for velocity maybe
-        self.ar_links = {}
+        self.obj_links = {}
         self.estimates = []
-        self.max_estimates = 15
+        self.max_estimates = max_estimates
 
-    def add_ar_link(self, ar_id, ts):
-        self.ar_links[ar_id] = ts
+    def add_obj_link(self, obj_color, obj_id, ts):
+        self.obj_links["%s_%s" % (obj_color, obj_id)] = ts
 
-    def get_fixed_to_target(self, ar, transformer):
-        ts = self.ar_links[ar.id]
+    def get_fixed_to_target(self, obj, transformer):
+        ts = self.obj_links["%s_%s" % (obj.color, obj.id)]
 
         target_frame = self.id
         attached_frame = ts.header.frame_id
 
-        attached_to_ar_t = ts.transform
-        attached_to_ar_matrix = transform_to_matrix(attached_to_ar_t)
+        attached_to_obj_t = ts.transform
+        attached_to_obj_matrix = transform_to_matrix(attached_to_obj_t)
 
         if attached_frame != target_frame:
             target_to_attached_t = transformer.get_transform(target_frame, attached_frame)
             target_to_attached_matrix = transform_to_matrix(target_to_attached_t)
 
-            target_to_ar_matrix = np.dot(target_to_attached_matrix, attached_to_ar_matrix)
+            target_to_obj_matrix = np.dot(target_to_attached_matrix, attached_to_obj_matrix)
 
         else:
-            target_to_ar_matrix = attached_to_ar_matrix
+            target_to_obj_matrix = attached_to_obj_matrix
 
-        fixed_to_ar_t = transform_from_pose(ar.pose.pose)
-        fixed_to_ar_matrix = transform_to_matrix(fixed_to_ar_t)
+        fixed_to_obj_t = transform_from_pose(ar.pose.pose)
+        fixed_to_obj_matrix = transform_to_matrix(fixed_to_obj_t)
         
-        ar_to_target_matrix = np.linalg.inv(target_to_ar_matrix)
-        fixed_to_target_matrix = np.dot(fixed_to_ar_matrix, ar_to_target_matrix)
+        obj_to_target_matrix = np.linalg.inv(target_to_obj_matrix)
+        fixed_to_target_matrix = np.dot(fixed_to_obj_matrix, obj_to_target_matrix)
         fixed_to_target_t = transform_from_matrix(fixed_to_target_matrix)
 
         return fixed_to_target_t
 
-    def update_transform(self, ar):
-        if ar.id in self.ar_links:
+    def update(self, ts):
+        self.ts = ts
+        self.set = True
 
-            t = self.get_fixed_to_target(ar, self.transformer)
+    def update_transform(self, obj):
+        if "%s_%s" % (obj.color, obj.id) in self.obj_links:
+
+            t = self.get_fixed_to_target(obj, self.transformer)
 
             self.estimates.append(t)
             while len(self.estimates) > self.max_estimates:
@@ -111,7 +116,7 @@ class FM:
         rospy.init_node('frame_maintainer')
 
         # take in all object and ar poses and
-        # rospy.Subscriber("/gatlin/ar_marker_list", ObjectList, self.ar_marker_list_cb, queue_size=3)
+        rospy.Subscriber("/gatlin/ar_marker_list", ObjectList, self.ar_marker_list_cb, queue_size=3)
         rospy.Subscriber("/baxter_left/ar_marker_list", ObjectList, self.ar_marker_list_cb, queue_size=3)
         rospy.Subscriber("/baxter_right/ar_marker_list", ObjectList, self.ar_marker_list_cb, queue_size=3)
         
@@ -125,21 +130,26 @@ class FM:
 
         self.transformer = Transformer()
 
-        # baxter = Frame(self.transformer, "baxter_link")
-        # baxter.add_ar_link("1",self.create_ts(
-        #     "left_hand", "ar_marker_1_expected",
-        #     0,0,0, 0,0,0,1
-        # ))
-        # baxter.add_ar_link("2",self.create_ts(
-        #     "base", "ar_marker_2_expected",
-        #     0,0,0, 0,0,0,1
-        # ))
-        # self.frames.append(baxter)
-
-        obj_width = .057
-        # get max block size that will fit in gatlin's gripper
-        self.create_obj_frame("8", obj_width)
-
+        baxter = Frame(self.transformer, 15, "baxter", "transform")
+        baxter.add_obj_link("ar", "1",self.create_ts(
+            "baxter", "ar_marker_1_expected",
+            0,0,0, 0,0,0,1
+        ))
+        # initialize baxter in global_map
+        baxter.update(self.create_ts(
+            FIXED_FRAME, "baxter",
+            1,0,0, 0,0,0,1
+        ))
+        self.frames.append(baxter)
+        
+        gatlin = Frame(self.transformer, 15, "gatlin", "transform")
+        # initialize gatlin in global_map
+        gatlin.update(self.create_ts(
+            FIXED_FRAME, "gatlin",
+            0,0,0, 0,0,0,1
+        ))
+        self.frames.append(gatlin)
+        
         rospy.sleep(1)
         rate = rospy.Rate(10)
         while not rospy.is_shutdown():
@@ -149,8 +159,8 @@ class FM:
         rospy.spin()
 
     def create_obj_frame(self, i, width):
-        obj = Frame(self.transformer, "ar_"+i, i)
-        obj.add_ar_link(i,self.create_ts(
+        obj = Frame(self.transformer, 15, "ar_"+i, "object", color="ar", id=i)
+        obj.add_obj_link("ar",i,self.create_ts(
             "ar_"+i, "ar_marker_%s_expected"%i,
             0,0,0, 0,0,0,1
             # -0.007, -0.037, -0.083,
@@ -162,22 +172,24 @@ class FM:
         ol = ObjectList()
         for f in self.frames:
             if f.set:
-                f.ts.header.stamp = rospy.Time.now()
-                f.ts.child_frame_id = f.id
-                # rospy.logerr(f.ts)
-                self.tfb.sendTransformMessage(f.ts)
-
-                o = Object()
-                o.id = f.num
-                o.color = "ar"
-                o.pose = ts_to_ps(f.ts)
-                # rospy.logerr(o)
-                ol.objects.append(o)
+                if f.type == "transform":
+                    f.ts.header.stamp = rospy.Time.now()
+                    f.ts.child_frame_id = f.target_frame
+                    # rospy.logerr(f.ts)
+                    self.tfb.sendTransformMessage(f.ts)
+                    rospy.loginfo("Published Global Transform")
+                elif f.type == "object":
+                    o = Object()
+                    o.id = f.id
+                    o.color = f.color
+                    o.pose = ts_to_ps(f.ts)
+                    # rospy.logerr(o)
+                    ol.objects.append(o)
 
         if len(ol.objects) > 0:
             # rospy.logerr(len(ol.objects))
-            # rospy.logerr(ol)
-            rospy.loginfo("Published Global ObjectList")
+            rospy.loginfo(ol)
+            # rospy.loginfo("Published Global ObjectList")
             self.ol_pub.publish(ol)
 
     def create_ts(self, parent, child, tx,ty,tz, rx,ry,rz,rw):
