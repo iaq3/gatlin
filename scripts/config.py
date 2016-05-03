@@ -17,19 +17,19 @@ ball_radius = 0.015
 
 joint_names = ['s0', 's1', 'e0', 'e1', 'w0', 'w1', 'w2']
 
-CLOSE_GRIPPER = 0
-OPEN_GRIPPER = 1
-MOVE_TO_POSE = 2
-MOVE_TO_POS = 3
-MOVE_TO_POSE_INTERMEDIATE = 4
-RESET_ARM = 5
-PLACE_UPPER = 6
+# CLOSE_GRIPPER = 0
+# OPEN_GRIPPER = 1
+# MOVE_TO_POSE = 2
+# MOVE_TO_POS = 3
+# MOVE_TO_POSE_INTERMEDIATE = 4
+# RESET_ARM = 5
+# PLACE_UPPER = 6
 
-BLOCK = 10
-GRAB = 13
-THROW = 14
-CHECK_BLOCKS = 15
-MOVE_BLOCKS = 16
+# BLOCK = 10
+# GRAB = 13
+# THROW = 14
+# CHECK_BLOCKS = 15
+# MOVE_BLOCKS = 16
 
 def getAverageTransform(transforms):
 		# get mean translation and rotation

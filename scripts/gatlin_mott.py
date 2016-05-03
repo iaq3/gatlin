@@ -62,6 +62,10 @@ class Nav_Manip_Controller :
 		if self.command_state == self.CANCELLED :
 			return
 
+		resp = self.move_arm("RESET_ARM", PoseStamped())
+		if not resp.success:
+			rospy.logerr("RESET_ARM FAILED")
+
 		rate = rospy.Rate(30)
 		goal_tolerence = .7
 
@@ -90,6 +94,10 @@ class Nav_Manip_Controller :
 		if self.command_state == self.CANCELLED :
 			return
 
+		resp = self.move_arm("RESET_ARM", PoseStamped())
+		if not resp.success:
+			rospy.logerr("RESET_ARM FAILED")
+
 		self.publishResponse("Servo base to %s_%s" % (dynamic_pose.color, dynamic_pose.id))
 
 		rate = rospy.Rate(30)
@@ -116,7 +124,7 @@ class Nav_Manip_Controller :
 			self.pauseCommand()
 
 			self.publishResponse("Attempting to grab %s_%s" % (dynamic_pose.color, dynamic_pose.id))
-			resp = self.move_arm(OPEN_GRIPPER, PoseStamped())
+			resp = self.move_arm("OPEN_GRIPPER", PoseStamped())
 
 			def getOffsetPose():
 				# rospy.logerr(dynamic_pose.ps)
@@ -142,24 +150,20 @@ class Nav_Manip_Controller :
 
 			# base_pose_offset = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
 			base_pose_offset = getOffsetPose()
-			resp = self.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_pose_offset)
+			resp = self.move_arm("MOVE_TO_POSE_INTERMEDIATE", base_pose_offset)
 			if not resp.success:
 				rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
-
-				resp = self.move_arm(RESET_ARM, PoseStamped())
-				if not resp.success:
-					rospy.logerr("RESET_ARM FAILED")
 				# try moving to it again
 				self.servoBaseToDynamicPos(self.object_dp)
 				#TODO check this
 				rospy.sleep(1)
 				continue
 
-			resp = self.move_arm(CLOSE_GRIPPER, PoseStamped())
+			resp = self.move_arm("CLOSE_GRIPPER", PoseStamped())
 
 			self.pauseCommand()
 
-			resp = self.move_arm(RESET_ARM, PoseStamped())
+			resp = self.move_arm("RESET_ARM", PoseStamped())
 			if not resp.success:
 				rospy.logerr("RESET_ARM FAILED")
 
@@ -182,26 +186,26 @@ class Nav_Manip_Controller :
 
 		self.publishResponse("Releasing object to %s_%s" % (dynamic_pose.color, dynamic_pose.id))
 		base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
-		resp = self.move_arm(MOVE_TO_POSE_INTERMEDIATE, base_pose)
+		resp = self.move_arm("MOVE_TO_POSE_INTERMEDIATE", base_pose)
 		if not resp.success:
 			rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
-		resp = self.move_arm(OPEN_GRIPPER, PoseStamped())
+		resp = self.move_arm("OPEN_GRIPPER", PoseStamped())
 
 		self.pauseCommand()
-		resp = self.move_arm(RESET_ARM, PoseStamped())
+		resp = self.move_arm("RESET_ARM", PoseStamped())
 
 	def interActionDelay(self, delay) : #if user tells command to quit, then you don't want delays to stack
 	 	if self.command_state == self.RUNNING :
 			rospy.sleep(delay)
 
 	def run_mott_sequence(self) :
+		resp = self.move_arm("RESET_ARM", PoseStamped())
+		if not resp.success:
+			rospy.logerr("RESET_ARM FAILED")
+
 		while self.object_dp.ps == None:
 			rospy.logerr("no object pose")
 			rospy.sleep(1)
-
-		resp = self.move_arm(RESET_ARM, PoseStamped())
-		if not resp.success:
-			rospy.logerr("RESET_ARM FAILED")
 
 		self.moveBaseToDynamicPos(self.object_dp)
 
@@ -226,6 +230,10 @@ class Nav_Manip_Controller :
 			self.publishResponse("quitting on user command") 
 
 	def base_to_sequence(self) :
+		resp = self.move_arm("RESET_ARM", PoseStamped())
+		if not resp.success:
+			rospy.logerr("RESET_ARM FAILED")
+
 		self.moveBaseToDynamicPos(self.target_dp)
 		self.servoBaseToDynamicPos(self.target_dp)
 		
@@ -234,8 +242,22 @@ class Nav_Manip_Controller :
 		elif self.command_state == self.PAUSING :
 			self.publishResponse("finished move base while pausing!?!?") 
 		elif self.command_state == self.CANCELLED :
-			self.publishResponse("quitting on user command") 
-				
+			self.publishResponse("quitting on user command")
+
+	def search_sequence(self) :
+		resp = self.move_arm("RESET_ARM", PoseStamped())
+		if not resp.success:
+			rospy.logerr("RESET_ARM FAILED")
+
+		self.moveBaseToDynamicPos(self.target_dp)
+		self.servoBaseToDynamicPos(self.target_dp)
+		
+		if self.command_state == self.RUNNING :
+			self.publishResponse("finished moving base to target")
+		elif self.command_state == self.PAUSING :
+			self.publishResponse("finished move base while pausing!?!?") 
+		elif self.command_state == self.CANCELLED :
+			self.publishResponse("quitting on user command")
 
 	def MottCallback(self, data) :
 
@@ -264,6 +286,9 @@ class Nav_Manip_Controller :
 		elif data.command == "move_base" :
 			rospy.loginfo("Starting Move Base TO")
 			self.base_to_sequence()
+		elif data.command == "search" :
+			rospy.loginfo("Starting Search")
+			self.search_sequence()
 		else:
 			rospy.logerr("Invalid Command: %s" % data.command)
 
