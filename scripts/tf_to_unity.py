@@ -63,6 +63,7 @@ class Tf_to_Unity:
 
 		self.tfl = TransformListener()
 
+		FIXED_FRAME = 'global_map'
 		GRIPPER_FRAME = 'gripper_active_link'
 		TOOL_FRAME = 'tool_tip_link'
 		BASE_FRAME = 'base_link'
@@ -78,6 +79,9 @@ class Tf_to_Unity:
 
 		gripper_in_base = Tf_Transformer(self.tfl, TOOL_FRAME, BASE_FRAME, rospy.Rate(9))
 		transform_pubs.append(gripper_in_base)
+
+		# base_in_fixed = Tf_Transformer(self.tfl, BASE_FRAME, FIXED_FRAME, rospy.Rate(10))
+		# transform_pubs.append(gripper_in_base)
 
 		# arm_base_in_base = Tf_Transformer(self.tfl, ARM_BASE_FRAME, BASE_FRAME, rospy.Rate(1))
 		# transform_pubs.append(arm_base_in_base)
