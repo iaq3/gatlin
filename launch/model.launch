@@ -17,7 +17,7 @@
 	<node if="$(arg rviz)" name="rviz" pkg="rviz" type="rviz" args="-d $(find gatlin)/rviz/urdf.rviz" required="true" />
 
 	<include if="$(arg bridge)" file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" >
-		<arg name="port" value="9090"/>
+		<arg name="port" value="9080"/>
 	</include>
 
 	<node if="$(arg bridge)" pkg="gatlin" type="head_controller.py" name="head_controller" output="screen" ></node>

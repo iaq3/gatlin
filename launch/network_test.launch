@@ -3,64 +3,26 @@
  -->
 <launch>
 
-<arg name="rviz" default="false"/>
+<arg name="rviz" default="true"/>
 <!-- <arg name="calibrate" default="false"/> -->
 
 
 <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" >
-	<arg name="port" value="9090"/>
+	<arg name="port" value="9080"/>
 </include>
 
 <!-- <include file="$(find gatlin)/launch/base_minimal.launch">
 	<arg name="simulation" value="false"/>
 </include> -->
 
-<include file="$(find gatlin)/launch/model.launch">
+<!-- <include file="$(find gatlin)/launch/model.launch">
 	<arg name="gui" value="true" />
 	<arg name="rviz" value="$(arg rviz)" />
-</include>
-
-
-<!-- <node if="$(arg rviz)" name="rviz" pkg="rviz" type="rviz" args="-d $(find gatlin)/rviz/urdf.rviz" required="true" /> -->
-
-<!-- <include file="$(find gatlin)/launch/arm_minimal.launch">
-  <arg name="rviz" value="$(arg rviz)"/>
 </include> -->
 
-<!-- <node pkg="gatlin" type="arm_controller.py" name="arm_controller" output="screen" ></node> -->
+<node pkg="gatlin" type="tf_to_unity.py" name="server_tf_manager" output="screen">
+	<param name="incoming" value="/server/tf"/>
+	<param name="outgoing" value=""/>
+</node>
 
-<node pkg="gatlin" type="octomap_server" name="octomap_server" output="screen" ></node>
-
-<!-- <node pkg="gatlin" type="head_controller.py" name="head_controller" output="screen" ></node> -->
-
-<!-- <node if="$(arg calibrate)" pkg="dynamic_tf" type="server.py" name="server" output="screen" ></node> -->
-
-<!-- <node pkg="web_video_server" type="web_video_server" name="web_video_server" output="screen" ></node>
-
-<node pkg="image_converter" type="image_converter" name="image_converter" output="screen" ></node>
-
-<param name="camera/rgb/image_color/compressed/jpeg_quality" value="50"/>
-
-<include file="$(find turtlebot_bringup)/launch/3dsensor.launch">
-	<arg name="rgb_processing" value="true" />
-	<arg name="depth_registration" value="true" />
-	<arg name="depth_processing" value="true" />
-</include>
-
-
-<node pkg="topic_tools" type="throttle" name="camera_throttle"
-  args="messages camera/rgb/image_color/compressed 5"/> -->
-
-
-<!-- <node pkg="tf" type="static_transform_publisher" name="kinect_tf" args="0.1 0.04 0.9 -0.694582 0.694582 -0.132499 0.132499 /base_link /camera_rgb_optical_frame 100"/> -->
-<!-- <node pkg="tf" type="static_transform_publisher" name="kinect_tf" args="0.1 0.04 0.62 -0.694581976063 0.694581976063 -0.132498598211 0.132498598211 /base_link /camera_rgb_optical_frame 100"/> -->
-
-<!-- <node unless="$(arg calibrate)" pkg="tf" type="static_transform_publisher" name="kinect_tf" args="0.14 0.02 0.6 -0.698401123334 0.698401123334 -0.110615871041 0.110615871041 /base_link /camera_rgb_optical_frame 100"/> -->
-
-
-<!-- 
-from tf.transformations import euler_from_quaternion
-print euler_from_quaternion([-0.694581976063, 0.694581976063, -0.132498598211, 0.132498598211])
-(-2.7646015351594335, -0.0, -1.5707963267948968)
- -->
 </launch>

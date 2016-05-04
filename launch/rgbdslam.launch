@@ -11,7 +11,7 @@
   </include>
 
   <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" >
-	<arg name="port" value="9090"/>
+	<arg name="port" value="9080"/>
   </include>-->
 
   <node name="$(anon dynparam)" pkg="dynamic_reconfigure" type="dynparam" args="set_from_parameters /camera/driver">

@@ -8,7 +8,7 @@
   </include> -->
 
   <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch">
-    <arg name="port" value="9090"/>
+    <arg name="port" value="9080"/>
   </include>
   
   <!-- <remap from="/cmd_vel_mux/input/teleop" to="/cmd_vel_mux/input/teleop"/> -->

@@ -8,7 +8,7 @@
 
 
 <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" >
-	<arg name="port" value="9090"/>
+	<arg name="port" value="9080"/>
 </include>
 
 <!-- <include file="$(find turtlebot_bringup)/launch/minimal.launch"></include> -->

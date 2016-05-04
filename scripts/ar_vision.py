@@ -22,7 +22,7 @@ class AR_Vision :
 
 		rospy.init_node("%s_vision" % self.vision_type)
 
-		print "initializing %s vision" % self.vision_type
+		rospy.loginfo("initializing %s vision" % self.vision_type)
 
 		ar_marker_topic = "/ARmarker_points"
 		self.tf_sub = rospy.Subscriber("/tf", tfMessage, self.tf_callback, queue_size=1)
@@ -49,7 +49,7 @@ class AR_Vision :
 		rospy.spin()
 
 	def get_transform(self, parent, child):
-		self.tfl.waitForTransform(child, parent, rospy.Time(0), rospy.Duration(4))
+		self.tfl.waitForTransform(parent, child, rospy.Time(0), rospy.Duration(4))
 		(T,R) = self.tfl.lookupTransform(parent, child, rospy.Time(0))
 		tf = Transform()
 		tf.rotation = Quaternion(R[0],R[1],R[2],R[3])
@@ -93,8 +93,8 @@ class AR_Vision :
 				p = Pose()
 				p.position = Point()
 
-
-				fixed_to_ar_t = self.get_transform(self.FIXED_FRAME, trans.child_frame_id)
+				FIXED_FRAME = "gatlin"
+				fixed_to_ar_t = self.get_transform(FIXED_FRAME, trans.child_frame_id)
 				# rospy.logerr(fixed_to_ar_t)
 
 				ps = PoseStamped()

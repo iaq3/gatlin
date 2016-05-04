@@ -67,7 +67,7 @@ class Nav_Manip_Controller :
 			rospy.logerr("RESET_ARM FAILED")
 
 		rate = rospy.Rate(30)
-		goal_tolerence = 1.5
+		goal_tolerence = 5.0
 
 		if self.distanceToPose(dynamic_pose.ps) > goal_tolerence :
 			self.publishResponse("Gmap base to %s_%s" % (dynamic_pose.color, dynamic_pose.id))
@@ -101,9 +101,9 @@ class Nav_Manip_Controller :
 		self.publishResponse("Servo base to %s_%s" % (dynamic_pose.color, dynamic_pose.id))
 
 		rate = rospy.Rate(30)
-		if "%s_%s" % (dynamic_pose.color, dynamic_pose.id) == "ar_6":
+		if "%s_%s" % (dynamic_pose.color, dynamic_pose.id) == "hp_2":
 			rospy.logerr("MOVING TO HP")
-			desired_pos = Point(.44,0,0) # z is set to 0 when checking error
+			desired_pos = Point(.30,0,0) # z is set to 0 when checking error
 			resp = self.move_head("LOOK_DOWNWARD", PoseStamped())
 			goal_tolerence = .035
 		else:
@@ -194,7 +194,7 @@ class Nav_Manip_Controller :
 
 		self.publishResponse("Releasing object to %s_%s" % (dynamic_pose.color, dynamic_pose.id))
 
-		if "%s_%s" % (dynamic_pose.color, dynamic_pose.id) == "ar_6":
+		if "%s_%s" % (dynamic_pose.color, dynamic_pose.id) == "hp_2":
 			resp = self.move_arm("PLACE_UPPER", PoseStamped())
 			rospy.logerr("PLACE_UPPER")
 		else:
@@ -387,8 +387,8 @@ class Nav_Manip_Controller :
 
 		# DynamicManager init
 		self.dm = DynamicManager(self.tfl)
-		# self.dm.add_ol_sub("/server/ar_marker_list")
 		self.dm.add_ol_sub("/gatlin/ar_marker_list")
+		# self.dm.add_ol_sub("/server/ar_marker_list")
 
 		self.RUNNING = 0
 		self.PAUSING = 1

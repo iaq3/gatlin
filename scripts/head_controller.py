@@ -5,6 +5,7 @@ from math import *
 import numpy as np
 from std_msgs.msg import *
 from geometry_msgs.msg import *
+from sensor_msgs.msg import *
 from gatlin.msg import *
 from gatlin.srv import *
 from config import *
@@ -14,7 +15,7 @@ from copy import deepcopy
 class Head_Controller:
 	def __init__(self):
 		# Give the launch a chance to catch up
-		rospy.sleep(5)
+		rospy.sleep(10)
 
 		rospy.init_node('Head_Controller')
 		rospy.loginfo("Launched Head Controller")
@@ -26,27 +27,58 @@ class Head_Controller:
 
 		self.head_pos_sub = rospy.Subscriber("/head_pos", Vector3, self.head_callback, queue_size=3)
 
-		move_head_service = createService('gatlin/move/head', MoveRobot, self.handle_move_head)
+		# self.joint_state_sub = rospy.Subscriber("/joint_states", JointState, self.joint_state_cb, queue_size=1)
+
+		move_head_service = createService('gatlin/move/head', MoveRobot, self.move_head)
 		# self.test_head_pose_pub = rospy.Publisher('/test_head_pose', PoseStamped, queue_size=1)
 
 		self.tfl = tf.TransformListener()
 
-		rospy.sleep(5)
+		rospy.sleep(1)
 
 		req = MoveRobotRequest()
-		req.action = "LOOK_DOWN"
+		# req.action = "LOOK_LEFT"
+		# req.action = "LOOK_RIGHT"
+		# req.action = "LOOK_DOWN"
 		# req.action = "LOOK_DOWNWARD"
 		# req.action = "LOOK_FORWARD"
 		# req.action = "LOOK_UP"
-		self.handle_move_head(req)
+		
+		wait = 3
+
+		req.action = "LOOK_DOWN"
+		self.move_head(req)
+		rospy.sleep(wait)
+
+		req.action = "LOOK_FORWARD"
+		self.move_head(req)
+		rospy.sleep(wait)
+
+		req.action = "LOOK_LEFT"
+		self.move_head(req)
+		rospy.sleep(wait)
+		
+		req.action = "LOOK_RIGHT"
+		self.move_head(req)
+		rospy.sleep(wait*2)
+		
+		req.action = "LOOK_FORWARD"
+		self.move_head(req)
+		# rospy.sleep(wait)
+		
+		# req.action = "LOOK_UP"
+		# self.move_head(req)
 
 		rospy.spin()
 
-	def handle_move_head(self, req):
+	def move_head(self, req):
 		success = True
 
-		if req.action == "ORIENTATION":
-			pass
+		if req.action == "SET":
+			rospy.loginfo("Setting Head")
+			pan = req.ps.pose.position.x
+			tilt = req.ps.pose.position.y
+			self.head_set(pan,tilt)
 
 		elif req.action == "LOOK_DOWN" :
 			rospy.loginfo("Looking Down")
@@ -62,7 +94,15 @@ class Head_Controller:
 
 		elif req.action == "LOOK_UP" :
 			rospy.loginfo("Looking Up")
-			self.head_set(0.0,-1.00)
+			self.head_set(0.0,-0.50)
+
+		elif req.action == "LOOK_LEFT" :
+			rospy.loginfo("Looking Left")
+			self.head_set(1.57,0.0)
+
+		elif req.action == "LOOK_RIGHT" :
+			rospy.loginfo("Looking Right")
+			self.head_set(-1.57,0.0)
 
 		elif req.action == "LOOK_AT" :
 			rospy.loginfo("Trying to Look At Pose")

@@ -8,7 +8,7 @@
 
 
 <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" >
-	<arg name="port" value="9090"/>
+	<arg name="port" value="9080"/>
 </include>
 
 <!-- <node pkg="gatlin" type="test_tf_broadcaster.py" name="test_tf_broadcaster" output="screen" ></node> -->

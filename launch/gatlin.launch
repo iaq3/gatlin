@@ -7,9 +7,8 @@
 <arg name="rviz" default="true"/>
 <arg name="calibrate" default="false"/>
 
-
 <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch">
-	<arg name="port" value="9090"/>
+	<arg name="port" value="9080"/>
 </include>
 
 <include file="$(find gatlin)/launch/arm_minimal.launch">
@@ -21,17 +20,20 @@
 	<!-- <arg name="sim" value="$(arg sim)"/> -->
 </include>
 
-<!-- <node pkg="gatlin" type="gatlin_mott.py" name="gatlin_mott" output="screen"/>  -->
+<node pkg="gatlin" type="gatlin_mott.py" name="gatlin_mott" output="screen"/> 
 
 <include file="$(find gatlin)/launch/ar_gatlin.launch" />
 
 <!-- <node pkg="gatlin" type="vision.py" name="vision" output="screen"/> -->
 
+<node pkg="gatlin" type="tf_to_unity.py" name="server_tf_manager">
+	<param name="incoming" value="/server/tf"/>
+	<param name="outgoing" value=""/>
+</node>
+
 <node pkg="gatlin" type="arm_controller.py" name="arm_controller" output="screen"/>
 
-<node pkg="gatlin" type="tf_to_unity.py" name="tf_to_unity"/>
-
-<node pkg="gatlin" type="head_controller.py" name="head_controller"/>
+<node pkg="gatlin" type="head_controller.py" name="head_controller" output="screen"/>
 
 <node if="$(arg calibrate)" pkg="dynamic_tf" type="server.py" name="server"/>
 
@@ -48,14 +50,12 @@
 	<arg name="scan_topic" value="/scan"/>
 </include>
 
-
 <!-- apparently very important for the speed that images are recieved on the android device -->
 <!-- <node pkg="topic_tools" type="throttle" name="camera_throttle_image_color_compressed" args="messages camera/rgb/image_color/compressed 2"/> -->
 
 <!-- /camera/rgb/image_rect_color -->
 
 <!-- <node pkg="topic_tools" type="throttle" name="camera_throttle" args="messages camera/rgb/image_rect_color 2"/> -->
-
 
 <include file="$(find turtlebot_navigation)/launch/includes/gmapping.launch.xml"/>
 
@@ -75,8 +75,5 @@
 <!-- what is the root transform of gatlin? -->
 
 <!-- <node pkg="tf" type="static_transform_publisher" name="gatlin_tf" args="0 0 0 0 0 0 1 /global_map /map 100"/> -->
-
-<!-- <node pkg="tf" type="static_transform_publisher" name="expected_ar_marker_0_tf" args="0 0 -0.04 1.5707 -3.1415 0.0 /gripper_servo_link /expected_ar_marker_0 100"/> -->
-
 
 </launch>
