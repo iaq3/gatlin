@@ -8,6 +8,7 @@ from gatlin.msg import *
 from gatlin.srv import *
 import tf
 from tf.msg import *
+from tf.transformations import *
 
 # FIXED_FRAME = "base"
 FIXED_FRAME = "global_map"
@@ -44,8 +45,9 @@ class Transformer:
 
 
 class Frame:
-    def __init__(self, transformer, max_estimates, target_frame, type, color="", id=""):
-        self.transformer = transformer
+    def __init__(self, tfl, max_estimates, target_frame, type, color="", id=""):
+        # self.transformer = transformer
+        self.tfl = tfl
         self.target_frame = target_frame # the target frame to position
         self.type = type
         self.id = id
@@ -62,17 +64,17 @@ class Frame:
     def add_obj_link(self, obj_color, obj_id, ts):
         self.obj_links["%s_%s" % (obj_color, obj_id)] = ts
 
-    def get_fixed_to_target(self, obj, transformer):
+    def get_fixed_to_target(self, obj):
         ts = self.obj_links["%s_%s" % (obj.color, obj.id)]
 
-        target_frame = self.id
+        target_frame = self.target_frame
         attached_frame = ts.header.frame_id
 
         attached_to_obj_t = ts.transform
         attached_to_obj_matrix = transform_to_matrix(attached_to_obj_t)
 
         if attached_frame != target_frame:
-            target_to_attached_t = transformer.get_transform(target_frame, attached_frame)
+            target_to_attached_t = self.get_transform(target_frame, attached_frame)
             target_to_attached_matrix = transform_to_matrix(target_to_attached_t)
 
             target_to_obj_matrix = np.dot(target_to_attached_matrix, attached_to_obj_matrix)
@@ -80,7 +82,7 @@ class Frame:
         else:
             target_to_obj_matrix = attached_to_obj_matrix
 
-        fixed_to_obj_t = transform_from_pose(ar.pose.pose)
+        fixed_to_obj_t = transform_from_pose(obj.pose.pose)
         fixed_to_obj_matrix = transform_to_matrix(fixed_to_obj_t)
         
         obj_to_target_matrix = np.linalg.inv(target_to_obj_matrix)
@@ -96,7 +98,13 @@ class Frame:
     def update_transform(self, obj):
         if "%s_%s" % (obj.color, obj.id) in self.obj_links:
 
-            t = self.get_fixed_to_target(obj, self.transformer)
+            # hold 2 degrees of rotation fixed for baxter
+            t = self.get_fixed_to_target(obj)
+            if self.target_frame == "baxter":
+                q = t.rotation
+                euler = euler_from_quaternion([q.x,q.y,q.z,q.w])
+                q = quaternion_from_euler(0, 0, euler[2])
+                t.rotation = Quaternion(q[0],q[1],q[2],q[3])
 
             self.estimates.append(t)
             while len(self.estimates) > self.max_estimates:
@@ -110,6 +118,14 @@ class Frame:
                 self.ts.child_frame_id = self.id
                 self.ts.transform = mean_transform
                 self.set = True
+
+    def get_transform(self, parent, child):
+        self.tfl.waitForTransform(child, parent, rospy.Time(0), rospy.Duration(4))
+        (T,R) = self.tfl.lookupTransform(parent, child, rospy.Time(0))
+        tf = Transform()
+        tf.rotation = Quaternion(R[0],R[1],R[2],R[3])
+        tf.translation = Vector3(T[0],T[1],T[2])
+        return tf
 
 class FM:
     def __init__(self):
@@ -128,12 +144,14 @@ class FM:
 
         self.frames = []
 
-        self.transformer = Transformer()
+        # self.transformer = Transformer()
+        self.tfl = tf.TransformListener()
 
-        baxter = Frame(self.transformer, 15, "baxter", "transform")
+        baxter = Frame(self.tfl, 25, "baxter", "transform")
         baxter.add_obj_link("ar", "1",self.create_ts(
             "baxter", "ar_marker_1_expected",
-            0,0,0, 0,0,0,1
+            # .233,0.034,-0.107, .707,0,.707,0
+            -0.009,0.237,-0.110, -0.5,-0.5,-0.5,0.5
         ))
         # initialize baxter in global_map
         baxter.update(self.create_ts(
@@ -142,13 +160,17 @@ class FM:
         ))
         self.frames.append(baxter)
         
-        gatlin = Frame(self.transformer, 15, "gatlin", "transform")
+        gatlin = Frame(self.tfl, 15, "gatlin", "transform")
         # initialize gatlin in global_map
         gatlin.update(self.create_ts(
             FIXED_FRAME, "gatlin",
             0,0,0, 0,0,0,1
         ))
         self.frames.append(gatlin)
+
+        obj_width = .057
+        self.create_obj_frame("8", obj_width)
+        self.create_obj_frame("6", obj_width)
         
         rospy.sleep(1)
         rate = rospy.Rate(10)
@@ -159,7 +181,7 @@ class FM:
         rospy.spin()
 
     def create_obj_frame(self, i, width):
-        obj = Frame(self.transformer, 15, "ar_"+i, "object", color="ar", id=i)
+        obj = Frame(self.tfl, 15, "ar_"+i, "object", color="ar", id=i)
         obj.add_obj_link("ar",i,self.create_ts(
             "ar_"+i, "ar_marker_%s_expected"%i,
             0,0,0, 0,0,0,1
@@ -188,8 +210,8 @@ class FM:
 
         if len(ol.objects) > 0:
             # rospy.logerr(len(ol.objects))
-            rospy.loginfo(ol)
-            # rospy.loginfo("Published Global ObjectList")
+            # rospy.loginfo(ol)
+            rospy.loginfo("Published Server AR Markers")
             self.ol_pub.publish(ol)
 
     def create_ts(self, parent, child, tx,ty,tz, rx,ry,rz,rw):

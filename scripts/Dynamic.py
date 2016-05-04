@@ -69,14 +69,14 @@ class DynamicPose:
 	def transform_pose(self, new_frame, pose):
 		if pose.header.frame_id == new_frame:
 			return pose
-		try:
-			ps = deepcopy(pose)
-			ps.header.stamp = rospy.Time(0)
-			self.tfl.waitForTransform(ps.header.frame_id, new_frame, rospy.Time(0), rospy.Duration(4.0))
-			new_pose = self.tfl.transformPose(new_frame, ps)
-			new_pose.header.stamp = deepcopy(pose.header.stamp)
-			return new_pose
-		except Exception as e:
-			rospy.logerr(e)
-			rospy.logerr("no transform %s -> %s" % (ps.header.frame_id, new_frame))
-			return None
+		# try:
+		ps = deepcopy(pose)
+		ps.header.stamp = rospy.Time(0)
+		self.tfl.waitForTransform(ps.header.frame_id, new_frame, rospy.Time(0), rospy.Duration(4.0))
+		new_pose = self.tfl.transformPose(new_frame, ps)
+		new_pose.header.stamp = deepcopy(pose.header.stamp)
+		return new_pose
+		# except Exception as e:
+		# 	rospy.logerr(e)
+		# 	rospy.logerr("no transform %s -> %s" % (ps.header.frame_id, new_frame))
+		# 	return None

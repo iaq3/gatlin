@@ -1,5 +1,5 @@
 <launch>
-  <node name="baxter_tf" pkg="tf" type="static_transform_publisher" args="0.0 0.0 0.0 0.0 0.0 0.0 1.0 baxter base 100" />
-  <node name="baxter_left_tf" pkg="tf" type="static_transform_publisher" args="0.025 0.220 0.119 0.0 0.0 0.0 1.0 base baxter_left 100" />
-  <node name="baxter_right_tf" pkg="tf" type="static_transform_publisher" args="0.025 -0.220 0.119 0.0 0.0 0.0 1.0 base baxter_right 100" />
+	<node name="baxter_tf" pkg="tf" type="static_transform_publisher" args="0.0 0.0 0.0 0.0 0.0 0.0 1.0 baxter base 100" />
+	<node name="baxter_left_tf" pkg="tf" type="static_transform_publisher" args="0.025 0.220 0.119 0.0 0.0 0.0 1.0 base baxter_left 100" />
+	<node name="baxter_right_tf" pkg="tf" type="static_transform_publisher" args="0.025 -0.220 0.119 0.0 0.0 0.0 1.0 base baxter_right 100" />
 </launch>

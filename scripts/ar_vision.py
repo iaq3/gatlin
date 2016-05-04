@@ -39,7 +39,8 @@ class AR_Vision :
 		
 		# self.RGB_FRAME = rospy.get_param("rgb_frame")
 		# self.FIXED_FRAME = rospy.get_param("fixed_frame")
-		self.FIXED_FRAME = "base"
+		# self.FIXED_FRAME = "base"
+		self.FIXED_FRAME = "global_map"
 		# self.BASE_FAME = rospy.get_param("base_frame")
 
 		self.br = tf.TransformBroadcaster()
@@ -88,16 +89,17 @@ class AR_Vision :
 			p = Pose()
 			p.position = Point()
 
-
-			# fixed_to_ar_t = self.get_transform(self.FIXED_FRAME, trans.child_frame_id)
-			# rospy.logerr(fixed_to_ar_t)
+			if self.FIXED_FRAME != marker.header.frame_id:
+				fixed_to_output_t = self.get_transform(self.FIXED_FRAME, marker.header.frame_id)
+				output_to_ar_t = transform_from_pose(marker.pose.pose)
+				fixed_to_ar_t = multiply_transforms(fixed_to_output_t, output_to_ar_t)
+			else:
+				fixed_to_ar_t = transform_from_pose(marker.pose.pose)
 
 			ps = PoseStamped()
 			ps.header.frame_id = self.FIXED_FRAME
 			ps.header.stamp = rospy.Time.now()
-			# ps.pose = transform_to_pose(trans.transform)
-			# ps.pose = transform_to_pose(fixed_to_ar_t)
-			ps.pose = deepcopy(marker.pose.pose)
+			ps.pose = transform_to_pose(fixed_to_ar_t)
 			self.test_pose_pub.publish(ps)
 			
 			o = Object()

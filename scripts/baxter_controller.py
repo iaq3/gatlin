@@ -170,13 +170,14 @@ class BaxterController():
         arm = self.limb
         hand_pose = self.getCurrentPose(arm)
         max_z = max(hand_pose.position.z, pose.position.z)
+        offset = .08
         if inter1 :
-            interpose1 = self.getOffsetPose(hand_pose, .07)
-            interpose1.position.z = max_z + .07
+            interpose1 = self.getOffsetPose(hand_pose, offset)
+            interpose1.position.z = max_z + offset
             b1 = self.MoveToPose(limb, interpose1, "MoveToIntermediatePose")
         if inter2 :
-            interpose2 = self.getOffsetPose(pose, .07)
-            interpose2.position.z = max_z + .07
+            interpose2 = self.getOffsetPose(pose, offset)
+            interpose2.position.z = max_z + offset
             b2 = self.MoveToPose(limb, interpose2, "MoveToIntermediatePose")
         if inter3 :
             interpose2 = self.getOffsetPose(pose, .01)

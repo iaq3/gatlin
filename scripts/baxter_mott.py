@@ -131,6 +131,8 @@ class Nav_Manip_Controller :
 			rospy.logerr("object_pose not set")
 			return
 
+		# self.test_pose_pub.publish(self.object_dp.ps)
+
 		self.grabObject(self.object_dp)
 		
 		self.interActionDelay(1)
@@ -208,7 +210,7 @@ class Nav_Manip_Controller :
 			temp_ps.header.stamp = rospy.Time(0)
 			self.tfl.waitForTransform(temp_ps.header.frame_id, new_frame, rospy.Time(0), rospy.Duration(4.0))
 			new_pose = self.tfl.transformPose(new_frame, temp_ps)
-			new_pose.header.stamp = deepcopy(pose.header.stamp)
+			new_pose.header.stamp = deepcopy(ps.header.stamp)
 			return new_pose
 		except Exception as e:
 			rospy.logerr(e)
@@ -237,8 +239,8 @@ class Nav_Manip_Controller :
 		self.CANCELLED = 2
 		self.command_state = 0 #keeps track of running, pausing, cancelled
 
-		#self.FIXED_FRAME = "global_map"
-		self.FIXED_FRAME = "base"
+		self.FIXED_FRAME = "global_map"
+		# self.FIXED_FRAME = "base"
 		self.BASE_FAME = "base"#TODO look into
 
 		robot = "baxter_" + limb
@@ -250,6 +252,9 @@ class Nav_Manip_Controller :
 
 		# self.move_arm = createServiceProxy("baxter/move/arm", MoveRobot, self.robot_name)
 		self.move_arm = createServiceProxy("/%s/move/arm" % robot, MoveRobot)
+
+		# self.test_pose_pub = rospy.Publisher("/test_mott_pose", PoseStamped, queue_size = 1)
+
 
 		rospy.spin()
 

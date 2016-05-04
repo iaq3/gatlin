@@ -5,6 +5,7 @@ import rospy, sys, tf
 from math import *
 from geometry_msgs.msg import *
 from tf.transformations import *
+from tf.msg import *
 from tf import *
 from copy import deepcopy
 	
@@ -56,12 +57,81 @@ class Tf_Transformer(Thread):
 			print e
 			rospy.logerr("no transform %s_in_%s" % (self.child, self.parent))
 
+class Tf_Listener:
+	def __init__(self, topic, tfb):
+		self.tfb = tfb
+		self.topic = topic
+		rospy.Subscriber(topic, tfMessage, self.tfmsg_cb, queue_size=1)
+
+	def tfmsg_cb(self, tfmsg):
+		rospy.loginfo("Recieved Tf on %s" % self.topic)
+		for ts in tfmsg.transforms:
+			self.tfb.sendTransformMessage(ts)
+		# rospy.loginfo("Broadcasted Transforms")
+
+
+class Tf_Broadcaster(Thread):
+	def __init__(self, rate, topic, tfl):
+		Thread.__init__(self)
+		self.setDaemon(True)
+
+		self.tfl = tfl
+		self.parent_child = []
+		self.tfmsg = None
+		self.topic = topic
+		self.tfmsg_pub = rospy.Publisher(topic, tfMessage, queue_size=1)
+		self.rate = rate
+
+	def get_ts(self, parent, child):
+		self.tfl.waitForTransform(child, parent, rospy.Time(0), rospy.Duration(4))
+		(T,R) = self.tfl.lookupTransform(parent, child, rospy.Time(0))
+		tfs = TransformStamped()
+		tfs.header.stamp = rospy.Time.now()
+		tfs.header.frame_id = parent
+		tfs.child_frame_id = child
+		tfs.transform.rotation = Quaternion(R[0],R[1],R[2],R[3])
+		tfs.transform.translation = Vector3(T[0],T[1],T[2])
+		return tfs
+
+	def broadcast_transforms(self):
+		self.tfmsg = tfMessage()
+		for parent, child in self.parent_child:
+			ts = self.get_ts(parent, child)
+			# rospy.loginfo("Got transform %s -> %s" % (parent, child))
+			self.tfmsg.transforms.append(ts)
+
+		if len(self.tfmsg.transforms) > 0:
+			rospy.loginfo("Published Transforms to %s" % self.topic)
+			self.tfmsg_pub.publish(self.tfmsg)
+
+	def run(self):
+		while not rospy.is_shutdown():
+			self.broadcast_transforms()
+			self.rate.sleep()
+
 
 class Tf_to_Unity:
 	def __init__(self):
 		rospy.init_node('Tf_to_Unity')
 
+		rospy.sleep(5)
+
 		self.tfl = TransformListener()
+		self.tfb = TransformBroadcaster()
+
+		outgoing_tf = rospy.get_param("~outgoing")
+		incoming_tf = rospy.get_param("~incoming")
+
+		if incoming_tf != "":
+			self.tf_l = Tf_Listener("/server/tf", self.tfb)
+
+		if outgoing_tf != "":
+			self.tf_b = Tf_Broadcaster(rospy.Rate(10), outgoing_tf, self.tfl)
+			self.tf_b.parent_child = [
+				["global_map", "gatlin"],
+				["global_map", "baxter"]
+			]
+			self.tf_b.start()
 
 		# GRIPPER_FRAME = 'gripper_active_link'
 		# TOOL_FRAME = 'tool_tip_link'
@@ -86,14 +156,14 @@ class Tf_to_Unity:
 		# arm_base_in_base = Tf_Transformer(self.tfl, ARM_BASE_FRAME, BASE_FRAME, rospy.Rate(1))
 		# transform_pubs.append(arm_base_in_base)
 
-		left_gripper_in_base = Tf_Transformer(self.tfl, LEFT_GRIPPER_FRAME, BASE_FRAME, rospy.Rate(6))
-		transform_pubs.append(left_gripper_in_base)
+		# left_gripper_in_base = Tf_Transformer(self.tfl, LEFT_GRIPPER_FRAME, BASE_FRAME, rospy.Rate(6))
+		# transform_pubs.append(left_gripper_in_base)
 		
-		right_gripper_in_base = Tf_Transformer(self.tfl, RIGHT_GRIPPER_FRAME, BASE_FRAME, rospy.Rate(6))
-		transform_pubs.append(right_gripper_in_base)
+		# right_gripper_in_base = Tf_Transformer(self.tfl, RIGHT_GRIPPER_FRAME, BASE_FRAME, rospy.Rate(6))
+		# transform_pubs.append(right_gripper_in_base)
 
-		for tp in transform_pubs:
-			tp.start()
+		# for tp in transform_pubs:
+		# 	tp.start()
 
 		rospy.spin()
 

@@ -151,11 +151,11 @@
 
     var hub_ip = "192.168.4.81";
     // var hub_ip = "128.84.103.242";
-    // var gatlin_ip = "192.168.4.8?";
+    var gatlin_ip = "192.168.4.82";
     var baxter_ip = "128.84.103.242";
 
     hub_ros = createROS("hub", hub_ip, 9090);
-    // gatlin_ros = createROS("gatlin", gatlin_ip, 9090);
+    gatlin_ros = createROS("gatlin", gatlin_ip, 9080);
     baxter_ros = createROS("baxter", baxter_ip, 8080);
 
     // gatlin -> unity
@@ -167,6 +167,8 @@
     // forwardTopic(gatlin_ros, hub_ros, '/camera_link_in_base_link', 'geometry_msgs/PoseStamped');
     // forwardTopic(gatlin_ros, hub_ros, '/map_pose', 'geometry_msgs/PoseStamped');
     // forwardTopic(gatlin_ros, hub_ros, '/gatlin/objectlist', 'gatlin/ObjectList');
+    forwardTopic(gatlin_ros, hub_ros, '/gatlin/ar_marker_list', 'gatlin/ObjectList');
+    forwardTopic(gatlin_ros, hub_ros, '/gatlin_mott_response', 'std_msgs/String');
 
     // unity -> gatlin
     // forwardTopic(hub_ros, gatlin_ros, '/gatlin_cmd', 'std_msgs/Int32');
@@ -179,6 +181,9 @@
     // forwardTopic(hub_ros, gatlin_ros, '/arm_target_pose', 'geometry_msgs/PoseStamped');
     // forwardTopic(hub_ros, gatlin_ros, '/gatlin_mott', 'gatlin/Mott');
     // forwardTopic(hub_ros, gatlin_ros, '/gatlin_mott_command', 'std_msgs/String');
+    forwardTopic(hub_ros, gatlin_ros, '/server/tf', 'tf/tfMessage');
+    forwardTopic(hub_ros, gatlin_ros, '/server/ar_marker_list', 'gatlin/ObjectList');
+    forwardTopic(hub_ros, gatlin_ros, '/gatlin_mott', 'gatlin/Mott');
 
     // TODO:
     // test the gatlin hub link with unity client connected to lab computer ip
@@ -191,6 +196,7 @@
     forwardTopic(hub_ros, baxter_ros, '/baxter_cmd_vel_right', 'geometry_msgs/Twist');
     forwardTopic(hub_ros, baxter_ros, '/baxter_right_mott', 'gatlin/Mott');
     forwardTopic(hub_ros, baxter_ros, '/server/ar_marker_list', 'gatlin/ObjectList');
+    forwardTopic(hub_ros, baxter_ros, '/server/tf', 'tf/tfMessage');
 
     // baxter -> unity
     forwardTopic(baxter_ros, hub_ros, '/left_gripper_in_base', 'geometry_msgs/PoseStamped');

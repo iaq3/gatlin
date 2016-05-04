@@ -28,32 +28,37 @@ class MRC:
         self.crq = CommandReqQueue()
         self.crq.add_robot("baxter_left")
         self.crq.add_robot("baxter_right")
+        self.crq.add_robot("gatlin")
 
         self.init_robots()
-
-        self.display_workspaces()
         
         self.wcg = WorkspaceConnectivityGraph(self.robots, self.crq, self.tfl)
 
         m = Mott()
         m.command = "mott"
         m.object_pose_topic = "ar_8"
-        m.target_pose_topic = "hp_2"
+        m.target_pose_topic = "target_1"
 
         # m.object_pose = PoseStamped()
 
         table_z = -.230
-        m.object_pose.header.frame_id = "base"
-        m.object_pose.header.stamp = rospy.Time.now()
-        m.object_pose.pose.position = Point(.6,-.5, table_z)
-        m.object_pose.pose.orientation = Quaternion(0,1,0,0)
+        # m.object_pose.header.frame_id = "baxter"
+        # m.object_pose.header.stamp = rospy.Time.now()
+        # m.object_pose.pose.position = Point(.6,-.5, table_z)
+        # m.object_pose.pose.orientation = Quaternion(0,1,0,0)
         
         hp2_z = -0.548
-        m.target_pose.header.frame_id = "base"
+        m.target_pose.header.frame_id = "baxter"
         m.target_pose.header.stamp = rospy.Time.now()
-        # m.target_pose.pose.position = Point(.6,-.5, table_z)
-        m.target_pose.pose.position = Point(-0.1,0.725, hp2_z)
+        m.target_pose.pose.position = Point(.6,-.5, table_z)
+        # m.target_pose.pose.position = Point(-0.1,0.725, hp2_z)
         m.target_pose.pose.orientation = Quaternion(0,1,0,0)
+        # rospy.logerr(m)
+
+        m.object_pose.header.frame_id = "gatlin"
+        # m.object_pose.header.stamp = rospy.Time.now()
+        # m.object_pose.pose.position = Point(0.21,-0.37, 0.03)
+        # m.object_pose.pose.orientation = Quaternion(0,1,0,0)
         mott_json = json_message_converter.convert_ros_message_to_json(m)
 
         # test CommandRequestList
@@ -73,6 +78,7 @@ class MRC:
                 if cmd != None:
                     # rospy.logerr(cmd)
                     r.execute_command(cmd)
+            self.display_workspaces()
             rate.sleep()
 
         rospy.spin()
@@ -90,34 +96,34 @@ class MRC:
             Workspace(
                 Point( 0.80,-0.10,-0.60),
                 Point(-0.30, 0.80, 0.70),
-                "base"
+                "baxter"
                 # "global_map"
             ),
             self.crq
         )
         self.robots.append(baxter_left)
-        self.baxter_left = baxter_left
+        # self.baxter_left = baxter_left
 
         baxter_right = Robot("baxter_right",  1.0,
             Workspace(
                 Point( 0.80,-0.80,-0.60),
                 Point(-0.30, 0.10, 0.70),
-                "base"
+                "baxter"
             ),
             self.crq
         )
         self.robots.append(baxter_right)
 
-        # height = 0.3
-        # gatlin = Robot("gatlin", 0.6,
-        #     Workspace(
-        #         Point(-5.0,-5.0,0.0),
-        #         Point(5.0,5.0,height),
-        #         "base_link"
-        #     ),
-            # self.crq
-        # )
-        # self.robots.append(gatlin)
+        height = 0.4
+        gatlin = Robot("gatlin", 0.6,
+            Workspace(
+                Point(-5.0,-5.0,0.0),
+                Point(5.0,5.0,height),
+                "gatlin"
+            ),
+            self.crq
+        )
+        self.robots.append(gatlin)
 
         # youbot = Robot("youbot", 0.6, 
         #     Workspace(
@@ -143,14 +149,15 @@ class MRC:
     def display_workspaces(self):
         self.workspace_pub = rospy.Publisher("/workspace_markers", Marker, queue_size = 1)
         
-        rate = rospy.Rate(10)
+        rate = rospy.Rate(30)
         # while not rospy.is_shutdown():
         for x in range(0,20):
             for i in range(0,len(self.robots)):
-                self.display_workspace(self.robots[i].workspace, i)
+                self.display_workspace(self.robots[i], i)
             rate.sleep()
 
-    def display_workspace(self, workspace, i):
+    def display_workspace(self, robot, i):
+        workspace = robot.workspace
         center, dimensions = workspace.getCenterDimensions()
 
         marker = Marker()
@@ -162,6 +169,8 @@ class MRC:
         marker.scale.x = dimensions[0]
         marker.scale.y = dimensions[1]
         marker.scale.z = dimensions[2]
+        marker.color.r = robot.color
+        marker.color.b = 1-robot.color
         marker.color.a = 0.5
         marker.pose.orientation.w = 1.0
         marker.pose.position.x = center[0]
@@ -178,6 +187,7 @@ class MRC:
         for cmd in cmd_req.commands:
             if cmd.action == "mott":
                 cmd.args = cmd.args.replace("'", "\"")
+                # rospy.logerr(cmd)
                 mott = json_message_converter.convert_json_to_ros_message('gatlin/Mott', cmd.args)
                 # rospy.logerr(mott)
                 
@@ -232,6 +242,7 @@ class Workspace:
             inx = self.between(point.x, self.p1.x, self.p2.x)
             iny = self.between(point.y, self.p1.y, self.p2.y)
             inz = self.between(point.z, self.p1.z, self.p2.z)
+            # rospy.logerr("%r, %r, %r," % (inx, iny, inz))
             return inx and iny and inz
 
         def getCenterDimensions(self):
@@ -313,8 +324,8 @@ class WorkspaceConnectivityGraph:
 
         self.cmd_idx = 0
 
-        # self.fixed_frame = "global_map"
-        self.fixed_frame = "base"
+        self.fixed_frame = "global_map"
+        # self.fixed_frame = "base"
         self.dm = DynamicManager(self.tfl)
         self.dm.add_ol_sub("/server/ar_marker_list")
 
@@ -405,7 +416,7 @@ class WorkspaceConnectivityGraph:
         hp_1 = Workspace(
             Point(0.70,-0.10, table_z-.01),
             Point(0.50, 0.10, table_z+.01),
-            "base"
+            "baxter"
         )
         self.add_hp("hp_1", hp_1)
 
@@ -413,7 +424,7 @@ class WorkspaceConnectivityGraph:
         hp_2 = Workspace(
             Point(-0.45, 0.60, hp2_z-.01),
             Point(0.25, 0.85, hp2_z+.01),
-            "base"
+            "baxter"
         )
         self.add_hp("hp_2", hp_2)
 
@@ -436,9 +447,10 @@ class WorkspaceConnectivityGraph:
 
         self.hps.append(hp_dp)
 
-        # given a obj determine if it is in the robots wksp
+        # given a hp determine if it is in the robots wksp
         for robot in self.robots:
-            inside = robot.workspace.inside_workspace(hp_dp.ps.pose.position)
+            local_ps = self.transform_pose(robot.workspace.reference_frame, hp_dp.ps)
+            inside = robot.workspace.inside_workspace(local_ps.pose.position)
             # if inside then add an edge
             if inside:
                 robot_to_hp = self.getDist(robot, hp_dp)
@@ -464,7 +476,8 @@ class WorkspaceConnectivityGraph:
 
         # given a obj determine if it is in the robots wksp
         for robot in self.robots:
-            inside = robot.workspace.inside_workspace(object_dp.ps.pose.position)
+            local_ps = self.transform_pose(robot.workspace.reference_frame, object_dp.ps)
+            inside = robot.workspace.inside_workspace(local_ps.pose.position)
             # if inside then add an edge
             if inside:
                 robot_to_obj = self.getDist(robot, object_dp)
@@ -485,7 +498,8 @@ class WorkspaceConnectivityGraph:
 
         # given a target determine if it is in the robots wksp
         for robot in self.robots:
-            inside = robot.workspace.inside_workspace(target_dp.ps.pose.position)
+            local_ps = self.transform_pose(robot.workspace.reference_frame, target_dp.ps)
+            inside = robot.workspace.inside_workspace(local_ps.pose.position)
             # if inside then add an edge
             if inside:
                 robot_to_target = self.getDist(robot, target_dp)
