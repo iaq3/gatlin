@@ -49,12 +49,14 @@ def getAverageTransform(transforms):
 		mean_rotation = np.mean(rotations, axis=0)
 
 		error_translations = translations - mean_translation
-		norm_error_translations = np.linalg.norm(error_translations, axis=1)
+		norm_error_translations = np.apply_along_axis(np.linalg.norm, 1, error_translations)
+		# norm_error_translations = np.linalg.norm(error_translations, axis=1)
 		mean_norm_error_translation = np.mean(norm_error_translations)
 		std_dev_norm_error_translation = np.std(norm_error_translations)
 
 		error_rotations = rotations - mean_rotation
-		norm_error_rotations = np.linalg.norm(error_rotations, axis=1)
+		norm_error_rotations = np.apply_along_axis(np.linalg.norm, 1, error_rotations)
+		# norm_error_rotations = np.linalg.norm(error_rotations, axis=1)
 		mean_norm_error_rotation = np.mean(norm_error_rotations)
 		std_dev_norm_error_rotation = np.std(norm_error_rotations)
 

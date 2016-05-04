@@ -27,7 +27,7 @@
 
 <!-- <node pkg="gatlin" type="vision.py" name="vision" output="screen"/> -->
 
-<!-- <node pkg="gatlin" type="arm_controller.py" name="arm_controller" output="screen"/> -->
+<node pkg="gatlin" type="arm_controller.py" name="arm_controller" output="screen"/>
 
 <node pkg="gatlin" type="tf_to_unity.py" name="tf_to_unity"/>
 

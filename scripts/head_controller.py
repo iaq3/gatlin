@@ -7,6 +7,7 @@ from std_msgs.msg import *
 from geometry_msgs.msg import *
 from gatlin.msg import *
 from gatlin.srv import *
+from config import *
 from tf.transformations import *
 from copy import deepcopy
 
@@ -26,29 +27,17 @@ class Head_Controller:
 		self.head_pos_sub = rospy.Subscriber("/head_pos", Vector3, self.head_callback, queue_size=3)
 
 		move_head_service = createService('gatlin/move/head', MoveRobot, self.handle_move_head)
-		self.test_head_pose_pub = rospy.Publisher('/test_head_pose', PoseStamped, queue_size=1)
+		# self.test_head_pose_pub = rospy.Publisher('/test_head_pose', PoseStamped, queue_size=1)
 
 		self.tfl = tf.TransformListener()
 
 		rospy.sleep(5)
 
-		# center the head
-		# self.head_set(0.0,0.0)
-
-		# lower the head to look at the floor
-		# req = MoveRobotRequest()
-		# req.action = "LOOK_DOWN"
-		# self.handle_move_head(req)
-
-		# Test LookAt
 		req = MoveRobotRequest()
-		req.action = "LOOK_AT"
-		req.ps.header.frame_id = "base_link"
-		# req.ps.header.frame_id = "global_map"
-		req.ps.header.stamp = rospy.Time.now()
-		req.ps.pose.position = Point(.1, 0, 0)
-		req.ps.pose.orientation = Quaternion(0, 0, 0, 1)
-
+		req.action = "LOOK_DOWN"
+		# req.action = "LOOK_DOWNWARD"
+		# req.action = "LOOK_FORWARD"
+		# req.action = "LOOK_UP"
 		self.handle_move_head(req)
 
 		rospy.spin()
@@ -66,6 +55,10 @@ class Head_Controller:
 		elif req.action == "LOOK_FORWARD" :
 			rospy.loginfo("Looking Forward")
 			self.head_set(0.0,0.0)
+
+		elif req.action == "LOOK_DOWNWARD" :
+			rospy.loginfo("Looking Downward")
+			self.head_set(0.0,0.75)
 
 		elif req.action == "LOOK_UP" :
 			rospy.loginfo("Looking Up")
@@ -124,7 +117,7 @@ class Head_Controller:
 	def LookAt(self, ps) :
 		look_at_ps = self.transform_pose(self.REFERENCE_FRAME, ps)
 
-		self.test_head_pose_pub.publish(look_at_ps)
+		# self.test_head_pose_pub.publish(look_at_ps)
 
 		headPt = PointStamped()
 		headPt.header.frame_id = self.REFERENCE_FRAME

@@ -67,7 +67,7 @@ class Nav_Manip_Controller :
 			rospy.logerr("RESET_ARM FAILED")
 
 		rate = rospy.Rate(30)
-		goal_tolerence = .7
+		goal_tolerence = 1.5
 
 		if self.distanceToPose(dynamic_pose.ps) > goal_tolerence :
 			self.publishResponse("Gmap base to %s_%s" % (dynamic_pose.color, dynamic_pose.id))
@@ -101,8 +101,15 @@ class Nav_Manip_Controller :
 		self.publishResponse("Servo base to %s_%s" % (dynamic_pose.color, dynamic_pose.id))
 
 		rate = rospy.Rate(30)
-		desired_pos = Point(.30,0,0)
-		goal_tolerence = .025
+		if "%s_%s" % (dynamic_pose.color, dynamic_pose.id) == "ar_6":
+			rospy.logerr("MOVING TO HP")
+			desired_pos = Point(.44,0,0) # z is set to 0 when checking error
+			resp = self.move_head("LOOK_DOWNWARD", PoseStamped())
+			goal_tolerence = .035
+		else:
+			desired_pos = Point(.30,0,0)
+			resp = self.move_head("LOOK_DOWN", PoseStamped())
+			goal_tolerence = .025
 
 		base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
 		while self.servo_base_to_pos(desired_pos, base_pose.pose.position) > goal_tolerence :
@@ -133,7 +140,7 @@ class Nav_Manip_Controller :
 
 				offset_t = Transform()
 				# offset_t.translation = Vector3(-0.093, -0.019, 0.005)
-				offset_t.translation = Vector3(-0.042, 0.00, -0.025)
+				offset_t.translation = Vector3(-0.025, 0.00, -0.025)
 				offset_t.rotation = Quaternion(0.0, 0.0, 0.0, 1.0)
 				# offset_t.rotation = Quaternion(0.620, 0.658, -0.305, -0.298)
 				# offset_inv_t = inverse_transform(offset_t)
@@ -151,6 +158,7 @@ class Nav_Manip_Controller :
 			# base_pose_offset = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
 			base_pose_offset = getOffsetPose()
 			resp = self.move_arm("MOVE_TO_POSE_INTERMEDIATE", base_pose_offset)
+
 			if not resp.success:
 				rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
 				# try moving to it again
@@ -185,8 +193,14 @@ class Nav_Manip_Controller :
 		self.pauseCommand()
 
 		self.publishResponse("Releasing object to %s_%s" % (dynamic_pose.color, dynamic_pose.id))
-		base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
-		resp = self.move_arm("MOVE_TO_POSE_INTERMEDIATE", base_pose)
+
+		if "%s_%s" % (dynamic_pose.color, dynamic_pose.id) == "ar_6":
+			resp = self.move_arm("PLACE_UPPER", PoseStamped())
+			rospy.logerr("PLACE_UPPER")
+		else:
+			base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
+			resp = self.move_arm("MOVE_TO_POSE_INTERMEDIATE", base_pose)
+
 		if not resp.success:
 			rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
 		resp = self.move_arm("OPEN_GRIPPER", PoseStamped())
@@ -199,13 +213,13 @@ class Nav_Manip_Controller :
 			rospy.sleep(delay)
 
 	def run_mott_sequence(self) :
+		resp = self.move_arm("OPEN_GRIPPER", PoseStamped())
 		resp = self.move_arm("RESET_ARM", PoseStamped())
 		if not resp.success:
 			rospy.logerr("RESET_ARM FAILED")
 
-		while self.object_dp.ps == None:
-			rospy.logerr("no object pose")
-			rospy.sleep(1)
+		if self.object_dp.ps == None:
+			self.search_sequence(self.object_dp)
 
 		self.moveBaseToDynamicPos(self.object_dp)
 
@@ -213,8 +227,11 @@ class Nav_Manip_Controller :
 		self.servoBaseToDynamicPos(self.object_dp)
 		self.interActionDelay(1)
 
-		self.grabObject(self.object_dp)		
+		self.grabObject(self.object_dp)
 		self.interActionDelay(1)
+
+		if self.target_dp.ps == None:
+			self.search_sequence(self.target_dp)
 
 		self.moveBaseToDynamicPos(self.target_dp)
 		self.servoBaseToDynamicPos(self.target_dp)
@@ -244,20 +261,37 @@ class Nav_Manip_Controller :
 		elif self.command_state == self.CANCELLED :
 			self.publishResponse("quitting on user command")
 
-	def search_sequence(self) :
-		resp = self.move_arm("RESET_ARM", PoseStamped())
-		if not resp.success:
-			rospy.logerr("RESET_ARM FAILED")
+	def search_sequence(self, dp) :
 
-		self.moveBaseToDynamicPos(self.target_dp)
-		self.servoBaseToDynamicPos(self.target_dp)
+		rospy.logerr("Searching for %s_%s" % (dp.color, dp.id))
 		
-		if self.command_state == self.RUNNING :
-			self.publishResponse("finished moving base to target")
-		elif self.command_state == self.PAUSING :
-			self.publishResponse("finished move base while pausing!?!?") 
-		elif self.command_state == self.CANCELLED :
-			self.publishResponse("quitting on user command")
+		# resp = self.move_head("LOOK_DOWN", PoseStamped())
+
+		ps = PoseStamped()
+		ps.header.frame_id = "base_link"
+		ps.header.stamp = rospy.Time.now()
+		ps.pose.position = Point(0.46, 0.00, 0.60)
+
+		while dp.ps == None:
+			ps.pose.position.z -= .05
+			resp = self.move_head("LOOK_AT", ps)
+			rospy.logerr("%s_%s not found yet" % (dp.color, dp.id))
+			rospy.sleep(1.5)
+
+		rospy.logerr("%s_%s found!" % (dp.color, dp.id))
+		# resp = self.move_arm("RESET_ARM", PoseStamped())
+		# if not resp.success:
+		# 	rospy.logerr("RESET_ARM FAILED")
+
+		# self.moveBaseToDynamicPos(self.target_dp)
+		# self.servoBaseToDynamicPos(self.target_dp)
+		
+		# if self.command_state == self.RUNNING :
+		# 	self.publishResponse("finished moving base to target")
+		# elif self.command_state == self.PAUSING :
+		# 	self.publishResponse("finished move base while pausing!?!?") 
+		# elif self.command_state == self.CANCELLED :
+		# 	self.publishResponse("quitting on user command")
 
 	def MottCallback(self, data) :
 
@@ -313,7 +347,7 @@ class Nav_Manip_Controller :
 
 	def gmapBaseTo(self, ps) :
 		map_target_pose = self.transform_pose("map", ps)
-		map_robot_pose = self.transform_pose("map", self.robot_pose.ps)
+		# map_robot_pose = self.transform_pose("map", self.robot_pose.ps)
 		map_target_pose.pose.orientation = map_robot_pose.pose.orientation
 		self.gmap_base_pub.publish(map_target_pose)
 
@@ -376,6 +410,7 @@ class Nav_Manip_Controller :
 		rospy.Subscriber("/%s_mott_command" % robot, String, self.MottCommandCallback, queue_size = 1)
 
 		self.move_arm = createServiceProxy("%s/move/arm" % robot, MoveRobot)
+		self.move_head = createServiceProxy("%s/move/head" % robot, MoveRobot)
 
 		self.test_pose_pub = rospy.Publisher('/test_obj_pose', PoseStamped)
 
