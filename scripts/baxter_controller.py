@@ -27,12 +27,16 @@ class BaxterController():
         self.hand_pose = Pose()
 
         self.limb_name = rospy.get_param('~limb')
-        # self.limb_name = "left"
+        # self.limb_name = "right"
         self.robot_name = "baxter"
 
         self.limb = Limb(self.limb_name)
         
         self.gripper = Gripper(self.limb_name)
+
+
+
+        rospy.Subscriber("/robot/end_effector/"+self.limb_name+"_gripper/state", EndEffectorState, self.respondToEndEffectorState)
 
         rospy.Subscriber("/robot/limb/"+self.limb_name+"/endpoint_state", EndpointState, self.respondToEndpoint)
         
@@ -95,6 +99,12 @@ class BaxterController():
     def respondToEndpoint(self, EndpointState) :
         self.hand_pose = deepcopy(EndpointState.pose)
 
+    def respondToEndEffectorState(self, EndEffectorState) :
+        self.hand_state = deepcopy(EndEffectorState)
+        # rospy.logerr(self.hand_state.gripping)
+        # rospy.logerr(self.hand_state)
+
+
 
     def handle_move_robot(self, req):
         rospy.sleep(.2)
@@ -119,6 +129,13 @@ class BaxterController():
             gripper.close(block=True)
             # rospy.sleep(GRIPPER_WAIT)
             rospy.loginfo("Closed Gripper")
+
+            rospy.sleep(.1)
+            if self.hand_state.force > 12.0:
+                rospy.logerr(self.limb_name+" gripper is gripping!")
+            else:
+                rospy.logerr(self.limb_name+" gripper did not grip.")
+                success = False
 
         elif req.action == "MOVE_TO_POSE_INTERMEDIATE" :
             rospy.loginfo("Trying to Move To Pose")
@@ -146,7 +163,7 @@ class BaxterController():
         elif req.action == "RESET_ARM" :
             rospy.loginfo("Trying to Reset Arm")
             rest_pose = Pose()
-            rest_pose.position = Point(0.5, 0.5, 0.1)
+            rest_pose.position = Point(0.55, 0.45, 0.07)
             rest_pose.orientation = Quaternion(0.0,1.0,0.0,0.0)
 
             if self.limb_name == "right": rest_pose.position.y *= -1
@@ -170,7 +187,7 @@ class BaxterController():
         arm = self.limb
         hand_pose = self.getCurrentPose(arm)
         max_z = max(hand_pose.position.z, pose.position.z)
-        offset = .08
+        offset = .06
         if inter1 :
             interpose1 = self.getOffsetPose(hand_pose, offset)
             interpose1.position.z = max_z + offset

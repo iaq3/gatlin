@@ -27,74 +27,82 @@ def angle(v1, v2):
 class Nav_Manip_Controller :
 
 	def grabObject(self, dynamic_pose) :
-		#holding_object = False
-		#while not holding_object :
-		while True:
-			if self.command_state == self.CANCELLED :
+		holding_object = False
+		while not holding_object :
+			max_tries = 3
+			num_tries = 0
+			base_pose_offset = None
+			while num_tries < max_tries:
+				if self.command_state == self.CANCELLED :
+					return
+				self.pauseCommand()
+
+				self.publishResponse("Attempting to grab %s_%s" % (dynamic_pose.color, dynamic_pose.id))
+
+				resp = self.move_arm("OPEN_GRIPPER", PoseStamped())
+
+				def getOffsetPose():
+					# rospy.logerr(dynamic_pose.ps)
+					base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
+					base_to_ar_t = transform_from_pose(base_pose.pose)
+
+					offset_t = Transform()
+					offset_t.translation = Vector3(-0.010, -0.000, -0.084)
+					offset_t.rotation = Quaternion(-0.7071, -0.7071, 0.0000, 0.0000)
+					# offset_inv_t = inverse_transform(offset_t)
+
+					base_to_offset_t = multiply_transforms(base_to_ar_t, offset_t)
+					base_pose_offset = deepcopy(base_pose)
+					base_pose_offset.pose = transform_to_pose(base_to_offset_t)
+
+					q = base_pose_offset.pose.orientation
+					rpy = euler_from_quaternion([q.x,q.y,q.z,q.w])
+					q = quaternion_from_euler(3.1415, 0.0, rpy[2])
+					base_pose_offset.pose.orientation = Quaternion(q[0],q[1],q[2],q[3])
+					return base_pose_offset
+
+				# base_pose_offset = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
+				base_pose_offset = getOffsetPose()
+
+
+				base_pose_offset.pose.position.z += .10
+				resp = self.move_arm("MOVE_TO_POSE_INTERMEDIATE", base_pose_offset)
+
+				# base_pose_offset = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
+				base_pose_offset = getOffsetPose()
+				resp = self.move_arm("MOVE_TO_POSE_INTERMEDIATE", base_pose_offset)
+
+				repeat = False
+				if not resp.success:
+					rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
+					repeat = True
+					# try moving to it again
+					#self.servoBaseToDynamicPos(self.object_dp)
+					#TODO check this
+					rospy.sleep(.5)
+
+				if not repeat: break
+
+			if not num_tries < max_tries:
+				self.command_state = self.CANCELLED
 				return
+
 			self.pauseCommand()
 
-			self.publishResponse("Attempting to grab %s_%s" % (dynamic_pose.color, dynamic_pose.id))
+			resp = self.move_arm("CLOSE_GRIPPER", PoseStamped())
 
-			resp = self.move_arm("OPEN_GRIPPER", PoseStamped())
+			base_pose_offset.pose.position.z += .07
+			resp = self.move_arm("MOVE_TO_POSE", base_pose_offset)
 
-			def getOffsetPose():
-				# rospy.logerr(dynamic_pose.ps)
-				base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
-				base_to_ar_t = transform_from_pose(base_pose.pose)
+			resp = self.move_arm("CLOSE_GRIPPER", PoseStamped())
+			holding_object = resp.success
 
-				offset_t = Transform()
-				offset_t.translation = Vector3(-0.010, -0.000, -0.084)
-				offset_t.rotation = Quaternion(-0.7071, -0.7071, 0.0000, 0.0000)
-				# offset_inv_t = inverse_transform(offset_t)
+			self.pauseCommand()
 
-				base_to_offset_t = multiply_transforms(base_to_ar_t, offset_t)
-				base_pose_offset = deepcopy(base_pose)
-				base_pose_offset.pose = transform_to_pose(base_to_offset_t)
-
-				q = base_pose_offset.pose.orientation
-				rpy = euler_from_quaternion([q.x,q.y,q.z,q.w])
-				q = quaternion_from_euler(3.1415, 0.0, rpy[2])
-				base_pose_offset.pose.orientation = Quaternion(q[0],q[1],q[2],q[3])
-				return base_pose_offset
-
-			# base_pose_offset = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
-			base_pose_offset = getOffsetPose()
-
-
-			base_pose_offset.pose.position.z += .10
-			resp = self.move_arm("MOVE_TO_POSE_INTERMEDIATE", base_pose_offset)
-
-			# base_pose_offset = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
-			base_pose_offset = getOffsetPose()
-			resp = self.move_arm("MOVE_TO_POSE_INTERMEDIATE", base_pose_offset)
-
-			repeat = False
-			if not resp.success:
-				rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
-				repeat = True
-				# try moving to it again
-				#self.servoBaseToDynamicPos(self.object_dp)
-				#TODO check this
-				rospy.sleep(.5)
-
-			if not repeat: break
-
-		self.pauseCommand()
-
-		resp = self.move_arm("CLOSE_GRIPPER", PoseStamped())
-
-		self.pauseCommand()
-
-		#resp = self.move_arm("RESET_ARM", PoseStamped())
-		# base_pose.pose.position.z += .1
-		# resp = self.move_arm("MOVE_TO_POS", base_pose)
-		# if not resp.success:
-		# 	rospy.logerr("RESET_ARM FAILED")
-
-		# no object detection in last second, it is likely in robot's hand
-		#if time.time() - dynamic_pose.last_update > 1 :
-		#holding_object = True
+			if holding_object:
+				rospy.logerr("IN GRIPPER %s_%s" % (dynamic_pose.color, dynamic_pose.id))
+			else:
+				rospy.logerr("MISSED %s_%s" % (dynamic_pose.color, dynamic_pose.id))
 
 		self.publishResponse("Grabbed %s_%s" % (dynamic_pose.color, dynamic_pose.id))
 
@@ -131,6 +139,9 @@ class Nav_Manip_Controller :
 			rospy.logerr("object_pose not set")
 			return
 
+		if self.object_dp.ps == None or self.object_dp.ps.pose.position == Point():
+			self.search_sequence(self.object_dp)
+
 		# self.test_pose_pub.publish(self.object_dp.ps)
 
 		self.grabObject(self.object_dp)
@@ -148,7 +159,27 @@ class Nav_Manip_Controller :
 		elif self.command_state == self.PAUSING :
 			self.publishResponse("finished mott while pausing!?!?") 
 		elif self.command_state == self.CANCELLED :
-			self.publishResponse("quitting on user command") 
+			self.publishResponse("quitting on user command")
+
+	def search_sequence(self, dp) :
+
+		rospy.logerr("Searching for %s_%s" % (dp.color, dp.id))
+		
+		# resp = self.move_head("LOOK_DOWN", PoseStamped())
+
+		# ps = PoseStamped()
+		# ps.header.frame_id = "base_link"
+		# ps.header.stamp = rospy.Time.now()
+		# ps.pose.position = Point(0.46, 0.00, 0.60)
+
+		while dp.ps == None or dp.ps.pose.position == Point():
+			# ps.pose.position.z -= .05
+			# resp = self.move_head("LOOK_AT", ps)
+
+			rospy.logerr("%s_%s not found yet" % (dp.color, dp.id))
+			rospy.sleep(1.5)
+
+		rospy.logerr("%s_%s found!" % (dp.color, dp.id))
 
 	def MottCallback(self, data) :
 		# rospy.logerr(data)

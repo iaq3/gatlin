@@ -30,6 +30,9 @@ joint_names = ['s0', 's1', 'e0', 'e1', 'w0', 'w1', 'w2']
 # CHECK_BLOCKS = 15
 # MOVE_BLOCKS = 16
 
+def isEqualPoint(p1, p2):
+	return p1.x == p2.x and p1.y == p2.y and p1.z == p2.z
+
 def getAverageTransform(transforms):
 		# get mean translation and rotation
 		# rospy.logerr(transforms)

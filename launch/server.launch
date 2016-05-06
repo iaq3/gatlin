@@ -6,6 +6,7 @@
 
 	<include file="$(find gatlin)/launch/baxter_tf.launch" />
 	<node pkg="gatlin" type="tf_to_unity.py" name="server_tf_manager" output="screen">
+		<param name="unity" value="false"/>
 		<param name="incoming" value=""/>
 		<param name="outgoing" value="/server/tf"/>
 	</node>

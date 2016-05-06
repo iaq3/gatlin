@@ -23,12 +23,12 @@ class Tf_Transformer(Thread):
 		self.child_pose = None
 
 	def run(self):
-		self.frames = []
-		while not rospy.is_shutdown() and len(self.frames) <= 0:
-			self.frames = self.tfl.getFrameStrings()
-			self.rate.sleep()
+		# self.frames = []
+		# while not rospy.is_shutdown() and len(self.frames) <= 0:
+		# 	self.frames = self.tfl.getFrameStrings()
+		# 	self.rate.sleep()
 
-		print self.frames
+		# print self.frames
 
 		while not rospy.is_shutdown():
 			self.get_pose()
@@ -50,8 +50,8 @@ class Tf_Transformer(Thread):
 
 			if self.child_pose != None:
 				self.pose_pub.publish(self.child_pose)
-				print '%s_in_%s' % (self.child, self.parent)
-				print self.child_pose
+				# print '%s_in_%s' % (self.child, self.parent)
+				# print self.child_pose
 
 		except Exception as e:
 			print e
@@ -119,6 +119,7 @@ class Tf_to_Unity:
 		self.tfl = TransformListener()
 		self.tfb = TransformBroadcaster()
 
+		unity = rospy.get_param("~unity")
 		outgoing_tf = rospy.get_param("~outgoing")
 		incoming_tf = rospy.get_param("~incoming")
 
@@ -140,30 +141,35 @@ class Tf_to_Unity:
 		# HEAD_FRAME = 'head_base_link'
 		# KINECT_FRAME = 'camera_link'
 		# CAMERA_RGB_OPTICAL_FRAME = 'camera_rgb_optical_frame'
+		rospy.logerr(unity)
+		if unity:
+			FIXED_FRAME = 'global_map'
+			BASE_FRAME = 'base'
+			LEFT_GRIPPER_FRAME = 'left_gripper'
+			RIGHT_GRIPPER_FRAME = 'right_gripper'
 
-		BASE_FRAME = 'base'
-		LEFT_GRIPPER_FRAME = 'left_gripper'
-		RIGHT_GRIPPER_FRAME = 'right_gripper'
+			transform_pubs = []
 
-		transform_pubs = []
+			# kinect_in_base = Tf_Transformer(self.tfl, KINECT_FRAME, BASE_FRAME, rospy.Rate(10)) # use different rates for less msg collisions?
+			# transform_pubs.append(kinect_in_base)
 
-		# kinect_in_base = Tf_Transformer(self.tfl, KINECT_FRAME, BASE_FRAME, rospy.Rate(10)) # use different rates for less msg collisions?
-		# transform_pubs.append(kinect_in_base)
+			# gripper_in_base = Tf_Transformer(self.tfl, TOOL_FRAME, BASE_FRAME, rospy.Rate(9))
+			# transform_pubs.append(gripper_in_base)
 
-		# gripper_in_base = Tf_Transformer(self.tfl, TOOL_FRAME, BASE_FRAME, rospy.Rate(9))
-		# transform_pubs.append(gripper_in_base)
+			# arm_base_in_base = Tf_Transformer(self.tfl, ARM_BASE_FRAME, BASE_FRAME, rospy.Rate(1))
+			# transform_pubs.append(arm_base_in_base)
 
-		# arm_base_in_base = Tf_Transformer(self.tfl, ARM_BASE_FRAME, BASE_FRAME, rospy.Rate(1))
-		# transform_pubs.append(arm_base_in_base)
+			left_gripper_in_base = Tf_Transformer(self.tfl, LEFT_GRIPPER_FRAME, BASE_FRAME, rospy.Rate(6))
+			transform_pubs.append(left_gripper_in_base)
+			
+			right_gripper_in_base = Tf_Transformer(self.tfl, RIGHT_GRIPPER_FRAME, BASE_FRAME, rospy.Rate(6))
+			transform_pubs.append(right_gripper_in_base)
 
-		# left_gripper_in_base = Tf_Transformer(self.tfl, LEFT_GRIPPER_FRAME, BASE_FRAME, rospy.Rate(6))
-		# transform_pubs.append(left_gripper_in_base)
-		
-		# right_gripper_in_base = Tf_Transformer(self.tfl, RIGHT_GRIPPER_FRAME, BASE_FRAME, rospy.Rate(6))
-		# transform_pubs.append(right_gripper_in_base)
+			base_in_global_map = Tf_Transformer(self.tfl, BASE_FRAME, FIXED_FRAME, rospy.Rate(6))
+			transform_pubs.append(base_in_global_map)
 
-		# for tp in transform_pubs:
-		# 	tp.start()
+			for tp in transform_pubs:
+				tp.start()
 
 		rospy.spin()
 

@@ -34,15 +34,31 @@ class MRC:
         
         self.wcg = WorkspaceConnectivityGraph(self.robots, self.crq, self.tfl)
 
+        # self.one_block_move()
+        # self.two_block_stack()
+
+        rate = rospy.Rate(1)
+        while not rospy.is_shutdown():
+            for r in self.robots:
+                cmd = self.crq.request_command(r.name)
+                if cmd != None:
+                    # rospy.logerr(cmd)
+                    r.execute_command(cmd)
+            self.display_workspaces()
+            rate.sleep()
+
+        rospy.spin()
+
+    def one_block_move(self):
         m = Mott()
         m.command = "mott"
-        m.object_pose_topic = "ar_8"
+        m.object_pose_topic = "ar_5"
         m.target_pose_topic = "target_1"
 
         # m.object_pose = PoseStamped()
 
         table_z = -.230
-        # m.object_pose.header.frame_id = "baxter"
+        m.object_pose.header.frame_id = "baxter"
         # m.object_pose.header.stamp = rospy.Time.now()
         # m.object_pose.pose.position = Point(.6,-.5, table_z)
         # m.object_pose.pose.orientation = Quaternion(0,1,0,0)
@@ -50,12 +66,12 @@ class MRC:
         hp2_z = -0.548
         m.target_pose.header.frame_id = "baxter"
         m.target_pose.header.stamp = rospy.Time.now()
-        m.target_pose.pose.position = Point(.6,-.5, table_z)
+        m.target_pose.pose.position = Point(.6,.5, table_z)
         # m.target_pose.pose.position = Point(-0.1,0.725, hp2_z)
         m.target_pose.pose.orientation = Quaternion(0,1,0,0)
         # rospy.logerr(m)
 
-        m.object_pose.header.frame_id = "gatlin"
+        # m.object_pose.header.frame_id = "gatlin"
         # m.object_pose.header.stamp = rospy.Time.now()
         # m.object_pose.pose.position = Point(0.21,-0.37, 0.03)
         # m.object_pose.pose.orientation = Quaternion(0,1,0,0)
@@ -71,17 +87,60 @@ class MRC:
 
         self.mr_command_req_callback(crl)
 
-        rate = rospy.Rate(1)
-        while not rospy.is_shutdown():
-            for r in self.robots:
-                cmd = self.crq.request_command(r.name)
-                if cmd != None:
-                    # rospy.logerr(cmd)
-                    r.execute_command(cmd)
-            self.display_workspaces()
-            rate.sleep()
+    def two_block_stack(self):
+        table_z = -.230
+        hp2_z = -0.548
+        block_width = .0385
 
-        rospy.spin()
+        crl = CommandRequestList()
+
+        m = Mott()
+        m.command = "mott"
+        m.object_pose_topic = "ar_3"
+        m.target_pose_topic = "target_1"
+
+        m.object_pose.header.frame_id = "baxter"
+        
+        m.target_pose.header.frame_id = "baxter"
+        m.target_pose.header.stamp = rospy.Time.now()
+        m.target_pose.pose.position = Point(.6,-.5, table_z)
+        # m.target_pose.pose.position = Point(-0.1,0.725, hp2_z)
+        m.target_pose.pose.orientation = Quaternion(0,1,0,0)
+
+        mott_json = json_message_converter.convert_ros_message_to_json(m)
+
+        cr = CommandRequest()
+        cr.id = "1"
+        cr.action = "mott"
+        cr.args = mott_json
+        crl.commands.append(cr)
+
+        m = Mott()
+        m.command = "mott"
+        m.object_pose_topic = "ar_5"
+        m.target_pose_topic = "target_2"
+
+        m.object_pose.header.frame_id = "baxter"
+        
+        m.target_pose.header.frame_id = "baxter"
+        m.target_pose.header.stamp = rospy.Time.now()
+        m.target_pose.pose.position = Point(.6,-.5, table_z+block_width)
+        # m.target_pose.pose.position = Point(-0.1,0.725, hp2_z)
+        m.target_pose.pose.orientation = Quaternion(0,1,0,0)
+        
+        mott_json = json_message_converter.convert_ros_message_to_json(m)
+
+        cr = CommandRequest()
+        cr.id = "2"
+        cr.action = "mott"
+        cr.args = mott_json
+        crl.commands.append(cr)
+
+        crl.parents = ["1"]
+        crl.children = ["2"]
+
+        # test CommandRequestList
+        self.mr_command_req_callback(crl)
 
     def find_robot(self, name):
         for r in self.robots:
@@ -184,6 +243,7 @@ class MRC:
         rospy.logerr(cmd_req)
 
         # recieve commands
+        generated_cmd_ids = {}
         for cmd in cmd_req.commands:
             if cmd.action == "mott":
                 cmd.args = cmd.args.replace("'", "\"")
@@ -213,18 +273,27 @@ class MRC:
 
                 # generate actions based on optimal path
                 if path != None:
-                    self.wcg.generate_commands(path)
+                    gci = self.wcg.generate_commands(path)
+                    # rospy.logerr(gci)
+                    generated_cmd_ids[cmd.id] = gci
 
-                # use dependencies to build action graph
-                # figure out how to keep track of all dependencies
-                for i in range(0, len(cmd_req.parents)):
-                    parent = cmd_req.parents[i]
-                    child = cmd_req.children[i]
-                    rospy.logerr(parent)
-                    rospy.logerr(child)
+                
 
             elif cmd.action == "move_base":
                 pass
+
+        # use dependencies to build update crq
+        # rospy.logerr(generated_cmd_ids)
+        for i in range(0, len(cmd_req.parents)):
+            parent = cmd_req.parents[i]
+            child = cmd_req.children[i]
+            # rospy.logerr(parent)
+            # rospy.logerr(child)
+
+            for parent_id in generated_cmd_ids[parent]:
+                for child_id in generated_cmd_ids[child]:
+                    # rospy.logerr("%s <- %s" % (parent_id, child_id))
+                    self.crq.add_dependency(parent_id, child_id)
 
 
 class Workspace:
@@ -356,6 +425,7 @@ class WorkspaceConnectivityGraph:
             return
 
         crl = CommandRequestList()
+        generated_cmd_ids = []
         for i in range(0, num_robots):
             robot_name = path[i*2+1]
             target_name = path[i*2+2]
@@ -383,8 +453,11 @@ class WorkspaceConnectivityGraph:
             crl.commands.append(cr)
 
             self.crq.add_command_req(cr, robot_name)
+            generated_cmd_ids.append(cr.id)
             if i > 0:
                 self.crq.add_dependency(cr.id-1, cr.id)
+
+        return generated_cmd_ids
 
 
     def find_target(self, target_name):
@@ -467,12 +540,19 @@ class WorkspaceConnectivityGraph:
         # create_dp
         object_dp = self.dm.create_dp(self.fixed_frame)
         object_dp.subscribe_name(obj_topic)
-        if obj_pose.pose != Pose():
-            object_dp.set_pose(obj_pose)
-        else:
+
+        if isEqualPoint(obj_pose.pose.position, Point(0,0,0)):
             rospy.logerr("obj_pose is identity")
+            while not rospy.is_shutdown() and isEqualPoint(object_dp.ps.pose.position, Point(0,0,0)):
+                rospy.logerr("object_dp not found")
+                rospy.sleep(.1)
+        else:
+            object_dp.set_pose(obj_pose)
+            # rospy.logerr(obj_pose)
+        rospy.sleep(.2)
 
         self.objects.append(object_dp)
+        # rospy.logerr(object_dp.ps)
 
         # given a obj determine if it is in the robots wksp
         for robot in self.robots:
@@ -488,11 +568,19 @@ class WorkspaceConnectivityGraph:
         self.color_map[obj_topic] = 0.5
         self.G.add_edge(obj_topic, robot, distance=robot_to_obj)
 
-    def add_target(self, target_topic, init_target_pose):
+    def add_target(self, target_topic, target_pose):
         # create_dp
         target_dp = self.dm.create_dp(self.fixed_frame)
         target_dp.subscribe_name(target_topic)
-        target_dp.set_pose(init_target_pose)
+
+        if isEqualPoint(target_pose.pose.position, Point(0,0,0)):
+            rospy.logerr("target_pose is identity")
+            while not rospy.is_shutdown() and isEqualPoint(target_dp.ps.pose.position, Point(0,0,0)):
+                rospy.logerr("target_dp not found")
+                rospy.sleep(.1)
+        else:
+            target_dp.set_pose(target_pose)
+        rospy.sleep(.2)
 
         self.targets.append(target_dp)
 

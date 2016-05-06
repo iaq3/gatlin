@@ -171,6 +171,8 @@ class FM:
         obj_width = .057
         self.create_obj_frame("8", obj_width)
         self.create_obj_frame("6", obj_width)
+        self.create_obj_frame("5", obj_width)
+        self.create_obj_frame("3", obj_width)
         
         rospy.sleep(1)
         rate = rospy.Rate(10)
