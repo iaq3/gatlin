@@ -34,16 +34,19 @@ class MRC:
         
         self.wcg = WorkspaceConnectivityGraph(self.robots, self.crq, self.tfl)
 
-        # self.one_block_move()
+        self.one_block_move()
         # self.two_block_stack()
+
+        self.crq_locked = False
 
         rate = rospy.Rate(1)
         while not rospy.is_shutdown():
-            for r in self.robots:
-                cmd = self.crq.request_command(r.name)
-                if cmd != None:
-                    # rospy.logerr(cmd)
-                    r.execute_command(cmd)
+            if not self.crq_locked:
+                for r in self.robots:
+                    cmd = self.crq.request_command(r.name)
+                    if cmd != None:
+                        # rospy.logerr(cmd)
+                        r.execute_command(cmd)
             self.display_workspaces()
             rate.sleep()
 
@@ -66,7 +69,7 @@ class MRC:
         hp2_z = -0.548
         m.target_pose.header.frame_id = "baxter"
         m.target_pose.header.stamp = rospy.Time.now()
-        m.target_pose.pose.position = Point(.6,.5, table_z)
+        m.target_pose.pose.position = Point(.6,-.5, table_z)
         # m.target_pose.pose.position = Point(-0.1,0.725, hp2_z)
         m.target_pose.pose.orientation = Quaternion(0,1,0,0)
         # rospy.logerr(m)
@@ -241,6 +244,7 @@ class MRC:
 
     def mr_command_req_callback(self, cmd_req):
         rospy.logerr(cmd_req)
+        self.crq_locked = True
 
         # recieve commands
         generated_cmd_ids = {}
@@ -268,8 +272,7 @@ class MRC:
                 path = self.wcg.find_shortest_path(mott.object_pose_topic, mott.target_pose_topic)
                 rospy.logerr(path)
 
-                self.wcg.draw()
-                self.wcg.show()
+                
 
                 # generate actions based on optimal path
                 if path != None:
@@ -295,6 +298,10 @@ class MRC:
                     # rospy.logerr("%s <- %s" % (parent_id, child_id))
                     self.crq.add_dependency(parent_id, child_id)
 
+        self.crq_locked = False
+        
+        self.wcg.draw()
+        self.wcg.show()
 
 class Workspace:
         def __init__(self, p1, p2, rf):

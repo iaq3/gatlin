@@ -13,11 +13,12 @@ class Translator:
         self.limb = baxter_interface.Limb(limb_name)
         self.limb_kin = baxter_pykdl.baxter_kinematics(limb_name)
 
-        rospy.Subscriber("/baxter_cmd_vel_%s" % limb_name, Twist, self.ex)
+        rospy.Subscriber("/baxter_cmd_vel_%s" % limb_name, Twist, self.cmd_vel)
+        rospy.Subscriber("/baxter_ex_vel_%s" % limb_name, Twist, self.ex)
 
         rospy.spin()
 
-    def ex(self, t):
+    def cmd_vel(self, t):
         vvector3 = Vector3()
         vvector3.x = t.linear.x
         vvector3.y = t.angular.z
@@ -26,6 +27,14 @@ class Translator:
         # v /= np.linalg.norm(v)
         v /= .4
         v *= .04
+
+        self.execute_velocity(v)
+
+    def ex(self, t):
+        v = vector3_to_numpy(t.linear)
+        self.execute_velocity(v)
+
+    def execute_velocity(self, v):
 
         twist = np.empty(6)
         twist[:3] = v
@@ -38,7 +47,7 @@ class Translator:
 
         joint_vel = numpy_to_joint_dict(self.limb_name, np.squeeze(np.asarray(joint_velocities)))
 
-        # rospy.logerr(v)
+        rospy.logerr(v)
         self.limb.set_joint_velocities(joint_vel)
 
 if __name__ == '__main__':

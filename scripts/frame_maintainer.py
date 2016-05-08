@@ -98,6 +98,13 @@ class Frame:
     def update_transform(self, obj):
         if "%s_%s" % (obj.color, obj.id) in self.obj_links:
 
+            if isEqualPoint(obj.pose.pose.position, Point()):
+                # reset
+                rospy.logerr("RESET")
+                self.estimates = []
+                self.set = False
+                return
+
             # hold 2 degrees of rotation fixed for baxter
             t = self.get_fixed_to_target(obj)
             if self.target_frame == "baxter":
@@ -156,7 +163,7 @@ class FM:
         # initialize baxter in global_map
         baxter.update(self.create_ts(
             FIXED_FRAME, "baxter",
-            1,0,0, 0,0,0,1
+            1,0,1, 0,0,0,1
         ))
         self.frames.append(baxter)
         

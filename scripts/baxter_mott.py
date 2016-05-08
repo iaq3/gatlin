@@ -14,6 +14,7 @@ from gatlin.srv import *
 from config import *
 from Dynamic import *
 from random import randint
+from baxter_interface import *
 
 def distance(v1,v2):
 	return np.linalg.norm(vector3_to_numpy(v1) - vector3_to_numpy(v2))
@@ -25,6 +26,14 @@ def angle(v1, v2):
 	return math.acos(np.dot(v1, v2) / (length(v1) * length(v2)))
 
 class Nav_Manip_Controller :
+
+	def getCurrentPose(self):
+		pos = self.limb.endpoint_pose()['position']
+		ori = self.limb.endpoint_pose()['orientation']
+		p = Pose()
+		p.position = Point(pos[0],pos[1],pos[2])
+		p.orientation = Quaternion(ori[0],ori[1],ori[2],ori[3])
+		return p
 
 	def grabObject(self, dynamic_pose) :
 		holding_object = False
@@ -43,11 +52,14 @@ class Nav_Manip_Controller :
 
 				def getOffsetPose():
 					# rospy.logerr(dynamic_pose.ps)
-					base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
+					base_pose = self.transform_pose(self.BASE_FRAME, dynamic_pose.ps)
 					base_to_ar_t = transform_from_pose(base_pose.pose)
 
 					offset_t = Transform()
-					offset_t.translation = Vector3(-0.010, -0.000, -0.084)
+					if self.limb_name == "right":
+						offset_t.translation = Vector3(-0.02, -0.000, -0.084)
+					else:
+						offset_t.translation = Vector3(-0.02, -0.000, -0.084)
 					offset_t.rotation = Quaternion(-0.7071, -0.7071, 0.0000, 0.0000)
 					# offset_inv_t = inverse_transform(offset_t)
 
@@ -61,16 +73,57 @@ class Nav_Manip_Controller :
 					base_pose_offset.pose.orientation = Quaternion(q[0],q[1],q[2],q[3])
 					return base_pose_offset
 
-				# base_pose_offset = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
+				# base_pose_offset = self.transform_pose(self.BASE_FRAME, dynamic_pose.ps)
 				base_pose_offset = getOffsetPose()
 
 
-				base_pose_offset.pose.position.z += .10
+				base_pose_offset.pose.position.z += .08
 				resp = self.move_arm("MOVE_TO_POSE_INTERMEDIATE", base_pose_offset)
 
-				# base_pose_offset = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
-				base_pose_offset = getOffsetPose()
-				resp = self.move_arm("MOVE_TO_POSE_INTERMEDIATE", base_pose_offset)
+				grasped = False
+				rate = rospy.Rate(30)
+				while not grasped and not rospy.is_shutdown():
+
+					max_speed = .03
+					max_distance = .1
+
+					base_pose_offset = getOffsetPose()
+					current_pos = vector3_to_numpy(self.getCurrentPose().position)
+					desired_pos = vector3_to_numpy(base_pose_offset.pose.position)
+					# rospy.logerr("current_pos")
+					# rospy.logerr(current_pos)
+					# rospy.logerr("desired_pos")
+					# rospy.logerr(desired_pos)
+					
+					error_vec = desired_pos - current_pos
+					distance = np.linalg.norm(error_vec)
+					error_vec[2] = 0.0
+
+					xy_distance = np.linalg.norm(error_vec)
+					approach_speed = -.01 / (xy_distance / max_distance)
+					# approach_speed *= 1 - xy_distance/max_distance
+
+					error_vec[2] = approach_speed
+					scaled_error = error_vec/np.linalg.norm(error_vec) * max_speed
+
+					scaled_error_v3 = numpy_to_vector3(scaled_error)
+
+					rospy.logerr("scaled_error_v3")
+					rospy.logerr(scaled_error_v3)
+
+					twist = Twist()
+					twist.linear = scaled_error_v3
+
+					self.execute_vel_pub.publish(twist)
+
+					if distance < .007: grasped = True
+
+					rate.sleep()
+
+
+				# base_pose_offset = self.transform_pose(self.BASE_FRAME, dynamic_pose.ps)
+				# base_pose_offset = getOffsetPose()
+				# resp = self.move_arm("MOVE_TO_POSE_INTERMEDIATE", base_pose_offset)
 
 				repeat = False
 				if not resp.success:
@@ -117,7 +170,7 @@ class Nav_Manip_Controller :
 		self.pauseCommand()
 
 		self.publishResponse("Releasing object to %s_%s" % (dynamic_pose.color, dynamic_pose.id))
-		base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
+		base_pose = self.transform_pose(self.BASE_FRAME, dynamic_pose.ps)
 		resp = self.move_arm("MOVE_TO_POSE_INTERMEDIATE", base_pose)
 
 		self.pauseCommand()
@@ -131,7 +184,7 @@ class Nav_Manip_Controller :
 		resp = self.move_arm("MOVE_TO_POSE", base_pose)
 
 	def interActionDelay(self, delay) : #if user tells command to quit, then you don't want delays to stack
-	 	if self.command_state == self.RUNNING :
+		if self.command_state == self.RUNNING :
 			rospy.sleep(delay)
 
 	def run_mott_sequence(self) :
@@ -149,6 +202,23 @@ class Nav_Manip_Controller :
 		self.interActionDelay(1)
 
 		self.releaseObject(self.target_dp)
+
+		ol = ObjectList()
+		o = Object()
+		o.id = self.object_dp.id
+		o.color = self.object_dp.color
+		o.pose = PoseStamped()
+		ol.objects.append(o)
+		self.objectlist_pub.publish(ol)
+
+		ol = ObjectList()
+		o = Object()
+		o.id = self.object_dp.id
+		o.color = self.object_dp.color
+		o.pose = deepcopy(self.target_dp.ps)
+		ol.objects.append(o)
+		self.objectlist_pub.publish(ol)
+		self.objectlist_pub.publish(ol)
 
 		self.interActionDelay(1)
 
@@ -229,7 +299,7 @@ class Nav_Manip_Controller :
 	# get the distance from the base to the given pose
 	def distanceToPose(self, ps) :
 		origin = Point(0,0,0)
-		pose = self.transform_pose(self.BASE_FAME, ps)
+		pose = self.transform_pose(self.BASE_FRAME, ps)
 		return distance(origin, pose.pose.position)
 
 	# transform the pose stamped to the new frame
@@ -252,9 +322,13 @@ class Nav_Manip_Controller :
 
 	def __init__(self):
 		rospy.init_node('baxter_nav_manip_controller')
-		limb = rospy.get_param('~limb')
-		self.limb = limb
-		self.robot_name = "baxter_"+limb
+		limb_name = rospy.get_param('~limb')
+		self.limb_name = limb_name
+
+		self.limb = Limb(limb_name)
+		# rospy.logerr(self.getCurrentPose())
+
+		self.robot_name = "baxter_"+limb_name
 
 		#self.robot_pose = DynamicPose()
 		#self.robot_pose.subscribe("/robot_pose") #TODO change to end effector position??
@@ -272,9 +346,9 @@ class Nav_Manip_Controller :
 
 		self.FIXED_FRAME = "global_map"
 		# self.FIXED_FRAME = "base"
-		self.BASE_FAME = "base"#TODO look into
+		self.BASE_FRAME = "base"#TODO look into
 
-		robot = "baxter_" + limb
+		robot = "baxter_" + limb_name
 		self.response_pub = rospy.Publisher("/%s_mott_response" % robot, String, queue_size = 1)
 		self.baxter_cmd_pub = rospy.Publisher("/%s_cmd" % robot, Int32, queue_size = 1)
 
@@ -283,9 +357,14 @@ class Nav_Manip_Controller :
 
 		# self.move_arm = createServiceProxy("baxter/move/arm", MoveRobot, self.robot_name)
 		self.move_arm = createServiceProxy("/%s/move/arm" % robot, MoveRobot)
+		
+		self.execute_vel_pub = rospy.Publisher("/baxter_ex_vel_%s" % limb_name, Twist, queue_size = 1)
+		
+		self.objectlist_pub = rospy.Publisher("/%s/ar_marker_list" % robot, ObjectList, queue_size=3)
 
 		# self.test_pose_pub = rospy.Publisher("/test_mott_pose", PoseStamped, queue_size = 1)
-
+		
+		resp = self.move_arm("RESET_ARM", PoseStamped())
 
 		rospy.spin()
 

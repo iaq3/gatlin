@@ -38,13 +38,13 @@ class CommandReqQueue:
 				max_postreqs = v.post_req_count
 				best_cmd_reqNode = v
 			if v.state == MATCHED_RUNNING :
-				rospy.logerr("Command is already running on %s." % robot)
+				rospy.loginfo("Command is already running on %s." % robot)
 		if best_cmd_reqNode != None :
 			rospy.loginfo("%s given command %s." % (robot, best_cmd_reqNode.cmd_req.id))
 			best_cmd_reqNode.state = MATCHED_RUNNING
 			return best_cmd_reqNode.cmd_req
 
-		rospy.logerr("No commands availible for %s." % robot)
+		rospy.loginfo("No commands availible for %s." % robot)
 		return None
 
 	#alerts all postreq actions that prereq is finished
