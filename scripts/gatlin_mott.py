@@ -103,8 +103,8 @@ class Nav_Manip_Controller :
 		rate = rospy.Rate(30)
 		if "%s_%s" % (dynamic_pose.color, dynamic_pose.id) == "hp_2":
 			rospy.logerr("MOVING TO HP")
-			desired_pos = Point(.30,0,0) # z is set to 0 when checking error
-			resp = self.move_head("LOOK_DOWNWARD", PoseStamped())
+			desired_pos = Point(.28,0,0) # z is set to 0 when checking error
+			resp = self.move_head("LOOK_FORWARD", PoseStamped())
 			goal_tolerence = .035
 		else:
 			desired_pos = Point(.30,0,0)
@@ -218,7 +218,7 @@ class Nav_Manip_Controller :
 		if not resp.success:
 			rospy.logerr("RESET_ARM FAILED")
 
-		if self.object_dp.ps == None:
+		if self.object_dp.ps == None or self.object_dp.ps.pose.position == Point():
 			self.search_sequence(self.object_dp)
 
 		self.moveBaseToDynamicPos(self.object_dp)
@@ -230,7 +230,7 @@ class Nav_Manip_Controller :
 		self.grabObject(self.object_dp)
 		self.interActionDelay(1)
 
-		if self.target_dp.ps == None:
+		if self.target_dp.ps == None or self.target_dp.ps.pose.position == Point():
 			self.search_sequence(self.target_dp)
 
 		self.moveBaseToDynamicPos(self.target_dp)
@@ -238,6 +238,23 @@ class Nav_Manip_Controller :
 		self.interActionDelay(1)
 
 		self.releaseObject(self.target_dp)
+
+		ol = ObjectList()
+		o = Object()
+		o.id = self.object_dp.id
+		o.color = self.object_dp.color
+		o.pose = PoseStamped()
+		ol.objects.append(o)
+		self.objectlist_pub.publish(ol)
+
+		ol = ObjectList()
+		o = Object()
+		o.id = self.object_dp.id
+		o.color = self.object_dp.color
+		o.pose = deepcopy(self.target_dp.ps)
+		ol.objects.append(o)
+		self.objectlist_pub.publish(ol)
+		self.objectlist_pub.publish(ol)
 
 		if self.command_state == self.RUNNING :
 			self.publishResponse("finished mott") #string must contain finished
@@ -272,7 +289,7 @@ class Nav_Manip_Controller :
 		ps.header.stamp = rospy.Time.now()
 		ps.pose.position = Point(0.46, 0.00, 0.60)
 
-		while dp.ps == None:
+		while dp.ps == None or dp.ps.pose.position == Point():
 			ps.pose.position.z -= .05
 			resp = self.move_head("LOOK_AT", ps)
 			rospy.logerr("%s_%s not found yet" % (dp.color, dp.id))
@@ -411,6 +428,8 @@ class Nav_Manip_Controller :
 
 		self.move_arm = createServiceProxy("%s/move/arm" % robot, MoveRobot)
 		self.move_head = createServiceProxy("%s/move/head" % robot, MoveRobot)
+
+		self.objectlist_pub = rospy.Publisher("/%s/ar_marker_list" % robot, ObjectList, queue_size=3)
 
 		self.test_pose_pub = rospy.Publisher('/test_obj_pose', PoseStamped)
 
