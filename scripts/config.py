@@ -33,6 +33,9 @@ joint_names = ['s0', 's1', 'e0', 'e1', 'w0', 'w1', 'w2']
 def isEqualPoint(p1, p2):
 	return p1.x == p2.x and p1.y == p2.y and p1.z == p2.z
 
+def isEqualQuaternion(q1, q2):
+	return q1.x == q2.x and q1.y == q2.y and q1.z == q2.z and q1.w == q2.w
+
 def getAverageTransform(transforms):
 		# get mean translation and rotation
 		# rospy.logerr(transforms)

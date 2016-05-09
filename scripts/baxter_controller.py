@@ -163,7 +163,7 @@ class BaxterController():
         elif req.action == "RESET_ARM" :
             rospy.loginfo("Trying to Reset Arm")
             rest_pose = Pose()
-            rest_pose.position = Point(0.55, 0.45, 0.07)
+            rest_pose.position = Point(0.55, 0.45, 0.03)
             rest_pose.orientation = Quaternion(0.0,1.0,0.0,0.0)
 
             if self.limb_name == "right": rest_pose.position.y *= -1
@@ -187,7 +187,7 @@ class BaxterController():
         arm = self.limb
         hand_pose = self.getCurrentPose(arm)
         max_z = max(hand_pose.position.z, pose.position.z)
-        offset = .06
+        offset = .12
         if inter1 :
             interpose1 = self.getOffsetPose(hand_pose, offset)
             interpose1.position.z = max_z + offset

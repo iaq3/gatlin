@@ -35,6 +35,13 @@ class Nav_Manip_Controller :
 		p.orientation = Quaternion(ori[0],ori[1],ori[2],ori[3])
 		return p
 
+	def getCurrentForce(self):
+		force = self.limb.endpoint_effort()['force']
+		torque = self.limb.endpoint_effort()['torque']
+		force_v = Vector3(force[0],force[1],force[2])
+		torque_v = Vector3(torque[0],torque[1],torque[2])
+		return force_v
+
 	def grabObject(self, dynamic_pose) :
 		holding_object = False
 		while not holding_object :
@@ -57,9 +64,9 @@ class Nav_Manip_Controller :
 
 					offset_t = Transform()
 					if self.limb_name == "right":
-						offset_t.translation = Vector3(-0.02, -0.000, -0.084)
+						offset_t.translation = Vector3(-0.02, -0.00, -0.075)
 					else:
-						offset_t.translation = Vector3(-0.02, -0.000, -0.084)
+						offset_t.translation = Vector3(-0.01, -0.00, -0.075)
 					offset_t.rotation = Quaternion(-0.7071, -0.7071, 0.0000, 0.0000)
 					# offset_inv_t = inverse_transform(offset_t)
 
@@ -77,8 +84,12 @@ class Nav_Manip_Controller :
 				base_pose_offset = getOffsetPose()
 
 
-				base_pose_offset.pose.position.z += .08
+				base_pose_offset.pose.position.z += .15
 				resp = self.move_arm("MOVE_TO_POSE_INTERMEDIATE", base_pose_offset)
+
+				base_pose_offset = getOffsetPose()
+				base_pose_offset.pose.position.z += .15
+				resp = self.move_arm("MOVE_TO_POSE", base_pose_offset)
 
 				grasped = False
 				rate = rospy.Rate(30)
@@ -97,26 +108,30 @@ class Nav_Manip_Controller :
 					
 					error_vec = desired_pos - current_pos
 					distance = np.linalg.norm(error_vec)
+					z_dist = error_vec[2]
 					error_vec[2] = 0.0
 
 					xy_distance = np.linalg.norm(error_vec)
-					approach_speed = -.01 / (xy_distance / max_distance)
+					approach_speed = z_dist * (1 - xy_distance / max_distance)**2
+					# rospy.logerr(approach_speed)
 					# approach_speed *= 1 - xy_distance/max_distance
+					if self.getCurrentForce().z < -9.0:
+						approach_speed = .01
 
 					error_vec[2] = approach_speed
 					scaled_error = error_vec/np.linalg.norm(error_vec) * max_speed
 
 					scaled_error_v3 = numpy_to_vector3(scaled_error)
 
-					rospy.logerr("scaled_error_v3")
-					rospy.logerr(scaled_error_v3)
+					# rospy.logerr("scaled_error_v3")
+					# rospy.logerr(scaled_error_v3)
 
 					twist = Twist()
 					twist.linear = scaled_error_v3
 
 					self.execute_vel_pub.publish(twist)
 
-					if distance < .007: grasped = True
+					if distance < .005: grasped = True
 
 					rate.sleep()
 
@@ -170,8 +185,11 @@ class Nav_Manip_Controller :
 		self.pauseCommand()
 
 		self.publishResponse("Releasing object to %s_%s" % (dynamic_pose.color, dynamic_pose.id))
+		if isEqualQuaternion(dynamic_pose.ps.pose.orientation, Quaternion(0,0,0,1)):
+			dynamic_pose.ps.pose.orientation = Quaternion(0,1,0,0)
 		base_pose = self.transform_pose(self.BASE_FRAME, dynamic_pose.ps)
 		resp = self.move_arm("MOVE_TO_POSE_INTERMEDIATE", base_pose)
+		self.test_pose_pub.publish(dynamic_pose.ps)
 
 		self.pauseCommand()
 
@@ -362,7 +380,7 @@ class Nav_Manip_Controller :
 		
 		self.objectlist_pub = rospy.Publisher("/%s/ar_marker_list" % robot, ObjectList, queue_size=3)
 
-		# self.test_pose_pub = rospy.Publisher("/test_mott_pose", PoseStamped, queue_size = 1)
+		self.test_pose_pub = rospy.Publisher("/test_mott_pose", PoseStamped, queue_size = 1)
 		
 		resp = self.move_arm("RESET_ARM", PoseStamped())
 

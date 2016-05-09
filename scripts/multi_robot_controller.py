@@ -34,7 +34,7 @@ class MRC:
         
         self.wcg = WorkspaceConnectivityGraph(self.robots, self.crq, self.tfl)
 
-        self.one_block_move()
+        # self.one_block_move()
         # self.two_block_stack()
 
         self.crq_locked = False
@@ -61,7 +61,7 @@ class MRC:
         # m.object_pose = PoseStamped()
 
         table_z = -.230
-        m.object_pose.header.frame_id = "baxter"
+        # m.object_pose.header.frame_id = "baxter"
         # m.object_pose.header.stamp = rospy.Time.now()
         # m.object_pose.pose.position = Point(.6,-.5, table_z)
         # m.object_pose.pose.orientation = Quaternion(0,1,0,0)
@@ -74,10 +74,10 @@ class MRC:
         m.target_pose.pose.orientation = Quaternion(0,1,0,0)
         # rospy.logerr(m)
 
-        # m.object_pose.header.frame_id = "gatlin"
-        # m.object_pose.header.stamp = rospy.Time.now()
-        # m.object_pose.pose.position = Point(0.21,-0.37, 0.03)
-        # m.object_pose.pose.orientation = Quaternion(0,1,0,0)
+        m.object_pose.header.frame_id = "gatlin"
+        m.object_pose.header.stamp = rospy.Time.now()
+        m.object_pose.pose.position = Point(0.21,-0.37, 0.03)
+        m.object_pose.pose.orientation = Quaternion(0,1,0,0)
         mott_json = json_message_converter.convert_ros_message_to_json(m)
 
         # test CommandRequestList
@@ -299,7 +299,7 @@ class MRC:
                     self.crq.add_dependency(parent_id, child_id)
 
         self.crq_locked = False
-        
+
         self.wcg.draw()
         self.wcg.show()
 
@@ -492,7 +492,7 @@ class WorkspaceConnectivityGraph:
 
     def init_handoff_zones(self):
         # xyz point and width, length
-        table_z = -.240
+        table_z = -.245
         hp_1 = Workspace(
             Point(0.70,-0.10, table_z-.01),
             Point(0.50, 0.10, table_z+.01),
