@@ -57,7 +57,9 @@
 
 <!-- <node pkg="topic_tools" type="throttle" name="camera_throttle" args="messages camera/rgb/image_rect_color 2"/> -->
 
-<include file="$(find turtlebot_navigation)/launch/includes/gmapping.launch.xml"/>
+<include file="$(find turtlebot_navigation)/launch/includes/gmapping.launch.xml">
+	<arg name="scan_topic" value="/plannar_scan"/>
+</include>
 
 <include file="$(find turtlebot_navigation)/launch/includes/move_base.launch.xml"/>
 
