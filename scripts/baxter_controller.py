@@ -33,8 +33,8 @@ class BaxterController():
         self.limb = Limb(self.limb_name)
         
         self.gripper = Gripper(self.limb_name)
-
-
+        self.gripper.calibrate()
+        self.gripper.open(block=True)
 
         rospy.Subscriber("/robot/end_effector/"+self.limb_name+"_gripper/state", EndEffectorState, self.respondToEndEffectorState)
 

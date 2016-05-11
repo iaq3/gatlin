@@ -36,6 +36,7 @@ class MRC:
 
         # self.one_block_move()
         # self.two_block_stack()
+        # self.three_block_stack()
 
         self.crq_locked = False
 
@@ -141,6 +142,82 @@ class MRC:
 
         crl.parents = ["1"]
         crl.children = ["2"]
+
+        # test CommandRequestList
+        self.mr_command_req_callback(crl)
+
+    def three_block_stack(self):
+        table_z = -.230
+        hp2_z = -0.548
+        block_width = .0385
+
+        crl = CommandRequestList()
+
+        m = Mott()
+        m.command = "mott"
+        m.object_pose_topic = "ar_5"
+        m.target_pose_topic = "target_1"
+
+        m.object_pose.header.frame_id = "baxter"
+        
+        m.target_pose.header.frame_id = "baxter"
+        m.target_pose.header.stamp = rospy.Time.now()
+        m.target_pose.pose.position = Point(.6,-.5, table_z+block_width*0)
+        # m.target_pose.pose.position = Point(-0.1,0.725, hp2_z)
+        m.target_pose.pose.orientation = Quaternion(0,1,0,0)
+
+        mott_json = json_message_converter.convert_ros_message_to_json(m)
+
+        cr = CommandRequest()
+        cr.id = "1"
+        cr.action = "mott"
+        cr.args = mott_json
+        crl.commands.append(cr)
+
+        m = Mott()
+        m.command = "mott"
+        m.object_pose_topic = "ar_8"
+        m.target_pose_topic = "target_2"
+
+        m.object_pose.header.frame_id = "baxter"
+        
+        m.target_pose.header.frame_id = "baxter"
+        m.target_pose.header.stamp = rospy.Time.now()
+        m.target_pose.pose.position = Point(.6,-.5, table_z+block_width*1)
+        # m.target_pose.pose.position = Point(-0.1,0.725, hp2_z)
+        m.target_pose.pose.orientation = Quaternion(0,1,0,0)
+        
+        mott_json = json_message_converter.convert_ros_message_to_json(m)
+
+        cr = CommandRequest()
+        cr.id = "2"
+        cr.action = "mott"
+        cr.args = mott_json
+        crl.commands.append(cr)
+
+        m = Mott()
+        m.command = "mott"
+        m.object_pose_topic = "ar_3"
+        m.target_pose_topic = "target_2"
+
+        m.object_pose.header.frame_id = "baxter"
+        
+        m.target_pose.header.frame_id = "baxter"
+        m.target_pose.header.stamp = rospy.Time.now()
+        m.target_pose.pose.position = Point(.6,-.5, table_z+block_width*2)
+        # m.target_pose.pose.position = Point(-0.1,0.725, hp2_z)
+        m.target_pose.pose.orientation = Quaternion(0,1,0,0)
+        
+        mott_json = json_message_converter.convert_ros_message_to_json(m)
+
+        cr = CommandRequest()
+        cr.id = "3"
+        cr.action = "mott"
+        cr.args = mott_json
+        crl.commands.append(cr)
+
+        crl.parents = ["1","2"]
+        crl.children = ["2","3"]
 
         # test CommandRequestList
         self.mr_command_req_callback(crl)
