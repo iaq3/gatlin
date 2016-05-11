@@ -263,7 +263,8 @@ class Vision:
 			"green", "circle", "kinect", 
 			# {'H': {'max': 61, 'min': 44}, 'S': {'max': 126, 'min': 79}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 189, 'min': 128}},
 			# {'H': {'max': 48, 'min': 34}, 'S': {'max': 191, 'min': 145}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 229, 'min': 163}},
-			{'H': {'max': 52, 'min': 28}, 'S': {'max': 214, 'min': 153}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 231, 'min': 154}},
+			# {'H': {'max': 52, 'min': 28}, 'S': {'max': 214, 'min': 153}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 231, 'min': 154}},
+			{'H': {'max': 61, 'min': 29}, 'S': {'max': 122, 'min': 50}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 140, 'min': 94}},
 			calibrated=True, num_blobs = 2
 		)
 		self.masks.append(self.green_kinect_mask)
@@ -282,11 +283,12 @@ class Vision:
 			{'H': {'max': 180, 'min': 168}, 'S': {'max': 248, 'min': 184}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 225, 'min': 182}},
 			calibrated=True, num_blobs = 1
 		)
-		self.masks.append(self.red_kinect_mask)
+		# self.masks.append(self.red_kinect_mask)
 
 		self.yellow_kinect_mask = HSVMask(
 			"yellow", "circle", "kinect", 
-			{'H': {'max': 35, 'min': 20}, 'S': {'max': 242, 'min': 131}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 195, 'min': 96}},
+			# {'H': {'max': 35, 'min': 20}, 'S': {'max': 242, 'min': 131}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 195, 'min': 96}},
+			{'H': {'max': 37, 'min': 17}, 'S': {'max': 239, 'min': 170}, 'D': {'max': 10000.0, 'min': -1.0}, 'V': {'max': 255, 'min': 207}},
 			calibrated=True, num_blobs = 1
 		)
 		# self.masks.append(self.yellow_kinect_mask)
@@ -299,6 +301,8 @@ class Vision:
 		# self.masks.append(self.blue_kinect_mask)
 
 		self.objectlistpub = rospy.Publisher("/gatlin/objectlist", ObjectList, queue_size=3)
+
+		self.xy_pub = rospy.Publisher("/gatlin/objectscreencoords", Vector3, queue_size=1)
 
 		self.tfl = tf.TransformListener()
 		self.BASE_FRAME = "base_link"
@@ -357,6 +361,9 @@ class Vision:
 		
 		object_points = []
 		for bi in objs:
+
+			# publish x,y coords
+			self.xy_pub.publish(Vector3(bi[0],bi[1],0))
 			radius = bi[2]
 			distance = 0
 			if self.depth_image != None :

@@ -23,7 +23,8 @@ class LaserScanFilter:
 
 
 		# subscribe to the depth camera info
-		rospy.Subscriber("/camera/depth/camera_info", CameraInfo, self.depth_camera_info_cb, queue_size=1)
+		# rospy.Subscriber("/camera/depth/camera_info", CameraInfo, self.depth_camera_info_cb, queue_size=1)
+		rospy.Subscriber("/camera/depth_registered/camera_info", CameraInfo, self.depth_camera_info_cb, queue_size=1)
 
 		# republish in new frame
 		self.camera_info_pub = rospy.Publisher("/camera/plannar_rgb/camera_info", CameraInfo, queue_size=1)

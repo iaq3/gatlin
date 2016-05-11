@@ -15,7 +15,7 @@ from copy import deepcopy
 class Head_Controller:
 	def __init__(self):
 		# Give the launch a chance to catch up
-		rospy.sleep(10)
+		# rospy.sleep(10)
 
 		rospy.init_node('Head_Controller')
 		rospy.loginfo("Launched Head Controller")
@@ -46,28 +46,32 @@ class Head_Controller:
 		
 		wait = 3
 
+		# req.action = "LOOK_DOWNWARD"
 		req.action = "LOOK_DOWN"
 		self.move_head(req)
-		rospy.sleep(wait)
 
-		req.action = "LOOK_FORWARD"
-		self.move_head(req)
-		rospy.sleep(wait*2)
+		# req.action = "LOOK_DOWN"
+		# self.move_head(req)
+		# rospy.sleep(wait)
 
-		req.action = "LOOK_LEFT"
-		self.move_head(req)
-		rospy.sleep(wait*.5)
+		# req.action = "LOOK_FORWARD"
+		# self.move_head(req)
+		# rospy.sleep(wait*2)
+
+		# req.action = "LOOK_LEFT"
+		# self.move_head(req)
+		# rospy.sleep(wait*.5)
 		
-		req.action = "LOOK_RIGHT"
-		self.move_head(req)
-		rospy.sleep(wait)
+		# req.action = "LOOK_RIGHT"
+		# self.move_head(req)
+		# rospy.sleep(wait)
 		
-		req.action = "LOOK_FORWARD"
-		self.move_head(req)
-		rospy.sleep(wait)
+		# req.action = "LOOK_FORWARD"
+		# self.move_head(req)
+		# rospy.sleep(wait)
 		
-		req.action = "LOOK_DOWN"
-		self.move_head(req)
+		# req.action = "LOOK_DOWN"
+		# self.move_head(req)
 
 		rospy.spin()
 

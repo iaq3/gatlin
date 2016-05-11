@@ -22,7 +22,9 @@
 
 <node pkg="gatlin" type="gatlin_mott.py" name="gatlin_mott" output="screen"/> 
 
-<include file="$(find gatlin)/launch/ar_gatlin.launch" />
+<include file="$(find gatlin)/launch/laser_scan_gatlin.launch" />
+
+<!-- <include file="$(find gatlin)/launch/ar_gatlin.launch" /> -->
 
 <!-- <node pkg="gatlin" type="vision.py" name="vision" output="screen"/> -->
 
@@ -33,7 +35,7 @@
 
 <node pkg="gatlin" type="arm_controller.py" name="arm_controller" output="screen"/>
 
-<node pkg="gatlin" type="head_controller.py" name="head_controller" output="screen"/>
+<!-- <node pkg="gatlin" type="head_controller.py" name="head_controller" output="screen"/> -->
 
 <node if="$(arg calibrate)" pkg="dynamic_tf" type="server.py" name="server"/>
 
