@@ -198,7 +198,7 @@ class MRC:
         m = Mott()
         m.command = "mott"
         m.object_pose_topic = "ar_3"
-        m.target_pose_topic = "target_2"
+        m.target_pose_topic = "target_3"
 
         m.object_pose.header.frame_id = "baxter"
         
@@ -379,6 +379,8 @@ class MRC:
 
         self.wcg.draw()
         self.wcg.show()
+        
+        self.wcg = WorkspaceConnectivityGraph(self.robots, self.crq, self.tfl)
 
 class Workspace:
         def __init__(self, p1, p2, rf):

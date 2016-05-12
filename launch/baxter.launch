@@ -11,7 +11,7 @@
 		<param name="outgoing" value=""/>
 	</node>
 
-	<!-- <include file="$(find gatlin)/launch/baxter_mott.launch" /> -->
+	<include file="$(find gatlin)/launch/baxter_mott.launch" />
 	
 	<include file="$(find gatlin)/launch/ar_baxter.launch" />
 
