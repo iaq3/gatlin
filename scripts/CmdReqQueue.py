@@ -14,6 +14,8 @@ class CommandReqQueue:
 		self.cmd_reqs = {} #current action nodes in the system
 		self.robot_cmds = {} #action nodes for each robot
 
+		self.current_graph_crl_pub = rospy.Publisher("/mr_command_graph", CommandRequestList, queue_size = 1)
+
 	def add_robot(self, robot) :
 		self.robot_cmds[robot] = []
 
@@ -26,6 +28,22 @@ class CommandReqQueue:
 	def add_dependency(self, cmd_id1, cmd_id2):
 		self.cmd_reqs[cmd_id1].add_postreq(self.cmd_reqs[cmd_id2]) #could be just id of it too
 		self.cmd_reqs[cmd_id2].add_prereq(self.cmd_reqs[cmd_id1])
+
+	#returns a command
+	def publishCommandRequestList(self) :
+		crl = CommandRequestList()
+
+		for cmd_req_node in self.cmd_reqs :
+			crl.commands.append(cmd_req_node.cmd_req)
+			for child in cmd_req_node.children :
+				crl.children.append(child.cmd_req.id)
+				crl.parent.append(cmd_req_node.cmd_req.id)
+
+		rospy.logerr(crl)
+
+		self.current_graph_crl_pub.publish(crl)
+
+
 
 
 	#finds the most important action for a robot, sets it to running, and returns it

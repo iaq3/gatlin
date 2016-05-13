@@ -375,6 +375,7 @@ class MRC:
                     # rospy.logerr("%s <- %s" % (parent_id, child_id))
                     self.crq.add_dependency(parent_id, child_id)
 
+        self.crq.publishCommandRequestList()
         self.crq_locked = False
 
         self.wcg.draw()
