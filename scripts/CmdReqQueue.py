@@ -33,11 +33,13 @@ class CommandReqQueue:
 	def publishCommandRequestList(self) :
 		crl = CommandRequestList()
 
-		for cmd_req_node in self.cmd_reqs :
+		for cmd_req_key in self.cmd_reqs :
+			cmd_req_node = self.cmd_reqs[cmd_req_key]
+			cmd_req_node.cmd_req.id = str(cmd_req_node.cmd_req.id)
 			crl.commands.append(cmd_req_node.cmd_req)
-			for child in cmd_req_node.children :
-				crl.children.append(child.cmd_req.id)
-				crl.parent.append(cmd_req_node.cmd_req.id)
+			for child in cmd_req_node.prereqs :
+				crl.children.append(str(child.cmd_req.id))
+				crl.parents.append(str(cmd_req_node.cmd_req.id))
 
 		rospy.logerr(crl)
 
