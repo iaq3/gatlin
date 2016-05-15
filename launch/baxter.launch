@@ -33,4 +33,7 @@
 
 	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find gatlin)/rviz/baxter.rviz"/>
 
+	<node name="left_camera_control" pkg="baxter_tools" type="camera_control.py" args="-o left_hand_camera -r 640x400"/>
+	<node name="right_camera_control" pkg="baxter_tools" type="camera_control.py" args="-o right_hand_camera -r 640x400"/>
+
 </launch>

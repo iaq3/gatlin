@@ -363,7 +363,7 @@ class MRC:
                 pass
 
         # use dependencies to build update crq
-        # rospy.logerr(generated_cmd_ids)
+        rospy.logerr(generated_cmd_ids)
         for i in range(0, len(cmd_req.parents)):
             parent = cmd_req.parents[i]
             child = cmd_req.children[i]
@@ -500,6 +500,7 @@ class WorkspaceConnectivityGraph:
         # generate actions based on optimal path
         # use dependencies to build action graph
         # put actions in queue
+        generated_cmd_ids = []
         num_robots = (len(path)-1)/2
         num_hp = (len(path)-3)/2
         if num_hp < 1: num_hp = 0
@@ -509,10 +510,9 @@ class WorkspaceConnectivityGraph:
 
         if object_dp == None:
             rospy.logerr("no dp for %s" % object_name)
-            return
+            return []
 
         crl = CommandRequestList()
-        generated_cmd_ids = []
         for i in range(0, num_robots):
             robot_name = path[i*2+1]
             target_name = path[i*2+2]
@@ -520,7 +520,7 @@ class WorkspaceConnectivityGraph:
 
             if target_dp == None:
                 rospy.logerr("no dp for %s" % target_name)
-                continue
+                return []
 
             m = Mott()
             m.command = "mott"
@@ -533,7 +533,8 @@ class WorkspaceConnectivityGraph:
             m_json = json_message_converter.convert_ros_message_to_json(m)
 
             cr = CommandRequest()
-            cr.id = self.cmd_idx
+            cr.id = str(self.cmd_idx)
+            prev_id = str(self.cmd_idx-1)
             self.cmd_idx += 1
             cr.action = "mott"
             cr.args = m_json
@@ -542,7 +543,7 @@ class WorkspaceConnectivityGraph:
             self.crq.add_command_req(cr, robot_name)
             generated_cmd_ids.append(cr.id)
             if i > 0:
-                self.crq.add_dependency(cr.id-1, cr.id)
+                self.crq.add_dependency(prev_id, cr.id)
 
         return generated_cmd_ids
 
