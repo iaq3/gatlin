@@ -45,6 +45,8 @@ rosbag play --clock kinect.bag
 
 rosbag record /camera/depth_registered/hw_registered/image_rect_raw_throttled camera/depth_registered/camera_info /camera/rgb/image_rect_color_throttled camera/rgb/camera_info --limit=300
 
+rosbag record /mr_command_req --limit=1
+
 rosbag info small.bag
 rosparam set use_sim_time true
 rosbag play --clock small.bag

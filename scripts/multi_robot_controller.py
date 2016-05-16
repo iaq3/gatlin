@@ -5,6 +5,7 @@ from Dynamic import *
 from CmdReqQueue import *
 import numpy as np
 import rospy
+from threading import Thread
 from std_msgs.msg import *
 from geometry_msgs.msg import *
 from visualization_msgs.msg import *
@@ -62,23 +63,24 @@ class MRC:
         # m.object_pose = PoseStamped()
 
         table_z = -.230
+        hp2_z = -0.548
         # m.object_pose.header.frame_id = "baxter"
         # m.object_pose.header.stamp = rospy.Time.now()
         # m.object_pose.pose.position = Point(.6,-.5, table_z)
+        # m.object_pose.pose.position = Point(-0.1,0.725, hp2_z)
         # m.object_pose.pose.orientation = Quaternion(0,1,0,0)
         
-        hp2_z = -0.548
         m.target_pose.header.frame_id = "baxter"
         m.target_pose.header.stamp = rospy.Time.now()
-        m.target_pose.pose.position = Point(.6,-.5, table_z)
-        # m.target_pose.pose.position = Point(-0.1,0.725, hp2_z)
+        # m.target_pose.pose.position = Point(.6,-.5, table_z)
+        m.target_pose.pose.position = Point(0.1,0.725, hp2_z)
         m.target_pose.pose.orientation = Quaternion(0,1,0,0)
         # rospy.logerr(m)
 
-        m.object_pose.header.frame_id = "gatlin"
-        m.object_pose.header.stamp = rospy.Time.now()
-        m.object_pose.pose.position = Point(0.21,-0.37, 0.03)
-        m.object_pose.pose.orientation = Quaternion(0,1,0,0)
+        # m.object_pose.header.frame_id = "gatlin"
+        # m.object_pose.header.stamp = rospy.Time.now()
+        # m.object_pose.pose.position = Point(0.21,-0.37, 0.03)
+        # m.object_pose.pose.orientation = Quaternion(0,1,0,0)
         mott_json = json_message_converter.convert_ros_message_to_json(m)
 
         # test CommandRequestList
@@ -462,6 +464,16 @@ class Robot:
 #     def __init__(self, name, color, workspace):
 #         self.transform = TransformStamped()
 
+
+# class WCGShower(Thread):
+#     def __init__(self, wcg):
+#         Thread.__init__(self)
+#         self.setDaemon(True)
+
+#         self.wcg = wcg
+
+#     def run(self):
+
 class WorkspaceConnectivityGraph:
     def __init__(self, robots, crq, tfl):
         # rospy.init_node('WorkspaceConnectivityGraph')
@@ -573,7 +585,7 @@ class WorkspaceConnectivityGraph:
 
     def init_handoff_zones(self):
         # xyz point and width, length
-        table_z = -.245
+        table_z = -.230
         hp_1 = Workspace(
             Point(0.70,-0.10, table_z-.01),
             Point(0.50, 0.10, table_z+.01),
@@ -583,8 +595,8 @@ class WorkspaceConnectivityGraph:
 
         hp2_z = -.548
         hp_2 = Workspace(
-            Point(-0.45, 0.60, hp2_z-.01),
-            Point(0.25, 0.85, hp2_z+.01),
+            Point(-0.25, 0.60, hp2_z-.01),
+            Point(0.45, 0.85, hp2_z+.01),
             "baxter"
         )
         self.add_hp("hp_2", hp_2)
@@ -739,6 +751,8 @@ class WorkspaceConnectivityGraph:
 
     def show(self):
         plt.show()
+        rospy.sleep(5)
+        plt.close()
 
     def find_shortest_path(self, v1, v2):
         try:

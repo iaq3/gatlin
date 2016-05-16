@@ -115,7 +115,8 @@ class Nav_Manip_Controller :
 					approach_speed = z_dist * (1 - xy_distance / max_distance)**2
 					# rospy.logerr(approach_speed)
 					# approach_speed *= 1 - xy_distance/max_distance
-					if self.getCurrentForce().z < -9.0:
+					rospy.logerr(self.getCurrentForce().z)
+					if self.getCurrentForce().z < -12.0:
 						approach_speed = .01
 
 					error_vec[2] = approach_speed
@@ -188,6 +189,7 @@ class Nav_Manip_Controller :
 		if isEqualQuaternion(dynamic_pose.ps.pose.orientation, Quaternion(0,0,0,1)):
 			dynamic_pose.ps.pose.orientation = Quaternion(0,1,0,0)
 		base_pose = self.transform_pose(self.BASE_FRAME, dynamic_pose.ps)
+		base_pose.pose.orientation = Quaternion(0,1,0,0)
 		resp = self.move_arm("MOVE_TO_POSE_INTERMEDIATE", base_pose)
 		self.test_pose_pub.publish(dynamic_pose.ps)
 
