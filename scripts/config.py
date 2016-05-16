@@ -162,6 +162,13 @@ def ts_to_ps(ts):
 	ps.pose = transform_to_pose(ts.transform)
 	return ps
 
+def ps_to_ts(ps, child_frame):
+	ts = TransformStamped()
+	ts.header = ps.header
+	ts.child_frame_id = child_frame
+	ts.transform = transform_from_pose(ps.pose)
+	return ts
+
 def createServiceProxy(service,srv_type):
 	name = "/%s" % (service)
 	rospy.wait_for_service(name)
