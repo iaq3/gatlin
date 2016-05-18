@@ -11,11 +11,11 @@
 		<param name="outgoing" value=""/>
 	</node>
 
-	<include file="$(find gatlin)/launch/baxter_mott.launch" />
+	<!-- <include file="$(find gatlin)/launch/baxter_mott.launch" /> -->
 	
 	<include file="$(find gatlin)/launch/ar_baxter.launch" />
 
-	<node pkg="gatlin" type="baxter_controller.py" name="baxter_controller_right" output="screen">
+	<!-- <node pkg="gatlin" type="baxter_controller.py" name="baxter_controller_right" output="screen">
 		<param name="limb" value="right"/>
 	</node>
 
@@ -29,7 +29,7 @@
 
 	<node pkg="gatlin" type="execute_velocity.py" name="execute_velocity_right" output="screen">
 		<param name="limb" value="right"/>
-	</node>
+	</node> -->
 
 	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find gatlin)/rviz/baxter.rviz"/>
 

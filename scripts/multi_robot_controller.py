@@ -418,7 +418,7 @@ class Robot:
         self.workspace = workspace
         self.cmd_req_queue = cr_queue
         # publishers for all service requests
-        self.robot_state_pub = rospy.Publisher("/%s_graph_id" %, String, queue_size = 1) #could just be robot response
+        self.robot_state_pub = rospy.Publisher("/%s_graph_id" % name, String, queue_size = 1) #could just be robot response
         self.mott_pub = rospy.Publisher("/%s_mott" % name, Mott, queue_size = 1)
         self.mott_command_pub = rospy.Publisher("/%s_mott_command" % name, String, queue_size = 1)
 
