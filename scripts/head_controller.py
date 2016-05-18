@@ -15,7 +15,7 @@ from copy import deepcopy
 class Head_Controller:
 	def __init__(self):
 		# Give the launch a chance to catch up
-		# rospy.sleep(10)
+		rospy.sleep(10)
 
 		rospy.init_node('Head_Controller')
 		rospy.loginfo("Launched Head Controller")
@@ -34,7 +34,7 @@ class Head_Controller:
 
 		self.tfl = tf.TransformListener()
 
-		rospy.sleep(1)
+		rospy.sleep(2)
 
 		req = MoveRobotRequest()
 		# req.action = "LOOK_LEFT"
@@ -47,28 +47,30 @@ class Head_Controller:
 		wait = 3
 
 		# req.action = "LOOK_DOWNWARD"
+		# self.move_head(req)
+		# rospy.spin()
+
+		# while True:
+
 		req.action = "LOOK_DOWN"
 		self.move_head(req)
+		rospy.sleep(wait)
 
-		# req.action = "LOOK_DOWN"
-		# self.move_head(req)
-		# rospy.sleep(wait)
+		req.action = "LOOK_DOWNWARD"
+		self.move_head(req)
+		rospy.sleep(wait*2)
 
-		# req.action = "LOOK_FORWARD"
-		# self.move_head(req)
-		# rospy.sleep(wait*2)
-
-		# req.action = "LOOK_LEFT"
-		# self.move_head(req)
-		# rospy.sleep(wait*.5)
+		req.action = "LOOK_LEFT"
+		self.move_head(req)
+		rospy.sleep(wait*.5)
 		
-		# req.action = "LOOK_RIGHT"
-		# self.move_head(req)
-		# rospy.sleep(wait)
+		req.action = "LOOK_RIGHT"
+		self.move_head(req)
+		rospy.sleep(wait)
 		
-		# req.action = "LOOK_FORWARD"
-		# self.move_head(req)
-		# rospy.sleep(wait)
+		req.action = "LOOK_DOWNWARD"
+		self.move_head(req)
+		rospy.sleep(wait)
 		
 		# req.action = "LOOK_DOWN"
 		# self.move_head(req)
@@ -77,6 +79,8 @@ class Head_Controller:
 
 	def move_head(self, req):
 		success = True
+
+		drive = 0.70
 
 		if req.action == "SET":
 			rospy.loginfo("Setting Head")
@@ -94,7 +98,7 @@ class Head_Controller:
 
 		elif req.action == "LOOK_DOWNWARD" :
 			rospy.loginfo("Looking Downward")
-			self.head_set(0.0,0.75)
+			self.head_set(0.0,drive)
 
 		elif req.action == "LOOK_UP" :
 			rospy.loginfo("Looking Up")
@@ -102,11 +106,11 @@ class Head_Controller:
 
 		elif req.action == "LOOK_LEFT" :
 			rospy.loginfo("Looking Left")
-			self.head_set(1.57,0.0)
+			self.head_set(1.57,drive)
 
 		elif req.action == "LOOK_RIGHT" :
 			rospy.loginfo("Looking Right")
-			self.head_set(-1.57,0.0)
+			self.head_set(-1.57,drive)
 
 		elif req.action == "LOOK_AT" :
 			rospy.loginfo("Trying to Look At Pose")

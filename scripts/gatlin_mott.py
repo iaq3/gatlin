@@ -13,6 +13,10 @@ from gatlin.srv import *
 from config import *
 from Dynamic import *
 
+from move_base_msgs.msg import *
+import actionlib
+from actionlib_msgs.msg import *
+
 def distance(v1,v2):
 	return np.linalg.norm(vector3_to_numpy(v1) - vector3_to_numpy(v2))
 
@@ -24,9 +28,9 @@ def angle(v1, v2):
 
 class Nav_Manip_Controller :
 
-	def servo_base_to_pos(self, desired_pos, actual_pos) :
-		desired_pos = vector3_to_numpy(desired_pos)
-		actual_pos = vector3_to_numpy(actual_pos)
+	def servo_base_to_pose(self, desired_pose, actual_pose) :
+		desired_pos = vector3_to_numpy(Vector3(0,0,0))
+		actual_pos = vector3_to_numpy(actual_pose.position)
 		actual_pos[2] = 0
 
 		error_vec =  actual_pos - desired_pos
@@ -58,7 +62,21 @@ class Nav_Manip_Controller :
 
 		return error
 
-	def moveBaseToDynamicPos(self, dynamic_pose) :
+	def getOffsetPose(self, ps, offset_t, output_frame=None):
+		if output_frame != None:
+			ps = self.transform_pose(output_frame, ps)
+
+		if offset_t == None:
+			return ps
+
+		t = transform_from_pose(ps.pose)
+		t_to_offset_t = multiply_transforms(t, offset_t)
+		ps_offset = deepcopy(ps)
+		ps_offset.pose = transform_to_pose(t_to_offset_t)
+
+		return ps_offset
+
+	def moveBaseToDynamicPos(self, dynamic_pose, offset_t=None, goal_tolerence=0.2) :
 		if self.command_state == self.CANCELLED :
 			return
 
@@ -66,15 +84,28 @@ class Nav_Manip_Controller :
 		if not resp.success:
 			rospy.logerr("RESET_ARM FAILED")
 
-		rate = rospy.Rate(30)
-		goal_tolerence = 5.0
+		base_offset_ps = self.getOffsetPose(dynamic_pose.ps, offset_t)
 
-		if self.distanceToPose(dynamic_pose.ps) > goal_tolerence :
+		if self.distanceToPose(base_offset_ps) > goal_tolerence :
 			self.publishResponse("Gmap base to %s_%s" % (dynamic_pose.color, dynamic_pose.id))
 			
-			self.gmapBaseTo(dynamic_pose.ps)
+			self.gmapBaseTo(base_offset_ps)
 			#now this contains logic to cancel, pause, and resume
-			while self.distanceToPose(dynamic_pose.ps) > goal_tolerence : 
+			dist = self.distanceToPose(base_offset_ps)
+			rate = rospy.Rate(10)
+			state = None
+			start_time = time.time()
+			duration = 0
+			while not state == GoalStatus.SUCCEEDED and duration < 20:
+				duration = time.time() - start_time
+				state = self.move_base.get_state()
+				if state == GoalStatus.SUCCEEDED:
+					rospy.loginfo("move_base SUCCEEDED")
+
+
+				base_offset_ps = self.getOffsetPose(dynamic_pose.ps, offset_t)
+				dist = self.distanceToPose(base_offset_ps)
+				rospy.logerr(dist)
 				if self.command_state == self.CANCELLED :
 					self.cancelgmapBaseTo()
 					return
@@ -85,12 +116,43 @@ class Nav_Manip_Controller :
 						self.cancelgmapBaseTo()
 					rate.sleep()
 				if paused and self.command_state == self.RUNNING:
-					self.gmapBaseTo(dynamic_pose.ps)
+					self.gmapBaseTo(base_offset_ps)
 				rate.sleep()
 
 			self.cancelgmapBaseTo()
 
-	def servoBaseToDynamicPos(self, dynamic_pose) :
+	def gmapBaseTo(self, ps):
+		goal = MoveBaseGoal()
+		self.move_base_target = self.transform_pose("map", ps)
+		goal.target_pose = self.move_base_target
+		rospy.logerr(goal)
+		self.move_base.send_goal(goal)
+
+	def cancelgmapBaseTo(self) :
+		rospy.logerr("Cancelling current action")
+		self.move_base.cancel_goal()
+
+	def wait_for_move_base(self):
+		success = self.move_base.wait_for_result(rospy.Duration(60)) 
+
+		if not success:
+				self.move_base.cancel_goal()
+				rospy.logerr("move_base FAILURE")
+		else:
+			state = self.move_base.get_state()
+			if state == GoalStatus.SUCCEEDED:
+				rospy.loginfo("move_base SUCCEEDED")
+
+	# def cancelgmapBaseTo(self) :
+	# 	self.gatlin_cmd_pub.publish(9)
+
+	# def gmapBaseTo(self, ps) :
+	# 	map_target_pose = self.transform_pose("map", ps)
+	# 	# map_robot_pose = self.transform_pose("map", self.robot_pose.ps)
+	# 	# map_target_pose.pose.orientation = map_robot_pose.pose.orientation
+	# 	self.gmap_base_pub.publish(map_target_pose)
+
+	def servoBaseToDynamicPos(self, dynamic_pose, offset_t=None) :
 		if self.command_state == self.CANCELLED :
 			return
 
@@ -100,25 +162,34 @@ class Nav_Manip_Controller :
 
 		self.publishResponse("Servo base to %s_%s" % (dynamic_pose.color, dynamic_pose.id))
 
-		rate = rospy.Rate(30)
-		if "%s_%s" % (dynamic_pose.color, dynamic_pose.id) == "hp_2":
+		if dynamic_pose.color == "hp":
 			rospy.logerr("MOVING TO HP")
-			desired_pos = Point(.28,0,0) # z is set to 0 when checking error
+			offset_t = Transform()
+			offset_t.translation = Vector3(-.28,0,0)
+			offset_t.rotation = Quaternion(0.0, 0.0, 0.0, 1.0)
+			# desired_pos = Point(.28,0,0) # z is set to 0 when checking error
 			resp = self.move_head("LOOK_FORWARD", PoseStamped())
 			goal_tolerence = .035
 		else:
-			desired_pos = Point(.30,0,0)
+			offset_t = Transform()
+			offset_t.translation = Vector3(-.30,0,0)
+			offset_t.rotation = Quaternion(0.0, 0.0, 0.0, 1.0)
+			# desired_pos = Point(.30,0,0)
 			resp = self.move_head("LOOK_DOWN", PoseStamped())
 			goal_tolerence = .025
 
-		base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
-		while self.servo_base_to_pos(desired_pos, base_pose.pose.position) > goal_tolerence :
+		base_offset_ps = self.getOffsetPose(dynamic_pose.ps, offset_t, output_frame=self.BASE_FRAME)
+		desired_pose = Pose()
+		# rot_tolerance = .07
+		# base_pose = self.transform_pose(self.BASE_FRAME, dynamic_pose.ps)
+		rate = rospy.Rate(30)
+		while self.servo_base_to_pose(desired_pose, base_offset_ps.pose) > goal_tolerence :
 			if self.command_state == self.CANCELLED :
 				return
 			
 			self.pauseCommand() #TODO move fr
 			if self.command_state == self.RUNNING :
-				base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
+				base_offset_ps = self.getOffsetPose(dynamic_pose.ps, offset_t, output_frame=self.BASE_FRAME)
 
 			rate.sleep()
 
@@ -133,31 +204,13 @@ class Nav_Manip_Controller :
 			self.publishResponse("Attempting to grab %s_%s" % (dynamic_pose.color, dynamic_pose.id))
 			resp = self.move_arm("OPEN_GRIPPER", PoseStamped())
 
-			def getOffsetPose():
-				# rospy.logerr(dynamic_pose.ps)
-				base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
-				base_to_ar_t = transform_from_pose(base_pose.pose)
+			offset_t = Transform()
+			# offset_t.translation = Vector3(-0.093, -0.019, 0.005)
+			offset_t.translation = Vector3(-0.025, 0.00, -0.025)
+			offset_t.rotation = Quaternion(0.0, 0.0, 0.0, 1.0)
+			base_offset_ps = self.getOffsetPose(dynamic_pose.ps, offset_t, output_frame=self.BASE_FRAME)
 
-				offset_t = Transform()
-				# offset_t.translation = Vector3(-0.093, -0.019, 0.005)
-				offset_t.translation = Vector3(-0.025, 0.00, -0.025)
-				offset_t.rotation = Quaternion(0.0, 0.0, 0.0, 1.0)
-				# offset_t.rotation = Quaternion(0.620, 0.658, -0.305, -0.298)
-				# offset_inv_t = inverse_transform(offset_t)
-
-				base_to_offset_t = multiply_transforms(base_to_ar_t, offset_t)
-				base_pose_offset = deepcopy(base_pose)
-				base_pose_offset.pose = transform_to_pose(base_to_offset_t)
-
-				# q = base_pose_offset.pose.orientation
-				# rpy = euler_from_quaternion([q.x,q.y,q.z,q.w])
-				# q = quaternion_from_euler(3.1415, 0.0, rpy[2])
-				# base_pose_offset.pose.orientation = Quaternion(q[0],q[1],q[2],q[3])
-				return base_pose_offset
-
-			# base_pose_offset = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
-			base_pose_offset = getOffsetPose()
-			resp = self.move_arm("MOVE_TO_POSE_INTERMEDIATE", base_pose_offset)
+			resp = self.move_arm("MOVE_TO_POSE_INTERMEDIATE", base_offset_ps)
 
 			if not resp.success:
 				rospy.logerr("MOVE_TO_POSE_INTERMEDIATE FAILED")
@@ -194,11 +247,11 @@ class Nav_Manip_Controller :
 
 		self.publishResponse("Releasing object to %s_%s" % (dynamic_pose.color, dynamic_pose.id))
 
-		if "%s_%s" % (dynamic_pose.color, dynamic_pose.id) == "hp_2":
+		if dynamic_pose.color == "hp":
 			resp = self.move_arm("PLACE_UPPER", PoseStamped())
 			rospy.logerr("PLACE_UPPER")
 		else:
-			base_pose = self.transform_pose(self.BASE_FAME, dynamic_pose.ps)
+			base_pose = self.transform_pose(self.BASE_FRAME, dynamic_pose.ps)
 			resp = self.move_arm("MOVE_TO_POSE_INTERMEDIATE", base_pose)
 
 		if not resp.success:
@@ -209,7 +262,7 @@ class Nav_Manip_Controller :
 		resp = self.move_arm("RESET_ARM", PoseStamped())
 
 	def interActionDelay(self, delay) : #if user tells command to quit, then you don't want delays to stack
-	 	if self.command_state == self.RUNNING :
+		if self.command_state == self.RUNNING :
 			rospy.sleep(delay)
 
 	def run_mott_sequence(self) :
@@ -222,8 +275,6 @@ class Nav_Manip_Controller :
 			self.search_sequence(self.object_dp)
 
 		self.moveBaseToDynamicPos(self.object_dp)
-
-		#if not self.joystick_topic == "" : TODO
 		self.servoBaseToDynamicPos(self.object_dp)
 		self.interActionDelay(1)
 
@@ -268,8 +319,40 @@ class Nav_Manip_Controller :
 		if not resp.success:
 			rospy.logerr("RESET_ARM FAILED")
 
+		# rospy.logerr()
+
+		# if self.target_dp.ps == None or self.target_dp.ps.pose.position == Point():
+		# 	self.search_sequence(self.target_dp)
+
 		self.moveBaseToDynamicPos(self.target_dp)
 		self.servoBaseToDynamicPos(self.target_dp)
+		
+		if self.command_state == self.RUNNING :
+			self.publishResponse("finished moving base to target")
+		elif self.command_state == self.PAUSING :
+			self.publishResponse("finished move base while pausing!?!?") 
+		elif self.command_state == self.CANCELLED :
+			self.publishResponse("quitting on user command")
+
+	def grab_sequence(self) :
+		resp = self.move_arm("OPEN_GRIPPER", PoseStamped())
+		resp = self.move_arm("RESET_ARM", PoseStamped())
+		if not resp.success:
+			rospy.logerr("RESET_ARM FAILED")
+
+		if self.object_dp.ps == None or self.object_dp.ps.pose.position == Point():
+			self.search_sequence(self.object_dp)
+
+		offset_t = Transform()
+		offset_t.translation = Vector3(-.25, 0, 0.0)
+		offset_t.rotation = Quaternion(0.0, 0.0, 0.0, 1.0)
+
+		self.moveBaseToDynamicPos(self.object_dp, offset_t=offset_t)
+		self.servoBaseToDynamicPos(self.object_dp)
+		self.interActionDelay(1)
+
+		self.grabObject(self.object_dp)
+		self.interActionDelay(1)
 		
 		if self.command_state == self.RUNNING :
 			self.publishResponse("finished moving base to target")
@@ -287,10 +370,13 @@ class Nav_Manip_Controller :
 		ps = PoseStamped()
 		ps.header.frame_id = "base_link"
 		ps.header.stamp = rospy.Time.now()
-		ps.pose.position = Point(0.46, 0.00, 0.60)
+		ps.pose.position = Point(0.30, 0.00, 0.30)
 
 		while dp.ps == None or dp.ps.pose.position == Point():
-			ps.pose.position.z -= .05
+			if ps.pose.position.z < 0:
+				ps.pose.position.z = 0
+			else:
+				ps.pose.position.z -= .05
 			resp = self.move_head("LOOK_AT", ps)
 			rospy.logerr("%s_%s not found yet" % (dp.color, dp.id))
 			rospy.sleep(1.5)
@@ -318,6 +404,8 @@ class Nav_Manip_Controller :
 
 		self.command_state = self.RUNNING
 
+		# rospy.logerr(data)
+
 		if data.object_pose_topic != "" :
 			self.object_dp.subscribe_name(data.object_pose_topic)
 
@@ -337,6 +425,9 @@ class Nav_Manip_Controller :
 		elif data.command == "move_base" :
 			rospy.loginfo("Starting Move Base TO")
 			self.base_to_sequence()
+		elif data.command == "grab" :
+			rospy.loginfo("Starting Grab")
+			self.grab_sequence()
 		elif data.command == "search" :
 			rospy.loginfo("Starting Search")
 			self.search_sequence()
@@ -359,15 +450,6 @@ class Nav_Manip_Controller :
 	def baseJoystickPublish (msg) :
 		self.base_joystick_pub.publish(msg)
 
-	def cancelgmapBaseTo(self) :
-		self.gatlin_cmd_pub.publish(9)
-
-	def gmapBaseTo(self, ps) :
-		map_target_pose = self.transform_pose("map", ps)
-		# map_robot_pose = self.transform_pose("map", self.robot_pose.ps)
-		map_target_pose.pose.orientation = map_robot_pose.pose.orientation
-		self.gmap_base_pub.publish(map_target_pose)
-
 	def publishResponse(self, statement) :
 		rospy.loginfo(statement)
 		self.response_pub.publish(statement)
@@ -375,7 +457,7 @@ class Nav_Manip_Controller :
 	# get the distance from the base to the given pose
 	def distanceToPose(self, ps) :
 		origin = Point(0,0,0)
-		pose = self.transform_pose(self.BASE_FAME, ps)
+		pose = self.transform_pose(self.BASE_FRAME, ps)
 		return distance(origin, pose.pose.position)
 
 	# transform the pose stamped to the new frame
@@ -414,7 +496,7 @@ class Nav_Manip_Controller :
 
 		# self.FIXED_FRAME = "global_map"
 		self.FIXED_FRAME = "odom"
-		self.BASE_FAME = "base_link"
+		self.BASE_FRAME = "base_link"
 
 		robot = "gatlin"
 		self.base_joystick_pub = rospy.Publisher("/cmd_vel_mux/input/teleop", Twist) #<--- joystick topic
@@ -432,6 +514,21 @@ class Nav_Manip_Controller :
 		self.objectlist_pub = rospy.Publisher("/%s/ar_marker_list" % robot, ObjectList, queue_size=3)
 
 		self.test_pose_pub = rospy.Publisher('/test_obj_pose', PoseStamped)
+
+		#tell the action client that we want to spin a thread by default
+		self.move_base = actionlib.SimpleActionClient("move_base", MoveBaseAction)
+		rospy.loginfo("wait for the action server to come up")
+		#allow up to 5 seconds for the action server to come up
+		self.move_base.wait_for_server(rospy.Duration(10))
+
+		# # test move_base
+		# ps = PoseStamped()
+		# ps.header.stamp = rospy.Time.now()
+		# ps.header.frame_id = "base_link"
+		# ps.pose.position = Point(.1, 0, 0)
+		# ps.pose.orientation = Quaternion(0,0,0,1)
+		# self.gmapBaseTo(ps)
+		# rospy.logerr("test move_base")
 
 		rospy.spin()
 

@@ -20,11 +20,11 @@
 	<!-- <arg name="sim" value="$(arg sim)"/> -->
 </include>
 
-<node pkg="gatlin" type="gatlin_mott.py" name="gatlin_mott" output="screen"/> 
+<!-- <node pkg="gatlin" type="gatlin_mott.py" name="gatlin_mott" output="screen"/>  -->
 
 <include file="$(find gatlin)/launch/laser_scan_gatlin.launch" />
 
-<!-- <include file="$(find gatlin)/launch/ar_gatlin.launch" /> -->
+<include file="$(find gatlin)/launch/ar_gatlin.launch" />
 
 <!-- <node pkg="gatlin" type="vision.py" name="vision" output="screen"/> -->
 
@@ -35,7 +35,9 @@
 
 <node pkg="gatlin" type="arm_controller.py" name="arm_controller" output="screen"/>
 
-<!-- <node pkg="gatlin" type="head_controller.py" name="head_controller" output="screen"/> -->
+<node pkg="gatlin" type="head_controller.py" name="head_controller" output="screen"/>
+
+<node pkg="gatlin" type="GmapperConverter.py" name="GmapperConverter"/>
 
 <node if="$(arg calibrate)" pkg="dynamic_tf" type="server.py" name="server"/>
 
@@ -63,9 +65,7 @@
 	<arg name="scan_topic" value="/plannar_scan"/>
 </include>
 
-<include file="$(find turtlebot_navigation)/launch/includes/move_base.launch.xml"/>
-
-<node pkg="gatlin" type="GmapperConverter.py" name="GmapperConverter"/>
+<include file="$(find gatlin)/launch/includes/move_base.launch.xml"/>
 
 <node name="robot_pose_throttler" type="throttle" pkg="topic_tools" args="messages /robot_pose_ekf/odom_combined 20 /robot_pose_ekf/odom_combined_throttled"/>
 
@@ -78,6 +78,6 @@
 <node pkg="tf" type="static_transform_publisher" name="map_tf" args="0 0 0 0 0 0 1 /gatlin /map 100"/>
 <!-- what is the root transform of gatlin? -->
 
-<!-- <node pkg="tf" type="static_transform_publisher" name="gatlin_tf" args="0 0 0 0 0 0 1 /global_map /map 100"/> -->
+<node pkg="tf" type="static_transform_publisher" name="gatlin_tf" args="0 0 0 0 0 0 1 /global_map /map 100"/>
 
 </launch>

@@ -28,8 +28,9 @@
 
 	<node pkg="gatlin" type="laser_scan_filter.py" name="laser_scan_filter" output="screen" />
 
-	<node pkg="tf" type="static_transform_publisher" name="plannar_optical_tf" args="0.0 0.0 $(arg scan_height) -1.571 -0.000 -1.571 base_link plannar_optical_frame 100"/>
+	<!-- <node pkg="tf" type="static_transform_publisher" name="plannar_optical_tf" args="0.0 0.0 $(arg scan_height) -1.571 -0.000 -1.571 base_link plannar_optical_frame 100"/> -->
+	<node pkg="tf" type="static_transform_publisher" name="plannar_optical_tf" args="-0.025 -0.002 -0.368 -1.571 0.000 -1.591 head_tilt_servo_link plannar_optical_frame 1000"/>
 
-	<node pkg="tf" type="static_transform_publisher" name="plannar_tf" args="0.0 0.0 0.0 1.571 -1.571 0.000 plannar_optical_frame plannar_frame 100"/>
+	<node pkg="tf" type="static_transform_publisher" name="plannar_tf" args="0.0 0.0 0.0 1.571 -1.571 0.000 plannar_optical_frame plannar_frame 1000"/>
 
 </launch>
