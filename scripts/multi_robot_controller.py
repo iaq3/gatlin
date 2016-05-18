@@ -326,7 +326,7 @@ class MRC:
         self.crq_locked = True
 
         # recieve commands
-        generated_cmd_ids = {}
+        self.generated_cmd_ids = {}
         for cmd in cmd_req.commands:
             if cmd.action == "mott":
                 cmd.args = cmd.args.replace("'", "\"")
@@ -357,25 +357,31 @@ class MRC:
                 if path != None:
                     gci = self.wcg.generate_commands(path)
                     # rospy.logerr(gci)
-                    generated_cmd_ids[cmd.id] = gci
+                    self.generated_cmd_ids[cmd.id] = gci
 
                 
 
             elif cmd.action == "move_base":
                 cmd.args = cmd.args.replace("'", "\"")
-                mott = json_message_converter.convert_json_to_ros_message('gatlin/Mott', cmd.args)
-                self.wcg.add_target(mott.target_pose_topic, mott.target_pose)
+                # mott = json_message_converter.convert_json_to_ros_message('gatlin/Mott', cmd.args)
+                # self.wcg.add_target(mott.target_pose_topic, mott.target_pose)
+                # gci = self.wcg.generate_move_base_command(path)
+                self.generated_cmd_ids[cmd.id] = str(self.wcg.cmd_idx)
+                cmd.id = str(self.wcg.cmd_idx)
+                self.wcg.cmd_idx += 1
+                self.crq.add_command_req(cmd, "gatlin")
+                rospy.logerr("ADDED MOVEBASE TO CRQ")
 
         # use dependencies to build update crq
-        rospy.logerr(generated_cmd_ids)
+        rospy.logerr(self.generated_cmd_ids)
         for i in range(0, len(cmd_req.parents)):
             parent = cmd_req.parents[i]
             child = cmd_req.children[i]
             # rospy.logerr(parent)
             # rospy.logerr(child)
 
-            for parent_id in generated_cmd_ids[parent]:
-                for child_id in generated_cmd_ids[child]:
+            for parent_id in self.generated_cmd_ids[parent]:
+                for child_id in self.generated_cmd_ids[child]:
                     # rospy.logerr("%s <- %s" % (parent_id, child_id))
                     self.crq.add_dependency(parent_id, child_id)
 
@@ -452,7 +458,7 @@ class Robot:
     def execute_command(self, cmd):
         if cmd != None:
             if cmd.action == "mott" or cmd.action == "move_base":
-                self.response_pub.publish("starting: "+cmd.id) #could also put this in response...
+                self.robot_state_pub.publish("starting: "+cmd.id) #could also put this in response...
                 self.current_cmd = deepcopy(cmd)
                 # rospy.logerr("self.current_cmd")
                 # rospy.logerr(self.current_cmd)
@@ -516,7 +522,7 @@ class WorkspaceConnectivityGraph:
         # generate actions based on optimal path
         # use dependencies to build action graph
         # put actions in queue
-        generated_cmd_ids = []
+        self.generated_cmd_ids = []
         num_robots = (len(path)-1)/2
         num_hp = (len(path)-3)/2
         if num_hp < 1: num_hp = 0
@@ -557,45 +563,46 @@ class WorkspaceConnectivityGraph:
             crl.commands.append(cr)
 
             self.crq.add_command_req(cr, robot_name)
-            generated_cmd_ids.append(cr.id)
+            self.generated_cmd_ids.append(cr.id)
             if i > 0:
                 self.crq.add_dependency(prev_id, cr.id)
 
-        return generated_cmd_ids
+        return self.generated_cmd_ids
 
 
-    def generate_move_base_command(self, mb):
-        # generate move base
+    # def generate_move_base_command(self, cr):
+    #     # generate move base
 
-        # crl = CommandRequestList()
-        # for i in range(0, num_robots):
-        #     robot_name = path[i*2+1]
-        #     target_name = path[i*2+2]
-        target_dp = self.find_target(m.target_pose_topic)
+    #     # crl = CommandRequestList()
+    #     # for i in range(0, num_robots):
+    #     #     robot_name = path[i*2+1]
+    #     #     target_name = path[i*2+2]
+    #     target_dp = self.find_target(m.target_pose_topic)
 
-        if target_dp == None:
-            rospy.logerr("no dp for %s" % target_name)
-            return []
+    #     if target_dp == None:
+    #         rospy.logerr("no dp for %s" % target_name)
+    #         return []
 
-        m.target_pose = target_dp.ps
-        # rospy.logerr(m)
+    #     m.target_pose = target_dp.ps
+    #     # rospy.logerr(m)
 
-        m_json = json_message_converter.convert_ros_message_to_json(m)
+    #     m_json = json_message_converter.convert_ros_message_to_json(m)
 
-        cr = CommandRequest()
-        cr.id = str(self.cmd_idx)
-        prev_id = str(self.cmd_idx-1)
-        self.cmd_idx += 1
-        cr.action = "mott"
-        cr.args = m_json
-        crl.commands.append(cr)
+    #     cr = CommandRequest()
+    #     cr.id = str(self.cmd_idx)
+    #     prev_id = str(self.cmd_idx-1)
+    #     self.cmd_idx += 1
+    #     cr.action = "move_base"
+    #     cr.args = m_json
+    #     crl.commands.append(cr)
 
-        self.crq.add_command_req(cr, robot_name)
-        generated_cmd_ids.append(cr.id)
-        if i > 0:
-            self.crq.add_dependency(prev_id, cr.id)
+    #     robot_name = "gatlin"
+    #     self.crq.add_command_req(cr, robot_name)
+    #     # self.generated_cmd_ids.append(cr.id)
+    #     # if i > 0:
+    #         # self.crq.add_dependency(prev_id, cr.id)
 
-        return cr.id
+    #     return cr.id
 
 
     def find_target(self, target_name):

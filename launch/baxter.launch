@@ -11,29 +11,18 @@
 		<param name="outgoing" value=""/>
 	</node>
 
-	<!-- <include file="$(find gatlin)/launch/baxter_mott.launch" /> -->
+	<include file="$(find gatlin)/launch/baxter_mott.launch" />
 	
 	<include file="$(find gatlin)/launch/ar_baxter.launch" />
 
-	<!-- <node pkg="gatlin" type="baxter_controller.py" name="baxter_controller_right" output="screen">
-		<param name="limb" value="right"/>
-	</node>
+	<include file="$(find gatlin)/launch/baxter_limb.launch">
+		<arg name="limb" value="left"/>
+	</include>
 
-	<node pkg="gatlin" type="baxter_controller.py" name="baxter_controller_left" output="screen">
-		<param name="limb" value="left"/>
-	</node>
-
-	<node pkg="gatlin" type="execute_velocity.py" name="execute_velocity_left" output="screen">
-		<param name="limb" value="left"/>
-	</node>
-
-	<node pkg="gatlin" type="execute_velocity.py" name="execute_velocity_right" output="screen">
-		<param name="limb" value="right"/>
-	</node> -->
+	<include file="$(find gatlin)/launch/baxter_limb.launch">
+		<arg name="limb" value="right"/>
+	</include>
 
 	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find gatlin)/rviz/baxter.rviz"/>
-
-	<node name="left_camera_control" pkg="baxter_tools" type="camera_control.py" args="-o left_hand_camera -r 640x400"/>
-	<node name="right_camera_control" pkg="baxter_tools" type="camera_control.py" args="-o right_hand_camera -r 640x400"/>
 
 </launch>

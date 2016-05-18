@@ -1,0 +1,2 @@
+gatlin ar object not positioned correctly
+when baxter can't see block, still keeps trying to pick up where it last was, should search and then timeout

@@ -219,7 +219,7 @@ def multiply_quaternion(q_0, q_1):
 					   q_0[2]*q_1[3] + q_0[3]*q_1[2] - q_0[1]*q_1[0] + q_0[0]*q_1[1],
 					   q_0[3]*q_1[3] - q_0[0]*q_1[0] - q_0[1]*q_1[1] - q_0[2]*q_1[2] ])
 
-def mirror_left_arm_joints(new_pos):
+def mirror_left_arm_joints(pos):
 
 	joint_limits = {
 		"s0": [-2.461, 0.890],
@@ -240,10 +240,13 @@ def mirror_left_arm_joints(new_pos):
 		'w1': 0.2615, 
 		'w2': 0.0
 	}
-	for key in new_pos:
-				limbless_key = key[-2:]
-				if limbless_key != 'e1' and limbless_key != 's1' and limbless_key != 'w1':
-					new_pos[key] = joint_middle[limbless_key] - (new_pos[key] - joint_middle[limbless_key])
+	new_pos = {}
+	for key in pos:
+		limbless_key = key[-2:]
+		if limbless_key != 'e1' and limbless_key != 's1' and limbless_key != 'w1':
+			new_pos["right_"+limbless_key] = joint_middle[limbless_key] - (pos[key] - joint_middle[limbless_key])
+		else:
+			new_pos["right_"+limbless_key] = pos[key]
 
 	return new_pos
 

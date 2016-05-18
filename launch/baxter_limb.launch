@@ -1,0 +1,19 @@
+<launch>
+	
+	<arg name="limb" default="left"/>
+
+	<node pkg="gatlin" type="baxter_controller.py" name="baxter_controller_$(arg limb)" output="screen">
+		<param name="limb" value="$(arg limb)"/>
+	</node>
+
+	<node pkg="gatlin" type="execute_velocity.py" name="execute_velocity_$(arg limb)" output="screen">
+		<param name="limb" value="$(arg limb)"/>
+	</node>
+
+	<node pkg="gatlin" type="torque_thrower.py" name="torque_thrower_$(arg limb)" output="screen">
+		<param name="limb" value="$(arg limb)"/>
+	</node>
+
+	<node name="$(arg limb)_camera_control" pkg="baxter_tools" type="camera_control.py" args="-o $(arg limb)_hand_camera -r 640x400"/>
+
+</launch>

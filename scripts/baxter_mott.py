@@ -251,6 +251,51 @@ class Nav_Manip_Controller :
 		elif self.command_state == self.CANCELLED :
 			self.publishResponse("quitting on user command")
 
+	def throw_sequence(self):
+		if self.object_dp.ps == None:
+			rospy.logerr("object_pose not set")
+			return
+
+		if self.object_dp.ps == None or self.object_dp.ps.pose.position == Point():
+			self.search_sequence(self.object_dp)
+
+		# self.test_pose_pub.publish(self.object_dp.ps)
+
+		self.grabObject(self.object_dp)
+		
+		self.interActionDelay(1)
+
+		resp = self.thrower("throw","")
+		rospy.logerr("finished throw: %r", resp.success)
+
+		# ol = ObjectList()
+		# o = Object()
+		# o.id = self.object_dp.id
+		# o.color = self.object_dp.color
+		# o.pose = PoseStamped()
+		# ol.objects.append(o)
+		# self.objectlist_pub.publish(ol)
+
+		# ol = ObjectList()
+		# o = Object()
+		# o.id = self.object_dp.id
+		# o.color = self.object_dp.color
+		# o.pose = deepcopy(self.target_dp.ps)
+		# ol.objects.append(o)
+		# self.objectlist_pub.publish(ol)
+		# self.objectlist_pub.publish(ol)
+
+		self.interActionDelay(1)
+
+		resp = self.move_arm("RESET_ARM", PoseStamped())
+
+		if self.command_state == self.RUNNING :
+			self.publishResponse("finished mott") #string must contain finished
+		elif self.command_state == self.PAUSING :
+			self.publishResponse("finished mott while pausing!?!?") 
+		elif self.command_state == self.CANCELLED :
+			self.publishResponse("quitting on user command")
+
 	def search_sequence(self, dp) :
 
 		rospy.logerr("Searching for %s_%s" % (dp.color, dp.id))
@@ -286,16 +331,18 @@ class Nav_Manip_Controller :
 		if data.target_pose_topic != "" :
 			self.target_dp.subscribe_name(data.target_pose_topic)
 		
-		if (data.object_pose) :
+		if data.object_pose.header.frame_id != "" :
 			self.object_dp.set_pose(data.object_pose)
 
-		if (data.target_pose) :
+		if data.target_pose.header.frame_id != "" :
 			self.target_dp.set_pose(data.target_pose)
 		
 		rospy.sleep(.2)
 
 		if data.command == "mott" :
 			self.run_mott_sequence()
+		if data.command == "throw" :
+			self.throw_sequence()
 		else:
 			rospy.logerr("Invalid Command: %s" % data.command)
 
@@ -377,6 +424,7 @@ class Nav_Manip_Controller :
 
 		# self.move_arm = createServiceProxy("baxter/move/arm", MoveRobot, self.robot_name)
 		self.move_arm = createServiceProxy("/%s/move/arm" % robot, MoveRobot)
+		self.thrower = createServiceProxy("/%s/throw" % robot, Action)
 		
 		self.execute_vel_pub = rospy.Publisher("/baxter_ex_vel_%s" % limb_name, Twist, queue_size = 1)
 		

@@ -160,7 +160,7 @@
 
     // gatlin -> unity
     // forwardTopic(gatlin_ros, hub_ros, '/gatlin_mott_response', 'std_msgs/String');
-    // forwardTopic(gatlin_ros, hub_ros, '/tool_tip_link_in_base_link', 'geometry_msgs/PoseStamped');
+    forwardTopic(gatlin_ros, hub_ros, '/tool_tip_link_in_base_link', 'geometry_msgs/PoseStamped');
     // forwardTopic(gatlin_ros, hub_ros, '/octomap_array', 'std_msgs/UInt16MultiArray');
     // forwardTopic(gatlin_ros, hub_ros, '/map', 'nav_msgs/OccupancyGrid');
     forwardTopic(gatlin_ros, hub_ros, '/robot_pose', 'geometry_msgs/PoseStamped');
@@ -175,7 +175,7 @@
     // forwardTopic(hub_ros, gatlin_ros, '/gatlin_res', 'std_msgs/Float32');
     forwardTopic(hub_ros, gatlin_ros, '/cmd_vel_mux/input/teleop', 'geometry_msgs/Twist');
     // forwardTopic(hub_ros, gatlin_ros, '/target_pos', 'geometry_msgs/Vector3');
-    // forwardTopic(hub_ros, gatlin_ros, '/head_pos', 'geometry_msgs/Vector3');
+    forwardTopic(hub_ros, gatlin_ros, '/head_pos', 'geometry_msgs/Vector3');
     // forwardTopic(hub_ros, gatlin_ros, '/move/gripper', 'std_msgs/Float32');
     // forwardTopic(hub_ros, gatlin_ros, '/move_to_goal', 'geometry_msgs/PoseStamped');
     // forwardTopic(hub_ros, gatlin_ros, '/arm_target_pose', 'geometry_msgs/PoseStamped');
@@ -183,6 +183,7 @@
     // forwardTopic(hub_ros, gatlin_ros, '/gatlin_mott_command', 'std_msgs/String');
     forwardTopic(hub_ros, gatlin_ros, '/server/tf', 'tf/tfMessage');
     forwardTopic(hub_ros, gatlin_ros, '/server/ar_marker_list', 'gatlin/ObjectList');
+    
 
     // TODO:
     // test the gatlin hub link with unity client connected to lab computer ip
