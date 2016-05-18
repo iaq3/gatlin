@@ -362,7 +362,9 @@ class MRC:
                 
 
             elif cmd.action == "move_base":
-                pass
+                cmd.args = cmd.args.replace("'", "\"")
+                mott = json_message_converter.convert_json_to_ros_message('gatlin/Mott', cmd.args)
+                self.wcg.add_target(mott.target_pose_topic, mott.target_pose)
 
         # use dependencies to build update crq
         rospy.logerr(generated_cmd_ids)
@@ -560,6 +562,40 @@ class WorkspaceConnectivityGraph:
                 self.crq.add_dependency(prev_id, cr.id)
 
         return generated_cmd_ids
+
+
+    def generate_move_base_command(self, mb):
+        # generate move base
+
+        # crl = CommandRequestList()
+        # for i in range(0, num_robots):
+        #     robot_name = path[i*2+1]
+        #     target_name = path[i*2+2]
+        target_dp = self.find_target(m.target_pose_topic)
+
+        if target_dp == None:
+            rospy.logerr("no dp for %s" % target_name)
+            return []
+
+        m.target_pose = target_dp.ps
+        # rospy.logerr(m)
+
+        m_json = json_message_converter.convert_ros_message_to_json(m)
+
+        cr = CommandRequest()
+        cr.id = str(self.cmd_idx)
+        prev_id = str(self.cmd_idx-1)
+        self.cmd_idx += 1
+        cr.action = "mott"
+        cr.args = m_json
+        crl.commands.append(cr)
+
+        self.crq.add_command_req(cr, robot_name)
+        generated_cmd_ids.append(cr.id)
+        if i > 0:
+            self.crq.add_dependency(prev_id, cr.id)
+
+        return cr.id
 
 
     def find_target(self, target_name):
