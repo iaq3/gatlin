@@ -449,7 +449,7 @@ class Robot:
    
     def execute_command(self, cmd):
         if cmd != None:
-            if cmd.action == "mott":
+            if cmd.action == "mott" or cmd.action == "move_base":
                 self.response_pub.publish("starting: "+cmd.id) #could also put this in response...
                 self.current_cmd = deepcopy(cmd)
                 # rospy.logerr("self.current_cmd")
