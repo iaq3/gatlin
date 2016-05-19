@@ -150,10 +150,10 @@ class Tf_to_Unity:
 
 		transform_pubs = []
 
-		kinect_in_base = Tf_Transformer(self.tfl, KINECT_FRAME, BASE_FRAME, rospy.Rate(10)) # use different rates for less msg collisions?
+		kinect_in_base = Tf_Transformer(self.tfl, KINECT_FRAME, BASE_FRAME, rospy.Rate(5)) # use different rates for less msg collisions?
 		transform_pubs.append(kinect_in_base)
 
-		gripper_in_base = Tf_Transformer(self.tfl, TOOL_FRAME, BASE_FRAME, rospy.Rate(9))
+		gripper_in_base = Tf_Transformer(self.tfl, TOOL_FRAME, BASE_FRAME, rospy.Rate(4))
 		transform_pubs.append(gripper_in_base)
 
 		# base_in_fixed = Tf_Transformer(self.tfl, BASE_FRAME, FIXED_FRAME, rospy.Rate(10))

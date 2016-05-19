@@ -37,8 +37,6 @@
 
 <node pkg="gatlin" type="head_controller.py" name="head_controller" output="screen"/>
 
-<node pkg="gatlin" type="GmapperConverter.py" name="GmapperConverter"/>
-
 <node if="$(arg calibrate)" pkg="dynamic_tf" type="server.py" name="server"/>
 
 <node pkg="web_video_server" type="web_video_server" name="web_video_server"/>
@@ -65,7 +63,9 @@
 	<arg name="scan_topic" value="/plannar_scan"/>
 </include>
 
-<include file="$(find gatlin)/launch/includes/move_base.launch.xml"/>
+<include file="$(find turtlebot_navigation)/launch/includes/move_base.launch.xml"/>
+
+<node pkg="gatlin" type="GmapperConverter.py" name="GmapperConverter"/>
 
 <node name="robot_pose_throttler" type="throttle" pkg="topic_tools" args="messages /robot_pose_ekf/odom_combined 20 /robot_pose_ekf/odom_combined_throttled"/>
 
@@ -78,6 +78,6 @@
 <node pkg="tf" type="static_transform_publisher" name="map_tf" args="0 0 0 0 0 0 1 /gatlin /map 100"/>
 <!-- what is the root transform of gatlin? -->
 
-<node pkg="tf" type="static_transform_publisher" name="gatlin_tf" args="0 0 0 0 0 0 1 /global_map /map 100"/>
+<node pkg="tf" type="static_transform_publisher" name="gatlin_tf" args="0 0 0 0 0 0 1 /global_map /gatlin 100"/>
 
 </launch>
