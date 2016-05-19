@@ -187,7 +187,7 @@ class BaxterController():
         arm = self.limb
         hand_pose = self.getCurrentPose(arm)
         max_z = max(hand_pose.position.z, pose.position.z)
-        offset = .12
+        offset = .16
         if inter1 :
             interpose1 = self.getOffsetPose(hand_pose, offset)
             interpose1.position.z = max_z + offset

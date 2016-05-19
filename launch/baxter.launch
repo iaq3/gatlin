@@ -15,9 +15,9 @@
 	
 	<include file="$(find gatlin)/launch/ar_baxter.launch" />
 
-	<include file="$(find gatlin)/launch/baxter_limb.launch">
+	<!-- <include file="$(find gatlin)/launch/baxter_limb.launch">
 		<arg name="limb" value="left"/>
-	</include>
+	</include> -->
 
 	<include file="$(find gatlin)/launch/baxter_limb.launch">
 		<arg name="limb" value="right"/>

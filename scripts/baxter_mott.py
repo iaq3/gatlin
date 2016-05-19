@@ -154,7 +154,7 @@ class Nav_Manip_Controller :
 
 			if not num_tries < max_tries:
 				self.command_state = self.CANCELLED
-				return
+				return False
 
 			self.pauseCommand()
 
@@ -174,6 +174,8 @@ class Nav_Manip_Controller :
 				rospy.logerr("MISSED %s_%s" % (dynamic_pose.color, dynamic_pose.id))
 
 		self.publishResponse("Grabbed %s_%s" % (dynamic_pose.color, dynamic_pose.id))
+
+		return True
 
 	def pauseCommand(self) :
 		while self.command_state == self.PAUSING :
@@ -208,16 +210,17 @@ class Nav_Manip_Controller :
 			rospy.sleep(delay)
 
 	def run_mott_sequence(self) :
-		if self.object_dp.ps == None:
-			rospy.logerr("object_pose not set")
-			return
-
 		if self.object_dp.ps == None or self.object_dp.ps.pose.position == Point():
+			rospy.logerr("object_pose not set")
 			self.search_sequence(self.object_dp)
 
 		# self.test_pose_pub.publish(self.object_dp.ps)
 
-		self.grabObject(self.object_dp)
+		success = self.grabObject(self.object_dp)
+		if not success:
+			rospy.logerr("Failed to grab object, will not place object")
+			resp = self.move_arm("RESET_ARM", PoseStamped())
+			return
 		
 		self.interActionDelay(1)
 
@@ -252,38 +255,46 @@ class Nav_Manip_Controller :
 			self.publishResponse("quitting on user command")
 
 	def throw_sequence(self):
-		if self.object_dp.ps == None:
-			rospy.logerr("object_pose not set")
-			return
-
 		if self.object_dp.ps == None or self.object_dp.ps.pose.position == Point():
+			rospy.logerr("object_pose not set")
 			self.search_sequence(self.object_dp)
 
 		# self.test_pose_pub.publish(self.object_dp.ps)
 
-		self.grabObject(self.object_dp)
+		success = self.grabObject(self.object_dp)
+
+		if not success:
+			rospy.logerr("Failed to grab object, will not throw")
+			return
 		
 		self.interActionDelay(1)
 
 		resp = self.thrower("throw","")
 		rospy.logerr("finished throw: %r", resp.success)
 
-		# ol = ObjectList()
-		# o = Object()
-		# o.id = self.object_dp.id
-		# o.color = self.object_dp.color
-		# o.pose = PoseStamped()
-		# ol.objects.append(o)
-		# self.objectlist_pub.publish(ol)
+		ol = ObjectList()
+		o = Object()
+		o.id = self.object_dp.id
+		o.color = self.object_dp.color
+		o.pose = PoseStamped()
+		ol.objects.append(o)
+		self.objectlist_pub.publish(ol)
 
-		# ol = ObjectList()
-		# o = Object()
-		# o.id = self.object_dp.id
-		# o.color = self.object_dp.color
-		# o.pose = deepcopy(self.target_dp.ps)
-		# ol.objects.append(o)
-		# self.objectlist_pub.publish(ol)
-		# self.objectlist_pub.publish(ol)
+		ol = ObjectList()
+		o = Object()
+		o.id = self.object_dp.id
+		o.color = self.object_dp.color
+
+		ps = PoseStamped()
+		ps.header.stamp = rospy.Time.now()
+		ps.header.frame_id = "baxter"
+		ps.pose.position = Point(2.0,0,-1.0)
+		ps.pose.orientation = Quaternion(0,1,0,0)
+		o.pose = ps
+
+		ol.objects.append(o)
+		self.objectlist_pub.publish(ol)
+		self.objectlist_pub.publish(ol)
 
 		self.interActionDelay(1)
 
@@ -338,6 +349,7 @@ class Nav_Manip_Controller :
 			self.target_dp.set_pose(data.target_pose)
 		
 		rospy.sleep(.2)
+		rospy.logerr(data)
 
 		if data.command == "mott" :
 			self.run_mott_sequence()

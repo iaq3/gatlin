@@ -163,7 +163,7 @@ class FM:
         # initialize baxter in global_map
         baxter.update(self.create_ts(
             FIXED_FRAME, "baxter",
-            1,0,1, 0,0,0,1
+            2,0,1, 0,0,0,1
         ))
         self.frames.append(baxter)
         

@@ -2,6 +2,7 @@
 
 from config import *
 from Dynamic import *
+from MRCTester import *
 from CmdReqQueue import *
 import numpy as np
 import rospy
@@ -34,10 +35,14 @@ class MRC:
         self.init_robots()
         
         self.wcg = WorkspaceConnectivityGraph(self.robots, self.crq, self.tfl)
+        # self.wcg_shower = WCGShower(self.wcg)
+        # self.wcg_shower.start()
 
-        # self.one_block_move()
-        # self.two_block_stack()
-        # self.three_block_stack()
+        self.mrc_tester = MRCTester(self)
+        # self.mrc_tester.one_block_move()
+        # self.mrc_tester.two_block_stack()
+        # self.mrc_tester.three_block_stack()
+        # self.mrc_tester.test_mott_throw()
 
         self.crq_locked = False
 
@@ -53,176 +58,6 @@ class MRC:
             rate.sleep()
 
         rospy.spin()
-
-    def one_block_move(self):
-        m = Mott()
-        m.command = "mott"
-        m.object_pose_topic = "ar_5"
-        m.target_pose_topic = "target_1"
-
-        # m.object_pose = PoseStamped()
-
-        table_z = -.230
-        hp2_z = -0.548
-        # m.object_pose.header.frame_id = "baxter"
-        # m.object_pose.header.stamp = rospy.Time.now()
-        # m.object_pose.pose.position = Point(.6,-.5, table_z)
-        # m.object_pose.pose.position = Point(-0.1,0.725, hp2_z)
-        # m.object_pose.pose.orientation = Quaternion(0,1,0,0)
-        
-        m.target_pose.header.frame_id = "baxter"
-        m.target_pose.header.stamp = rospy.Time.now()
-        # m.target_pose.pose.position = Point(.6,-.5, table_z)
-        m.target_pose.pose.position = Point(0.1,0.725, hp2_z)
-        m.target_pose.pose.orientation = Quaternion(0,1,0,0)
-        # rospy.logerr(m)
-
-        # m.object_pose.header.frame_id = "gatlin"
-        # m.object_pose.header.stamp = rospy.Time.now()
-        # m.object_pose.pose.position = Point(0.21,-0.37, 0.03)
-        # m.object_pose.pose.orientation = Quaternion(0,1,0,0)
-        mott_json = json_message_converter.convert_ros_message_to_json(m)
-
-        # test CommandRequestList
-        crl = CommandRequestList()
-        cr = CommandRequest()
-        cr.id = 1
-        cr.action = "mott"
-        cr.args = mott_json
-        crl.commands.append(cr)
-
-        self.mr_command_req_callback(crl)
-
-    def two_block_stack(self):
-        table_z = -.230
-        hp2_z = -0.548
-        block_width = .0385
-
-        crl = CommandRequestList()
-
-        m = Mott()
-        m.command = "mott"
-        m.object_pose_topic = "ar_3"
-        m.target_pose_topic = "target_1"
-
-        m.object_pose.header.frame_id = "baxter"
-        
-        m.target_pose.header.frame_id = "baxter"
-        m.target_pose.header.stamp = rospy.Time.now()
-        m.target_pose.pose.position = Point(.6,-.5, table_z)
-        # m.target_pose.pose.position = Point(-0.1,0.725, hp2_z)
-        m.target_pose.pose.orientation = Quaternion(0,1,0,0)
-
-        mott_json = json_message_converter.convert_ros_message_to_json(m)
-
-        cr = CommandRequest()
-        cr.id = "1"
-        cr.action = "mott"
-        cr.args = mott_json
-        crl.commands.append(cr)
-
-        m = Mott()
-        m.command = "mott"
-        m.object_pose_topic = "ar_5"
-        m.target_pose_topic = "target_2"
-
-        m.object_pose.header.frame_id = "baxter"
-        
-        m.target_pose.header.frame_id = "baxter"
-        m.target_pose.header.stamp = rospy.Time.now()
-        m.target_pose.pose.position = Point(.6,-.5, table_z+block_width)
-        # m.target_pose.pose.position = Point(-0.1,0.725, hp2_z)
-        m.target_pose.pose.orientation = Quaternion(0,1,0,0)
-        
-        mott_json = json_message_converter.convert_ros_message_to_json(m)
-
-        cr = CommandRequest()
-        cr.id = "2"
-        cr.action = "mott"
-        cr.args = mott_json
-        crl.commands.append(cr)
-
-        crl.parents = ["1"]
-        crl.children = ["2"]
-
-        # test CommandRequestList
-        self.mr_command_req_callback(crl)
-
-    def three_block_stack(self):
-        table_z = -.230
-        hp2_z = -0.548
-        block_width = .0385
-
-        crl = CommandRequestList()
-
-        m = Mott()
-        m.command = "mott"
-        m.object_pose_topic = "ar_5"
-        m.target_pose_topic = "target_1"
-
-        m.object_pose.header.frame_id = "baxter"
-        
-        m.target_pose.header.frame_id = "baxter"
-        m.target_pose.header.stamp = rospy.Time.now()
-        m.target_pose.pose.position = Point(.6,-.5, table_z+block_width*0)
-        # m.target_pose.pose.position = Point(-0.1,0.725, hp2_z)
-        m.target_pose.pose.orientation = Quaternion(0,1,0,0)
-
-        mott_json = json_message_converter.convert_ros_message_to_json(m)
-
-        cr = CommandRequest()
-        cr.id = "1"
-        cr.action = "mott"
-        cr.args = mott_json
-        crl.commands.append(cr)
-
-        m = Mott()
-        m.command = "mott"
-        m.object_pose_topic = "ar_8"
-        m.target_pose_topic = "target_2"
-
-        m.object_pose.header.frame_id = "baxter"
-        
-        m.target_pose.header.frame_id = "baxter"
-        m.target_pose.header.stamp = rospy.Time.now()
-        m.target_pose.pose.position = Point(.6,-.5, table_z+block_width*1)
-        # m.target_pose.pose.position = Point(-0.1,0.725, hp2_z)
-        m.target_pose.pose.orientation = Quaternion(0,1,0,0)
-        
-        mott_json = json_message_converter.convert_ros_message_to_json(m)
-
-        cr = CommandRequest()
-        cr.id = "2"
-        cr.action = "mott"
-        cr.args = mott_json
-        crl.commands.append(cr)
-
-        m = Mott()
-        m.command = "mott"
-        m.object_pose_topic = "ar_3"
-        m.target_pose_topic = "target_3"
-
-        m.object_pose.header.frame_id = "baxter"
-        
-        m.target_pose.header.frame_id = "baxter"
-        m.target_pose.header.stamp = rospy.Time.now()
-        m.target_pose.pose.position = Point(.6,-.5, table_z+block_width*2)
-        # m.target_pose.pose.position = Point(-0.1,0.725, hp2_z)
-        m.target_pose.pose.orientation = Quaternion(0,1,0,0)
-        
-        mott_json = json_message_converter.convert_ros_message_to_json(m)
-
-        cr = CommandRequest()
-        cr.id = "3"
-        cr.action = "mott"
-        cr.args = mott_json
-        crl.commands.append(cr)
-
-        crl.parents = ["1","2"]
-        crl.children = ["2","3"]
-
-        # test CommandRequestList
-        self.mr_command_req_callback(crl)
 
     def find_robot(self, name):
         for r in self.robots:
@@ -358,7 +193,8 @@ class MRC:
                     gci = self.wcg.generate_commands(path)
                     # rospy.logerr(gci)
                     self.generated_cmd_ids[cmd.id] = gci
-
+                else:
+                    self.generated_cmd_ids[cmd.id] = []
                 
 
             elif cmd.action == "move_base":
@@ -366,11 +202,20 @@ class MRC:
                 # mott = json_message_converter.convert_json_to_ros_message('gatlin/Mott', cmd.args)
                 # self.wcg.add_target(mott.target_pose_topic, mott.target_pose)
                 # gci = self.wcg.generate_move_base_command(path)
-                self.generated_cmd_ids[cmd.id] = str(self.wcg.cmd_idx)
+                self.generated_cmd_ids[cmd.id] = [str(self.wcg.cmd_idx)]
                 cmd.id = str(self.wcg.cmd_idx)
                 self.wcg.cmd_idx += 1
                 self.crq.add_command_req(cmd, "gatlin")
-                rospy.logerr("ADDED MOVEBASE TO CRQ")
+                # rospy.logerr("ADDED MOVEBASE TO CRQ")
+
+            elif cmd.action == "throw":
+                cmd.args = cmd.args.replace("'", "\"")
+                self.generated_cmd_ids[cmd.id] = [str(self.wcg.cmd_idx)]
+                cmd.id = str(self.wcg.cmd_idx)
+                self.wcg.cmd_idx += 1
+                self.crq.add_command_req(cmd, "baxter_right")
+                rospy.logerr("ADDED THROW TO CRQ")
+
 
         # use dependencies to build update crq
         rospy.logerr(self.generated_cmd_ids)
@@ -426,7 +271,7 @@ class Robot:
         self.workspace = workspace
         self.cmd_req_queue = cr_queue
         # publishers for all service requests
-        self.robot_state_pub = rospy.Publisher("/%s_graph_id" % name, String, queue_size = 1) #could just be robot response
+        self.robot_state_pub = rospy.Publisher("/%s_mott_response" % name, String, queue_size = 1) #could just be robot response
         self.mott_pub = rospy.Publisher("/%s_mott" % name, Mott, queue_size = 1)
         self.mott_command_pub = rospy.Publisher("/%s_mott_command" % name, String, queue_size = 1)
 
@@ -457,7 +302,7 @@ class Robot:
    
     def execute_command(self, cmd):
         if cmd != None:
-            if cmd.action == "mott" or cmd.action == "move_base":
+            if cmd.action == "mott" or cmd.action == "move_base" or cmd.action == "throw":
                 self.robot_state_pub.publish("starting: "+cmd.id) #could also put this in response...
                 self.current_cmd = deepcopy(cmd)
                 # rospy.logerr("self.current_cmd")
@@ -475,14 +320,16 @@ class Robot:
 #         self.transform = TransformStamped()
 
 
-# class WCGShower(Thread):
-#     def __init__(self, wcg):
-#         Thread.__init__(self)
-#         self.setDaemon(True)
+class WCGShower(Thread):
+    def __init__(self, wcg):
+        Thread.__init__(self)
+        self.setDaemon(True)
 
-#         self.wcg = wcg
+        self.wcg = wcg
 
-#     def run(self):
+    def run(self):
+        self.wcg.draw()
+        self.wcg.show()
 
 class WorkspaceConnectivityGraph:
     def __init__(self, robots, crq, tfl):
@@ -796,8 +643,8 @@ class WorkspaceConnectivityGraph:
 
     def show(self):
         plt.show()
-        rospy.sleep(5)
-        plt.close()
+        # rospy.sleep(5)
+        # plt.close()
 
     def find_shortest_path(self, v1, v2):
         try:
