@@ -170,6 +170,13 @@ class Nav_Manip_Controller :
 			# desired_pos = Point(.28,0,0) # z is set to 0 when checking error
 			resp = self.move_head("LOOK_FORWARD", PoseStamped())
 			goal_tolerence = .035
+		elif dynamic_pose.color == "basetarget":
+			offset_t = Transform()
+			offset_t.translation = Vector3(0,0,0)
+			offset_t.rotation = Quaternion(0.0, 0.0, 0.0, 1.0)
+			# desired_pos = Point(.30,0,0)
+			resp = self.move_head("LOOK_DOWNWARD", PoseStamped())
+			goal_tolerence = .05
 		else:
 			offset_t = Transform()
 			offset_t.translation = Vector3(-.30,0,0)
@@ -206,7 +213,7 @@ class Nav_Manip_Controller :
 
 			offset_t = Transform()
 			# offset_t.translation = Vector3(-0.093, -0.019, 0.005)
-			offset_t.translation = Vector3(-0.025, 0.00, -0.025)
+			offset_t.translation = Vector3(-0.028, 0.00, -0.025)
 			offset_t.rotation = Quaternion(0.0, 0.0, 0.0, 1.0)
 			base_offset_ps = self.getOffsetPose(dynamic_pose.ps, offset_t, output_frame=self.BASE_FRAME)
 
@@ -340,14 +347,14 @@ class Nav_Manip_Controller :
 		if not resp.success:
 			rospy.logerr("RESET_ARM FAILED")
 
-		if self.object_dp.ps == None or self.object_dp.ps.pose.position == Point():
+		if self.object_dp.ps.header.frame_id == "":
 			self.search_sequence(self.object_dp)
 
 		offset_t = Transform()
 		offset_t.translation = Vector3(-.25, 0, 0.0)
 		offset_t.rotation = Quaternion(0.0, 0.0, 0.0, 1.0)
 
-		self.moveBaseToDynamicPos(self.object_dp, offset_t=offset_t)
+		# self.moveBaseToDynamicPos(self.object_dp, offset_t=offset_t)
 		self.servoBaseToDynamicPos(self.object_dp)
 		self.interActionDelay(1)
 
@@ -355,11 +362,51 @@ class Nav_Manip_Controller :
 		self.interActionDelay(1)
 		
 		if self.command_state == self.RUNNING :
-			self.publishResponse("finished moving base to target")
+			self.publishResponse("finished grabbing")
 		elif self.command_state == self.PAUSING :
-			self.publishResponse("finished move base while pausing!?!?") 
+			self.publishResponse("finished grabbing while pausing!?!?") 
 		elif self.command_state == self.CANCELLED :
 			self.publishResponse("quitting on user command")
+
+	def release_sequence(self) :
+		if self.target_dp.ps == None or self.target_dp.ps.header.frame_id == "":
+			ps = PoseStamped()
+			ps.header.stamp = rospy.Time.now()
+			ps.header.frame_id = "base_link"
+			ps.pose.position = Point(.25,0,.03)
+			ps.pose.orientation = Quaternion(0,1,0,0)
+			self.target_dp.set_pose(ps)
+
+
+		# self.moveBaseToDynamicPos(self.target_dp)
+		# self.servoBaseToDynamicPos(self.target_dp)
+		# self.interActionDelay(1)
+
+		self.releaseObject(self.target_dp)
+
+		ol = ObjectList()
+		o = Object()
+		o.id = self.object_dp.id
+		o.color = self.object_dp.color
+		o.pose = PoseStamped()
+		ol.objects.append(o)
+		self.objectlist_pub.publish(ol)
+
+		ol = ObjectList()
+		o = Object()
+		o.id = self.object_dp.id
+		o.color = self.object_dp.color
+		o.pose = deepcopy(self.target_dp.ps)
+		ol.objects.append(o)
+		self.objectlist_pub.publish(ol)
+		self.objectlist_pub.publish(ol)
+
+		if self.command_state == self.RUNNING :
+			self.publishResponse("finished mott") #string must contain finished
+		elif self.command_state == self.PAUSING :
+			self.publishResponse("finished mott while pausing!?!?") 
+		elif self.command_state == self.CANCELLED :
+			self.publishResponse("quitting on user command") 
 
 	def search_sequence(self, dp) :
 
@@ -428,6 +475,9 @@ class Nav_Manip_Controller :
 		elif data.command == "grab" :
 			rospy.loginfo("Starting Grab")
 			self.grab_sequence()
+		elif data.command == "release" :
+			rospy.loginfo("Starting Release")
+			self.release_sequence()
 		elif data.command == "search" :
 			rospy.loginfo("Starting Search")
 			self.search_sequence()
