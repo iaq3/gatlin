@@ -72,8 +72,8 @@ class Head_Controller:
 		self.move_head(req)
 		rospy.sleep(wait)
 		
-		# req.action = "LOOK_DOWN"
-		# self.move_head(req)
+		req.action = "LOOK_DOWN"
+		self.move_head(req)
 
 		rospy.spin()
 
