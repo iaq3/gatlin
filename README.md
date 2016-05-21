@@ -1,1 +1,1 @@
-# Gatlin and Baxter ROS API
+# Gatlin ROS Hydro API
